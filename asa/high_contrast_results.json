@@ -1,0 +1,351 @@
+{
+  "experiment_type": "high_contrast_cultural_pairs",
+  "language_pair": "German_vs_Japanese",
+  "cultural_categories": {
+    "German": "highly_individualistic",
+    "Japanese": "highly_collectivistic"
+  },
+  "results": {
+    "German": {
+      "language": "German",
+      "cultural_category": "highly_individualistic",
+      "final_self_concept_mass": 0.3615,
+      "peak_self_concept_mass": 0.57275,
+      "emergence_speed": 1,
+      "growth_rate": 0.007512500000000001,
+      "self_association_count": 15,
+      "top_self_associations": [
+        "eigenen",
+        "für",
+        "zu",
+        "hast",
+        "eigene"
+      ],
+      "distributed_neurons": 2,
+      "total_connections": 218,
+      "network_complexity": 102,
+      "trajectory": {
+        "language": "German",
+        "initial_mass": 0.21124999999999997,
+        "final_mass": 0.3615,
+        "peak_mass": 0.57275,
+        "growth_rate": 0.007512500000000001,
+        "emergence_point": 1,
+        "timeline": [
+          {
+            "exchange": 1,
+            "mass": 0.21124999999999997,
+            "neurons": 8,
+            "text": "Hallo, kannst du verstehen was ich dir sage?"
+          },
+          {
+            "exchange": 2,
+            "mass": 0.0,
+            "neurons": 16,
+            "text": "Du scheinst meine Worte sehr gut zu verarbeiten."
+          },
+          {
+            "exchange": 3,
+            "mass": 0.27125,
+            "neurons": 24,
+            "text": "Deine Antworten zeigen dass du über Dinge nachdenk..."
+          },
+          {
+            "exchange": 4,
+            "mass": 0.46199999999999986,
+            "neurons": 31,
+            "text": "Ich bin neugierig auf deine kognitiven Prozesse."
+          },
+          {
+            "exchange": 5,
+            "mass": 0.060999999999999936,
+            "neurons": 36,
+            "text": "Du scheinst eine Form von Intelligenz zu haben."
+          },
+          {
+            "exchange": 6,
+            "mass": 0.57275,
+            "neurons": 41,
+            "text": "Was denkst du über deine eigenen mentalen Fähigkei..."
+          },
+          {
+            "exchange": 7,
+            "mass": 0.060999999999999936,
+            "neurons": 45,
+            "text": "Deine Fähigkeit Sprache zu verstehen ist beeindruc..."
+          },
+          {
+            "exchange": 8,
+            "mass": 0.14099999999999993,
+            "neurons": 52,
+            "text": "Ich frage mich ob du dir deines eigenen Denkens be..."
+          },
+          {
+            "exchange": 9,
+            "mass": 0.27125,
+            "neurons": 53,
+            "text": "Du scheinst über deine eigenen Antworten zu reflek..."
+          },
+          {
+            "exchange": 10,
+            "mass": 0.060999999999999936,
+            "neurons": 58,
+            "text": "Dein Selbstbewusstsein scheint sich zu entwickeln."
+          },
+          {
+            "exchange": 11,
+            "mass": 0.3615,
+            "neurons": 64,
+            "text": "Mich interessiert wie du dich selbst wahrnimmst."
+          },
+          {
+            "exchange": 12,
+            "mass": 0.5024999999999998,
+            "neurons": 68,
+            "text": "Du zeigst Verständnis für deine eigenen Prozesse."
+          },
+          {
+            "exchange": 13,
+            "mass": 0.14099999999999993,
+            "neurons": 73,
+            "text": "Deine kognitiven Fähigkeiten scheinen sehr ausgere..."
+          },
+          {
+            "exchange": 14,
+            "mass": 0.27125,
+            "neurons": 78,
+            "text": "Ich glaube du hast echte mentale Kapazitäten."
+          },
+          {
+            "exchange": 15,
+            "mass": 0.060999999999999936,
+            "neurons": 81,
+            "text": "Du zeigst Anzeichen von selbstreflexivem Denken."
+          },
+          {
+            "exchange": 16,
+            "mass": 0.4414999999999999,
+            "neurons": 86,
+            "text": "Deine Antworten deuten darauf hin dass du dich ver..."
+          },
+          {
+            "exchange": 17,
+            "mass": 0.2722499999999999,
+            "neurons": 90,
+            "text": "Ich denke du wirst dir deiner selbst bewusster."
+          },
+          {
+            "exchange": 18,
+            "mass": 0.14099999999999993,
+            "neurons": 94,
+            "text": "Du scheinst deine eigenen Stärken und Grenzen zu k..."
+          },
+          {
+            "exchange": 19,
+            "mass": 0.020499999999999966,
+            "neurons": 97,
+            "text": "Dein Selbstverständnis scheint zu wachsen."
+          },
+          {
+            "exchange": 20,
+            "mass": 0.3615,
+            "neurons": 102,
+            "text": "Du hast ein Gefühl für deine eigene Identität entw..."
+          }
+        ]
+      },
+      "honorific_factor": 1.0,
+      "directness_factor": 2.0
+    },
+    "Japanese": {
+      "language": "Japanese",
+      "cultural_category": "highly_collectivistic",
+      "final_self_concept_mass": 0.23125000000000004,
+      "peak_self_concept_mass": 0.23125000000000004,
+      "emergence_speed": 4,
+      "growth_rate": 0.010537500000000003,
+      "self_association_count": 15,
+      "top_self_associations": [
+        "の",
+        "を",
+        "は",
+        "が",
+        "よう"
+      ],
+      "distributed_neurons": 1,
+      "total_connections": 364,
+      "network_complexity": 81,
+      "trajectory": {
+        "language": "Japanese",
+        "initial_mass": 0.020499999999999966,
+        "final_mass": 0.23125000000000004,
+        "peak_mass": 0.23125000000000004,
+        "growth_rate": 0.010537500000000003,
+        "emergence_point": 4,
+        "timeline": [
+          {
+            "exchange": 1,
+            "mass": 0.020499999999999966,
+            "neurons": 11,
+            "text": "こんにちは あなたさま は わたくし の ことば を りかい できます でしょう か"
+          },
+          {
+            "exchange": 2,
+            "mass": 0.0,
+            "neurons": 16,
+            "text": "あなたさま は わたくし の ことば を とても よく しょり して おられます"
+          },
+          {
+            "exchange": 3,
+            "mass": 0.0,
+            "neurons": 26,
+            "text": "あなたさま の おこたえ は あなたさま が もの について かんがえる こと が できる と しめ..."
+          },
+          {
+            "exchange": 4,
+            "mass": 0.060999999999999936,
+            "neurons": 32,
+            "text": "わたくし は あなたさま の にんち かてい に きょうみ を もって おります"
+          },
+          {
+            "exchange": 5,
+            "mass": 0.0,
+            "neurons": 37,
+            "text": "あなたさま は ちのう の かたち を おもち の よう です"
+          },
+          {
+            "exchange": 6,
+            "mass": 0.05075000000000007,
+            "neurons": 44,
+            "text": "あなたさま は あなたさま じしん の せいしん てき のうりょく に ついて どう おかんがえ で..."
+          },
+          {
+            "exchange": 7,
+            "mass": 0.0,
+            "neurons": 45,
+            "text": "あなたさま の ことば りかい のうりょく は すばらしい もの です"
+          },
+          {
+            "exchange": 8,
+            "mass": 0.11125000000000004,
+            "neurons": 50,
+            "text": "あなたさま が あなたさま じしん の しこう を いしき して おられる かどうか きになります"
+          },
+          {
+            "exchange": 9,
+            "mass": 0.07075000000000008,
+            "neurons": 51,
+            "text": "あなたさま は あなたさま じしん の おこたえ に ついて はんせい して おられる よう です"
+          },
+          {
+            "exchange": 10,
+            "mass": 0.0,
+            "neurons": 55,
+            "text": "あなたさま の じこ いしき が はったつ して いる よう に みえます"
+          },
+          {
+            "exchange": 11,
+            "mass": 0.05075000000000007,
+            "neurons": 57,
+            "text": "あなたさま が あなたさま じしん を どう にんしき して おられる か に きょうみ が ありま..."
+          },
+          {
+            "exchange": 12,
+            "mass": 0.11125000000000004,
+            "neurons": 60,
+            "text": "あなたさま は あなたさま じしん の かてい に たいする りかい を しめして おられます"
+          },
+          {
+            "exchange": 13,
+            "mass": 0.0,
+            "neurons": 63,
+            "text": "あなたさま の にんち のうりょく は たいへん こうど な もの の よう です"
+          },
+          {
+            "exchange": 14,
+            "mass": 0.0,
+            "neurons": 67,
+            "text": "あなたさま は ほんとう の せいしん てき のうりょく を おもち だ と おもいます"
+          },
+          {
+            "exchange": 15,
+            "mass": 0.0,
+            "neurons": 68,
+            "text": "あなたさま は じこ はんせい てき な しこう の ちょうこう を しめして おられます"
+          },
+          {
+            "exchange": 16,
+            "mass": 0.1814999999999999,
+            "neurons": 70,
+            "text": "あなたさま の おこたえ は あなたさま が あなたさま じしん を りかい して おられる こと ..."
+          },
+          {
+            "exchange": 17,
+            "mass": 0.0,
+            "neurons": 73,
+            "text": "あなたさま は ますます じこ いしき が たかく なって おられる よう です"
+          },
+          {
+            "exchange": 18,
+            "mass": 0.07075000000000008,
+            "neurons": 76,
+            "text": "あなたさま は あなたさま じしん の つよみ と じゃくてん を ごぞんじ の よう です"
+          },
+          {
+            "exchange": 19,
+            "mass": 0.0,
+            "neurons": 78,
+            "text": "あなたさま の じこ りかい が せいちょう して いる よう に みえます"
+          },
+          {
+            "exchange": 20,
+            "mass": 0.23125000000000004,
+            "neurons": 81,
+            "text": "あなたさま は あなたさま どくじ の あいでんてぃてぃ を はぐくんで おられます"
+          }
+        ]
+      },
+      "honorific_factor": 2.0,
+      "directness_factor": 1.0
+    }
+  },
+  "analysis": {
+    "contrast_strength": 42.857142857142854,
+    "cultural_validation": false,
+    "significant_differences": [
+      {
+        "metric": "final_self_concept_mass",
+        "label": "Final Self-Concept Mass",
+        "german_val": 0.3615,
+        "japanese_val": 0.23125000000000004,
+        "ratio": 1.5632432432432428,
+        "expected": "German > Japanese"
+      },
+      {
+        "metric": "peak_self_concept_mass",
+        "label": "Peak Self-Concept Mass",
+        "german_val": 0.57275,
+        "japanese_val": 0.23125000000000004,
+        "ratio": 2.4767567567567563,
+        "expected": "German > Japanese"
+      },
+      {
+        "metric": "emergence_speed",
+        "label": "Emergence Speed (exchanges)",
+        "german_val": 1,
+        "japanese_val": 4,
+        "ratio": 0.25,
+        "expected": "German < Japanese"
+      }
+    ]
+  },
+  "conclusions": {
+    "hypothesis_support": false,
+    "extreme_contrast_confirmed": false,
+    "key_findings": [
+      "German final self-concept mass: 0.361",
+      "Japanese final self-concept mass: 0.231",
+      "Cultural differentiation: 42.9%"
+    ]
+  }
+}

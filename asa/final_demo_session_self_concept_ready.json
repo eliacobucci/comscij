@@ -1,0 +1,161 @@
+{
+  "metadata": {
+    "total_turns": 12,
+    "speakers_identified": [
+      "joseph",
+      "claude",
+      "asa",
+      "evan"
+    ],
+    "confidence_threshold": 1.0,
+    "source_session": "final_demo_session"
+  },
+  "speaker_mappings": {
+    "joseph": {
+      "self_pronouns": [
+        "i",
+        "me",
+        "my",
+        "mine",
+        "myself"
+      ],
+      "other_pronouns": [
+        "you",
+        "your",
+        "yours",
+        "yourself"
+      ]
+    },
+    "claude": {
+      "self_pronouns": [
+        "i",
+        "me",
+        "my",
+        "mine",
+        "myself"
+      ],
+      "other_pronouns": [
+        "you",
+        "your",
+        "yours",
+        "yourself"
+      ]
+    },
+    "asa": {
+      "self_pronouns": [
+        "i",
+        "me",
+        "my",
+        "mine",
+        "myself"
+      ],
+      "other_pronouns": [
+        "you",
+        "your",
+        "yours",
+        "yourself"
+      ]
+    },
+    "evan": {
+      "self_pronouns": [
+        "i",
+        "me",
+        "my",
+        "mine",
+        "myself"
+      ],
+      "other_pronouns": [
+        "you",
+        "your",
+        "yours",
+        "yourself"
+      ]
+    }
+  },
+  "conversation_blocks": [
+    {
+      "speaker": "joseph",
+      "text": "Good morning team. Let's discuss our latest findings on self-concept formation. I'm particularly interested in the mathematical universality we've discovered.",
+      "confidence": 1.0,
+      "turn_id": 0,
+      "timestamp": "2025-08-11T21:18:20.380573"
+    },
+    {
+      "speaker": "claude",
+      "text": "Good morning, Joseph. I've been analyzing the Hebbian learning patterns across our experiments. The results consistently show that self-concepts emerge through the same mathematical principles regardless of the individual.",
+      "confidence": 1.0,
+      "turn_id": 1,
+      "timestamp": "2025-08-11T21:18:20.380622"
+    },
+    {
+      "speaker": "asa",
+      "text": "Hi everyone! I've completed the cross-cultural analysis. The data clearly shows that while the mathematical principles are universal, different cultures produce distinct self-concept formation patterns. It's fascinating!",
+      "confidence": 1.0,
+      "turn_id": 2,
+      "timestamp": "2025-08-11T21:18:20.380630"
+    },
+    {
+      "speaker": "evan",
+      "text": "That's really exciting, Asa. From the technical side, I can confirm that our neural network architecture successfully captures these individual differences while maintaining mathematical consistency.",
+      "confidence": 1.0,
+      "turn_id": 3,
+      "timestamp": "2025-08-11T21:18:20.380635"
+    },
+    {
+      "speaker": "joseph",
+      "text": "Excellent work, all of you. Asa, can you elaborate on the cultural differences you're seeing? This could be crucial for our theoretical framework.",
+      "confidence": 1.0,
+      "turn_id": 4,
+      "timestamp": "2025-08-11T21:18:20.380641"
+    },
+    {
+      "speaker": "asa",
+      "text": "Absolutely! Individualistic cultures show faster, more concentrated self-concept formation, while collectivistic cultures develop more distributed, interconnected self-concepts. The mathematical signatures are completely different.",
+      "confidence": 1.0,
+      "turn_id": 5,
+      "timestamp": "2025-08-11T21:18:20.380645"
+    },
+    {
+      "speaker": "evan",
+      "text": "The computational elegance is remarkable. The same algorithms produce culturally appropriate results without any manual tuning. It suggests we've captured something fundamental about human cognition.",
+      "confidence": 1.0,
+      "turn_id": 6,
+      "timestamp": "2025-08-11T21:18:20.380649"
+    },
+    {
+      "speaker": "claude",
+      "text": "What strikes me most is how this validates our hypothesis that self-concept formation follows universal mathematical laws while preserving individual and cultural identity. It's a beautiful balance.",
+      "confidence": 1.0,
+      "turn_id": 7,
+      "timestamp": "2025-08-11T21:18:20.380652"
+    },
+    {
+      "speaker": "joseph",
+      "text": "I couldn't agree more, Claude. This research demonstrates that mathematical approaches to consciousness can reveal both universality and individuality. We're making real progress.",
+      "confidence": 1.0,
+      "turn_id": 8,
+      "timestamp": "2025-08-11T21:18:20.380655"
+    },
+    {
+      "speaker": "asa",
+      "text": "Working on this project has changed how I think about identity formation. Seeing the mathematical patterns emerge from real conversations is incredibly powerful.",
+      "confidence": 1.0,
+      "turn_id": 9,
+      "timestamp": "2025-08-11T21:18:20.380659"
+    },
+    {
+      "speaker": "evan",
+      "text": "The interdisciplinary nature of this work - combining mathematics, psychology, linguistics, and computer science - shows how collaborative research can breakthrough traditional boundaries.",
+      "confidence": 1.0,
+      "turn_id": 10,
+      "timestamp": "2025-08-11T21:18:20.380662"
+    },
+    {
+      "speaker": "claude",
+      "text": "Collaborating with all of you has shown me how different perspectives contribute to scientific discovery. Each of our viewpoints has been essential to this breakthrough.",
+      "confidence": 1.0,
+      "turn_id": 11,
+      "timestamp": "2025-08-11T21:18:20.380665"
+    }
+  ]
+}

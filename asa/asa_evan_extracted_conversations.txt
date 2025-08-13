@@ -1,0 +1,41 @@
+# Asa and Evan Conversation Reconstruction
+# Extracted from various source files
+
+## From: speaker_identification_tool.py
+
+'asa', 'evan', 'student', 'researcher'
+elif 'asa' in name_counts:
+speaker_identity['likely_identity'] = 'Asa'
+elif 'evan' in name_counts:
+speaker_identity['likely_identity'] = 'Evan'
+Hey Joseph, I've been following this conversation and I'm curious about something. Asa here do you think we could extend this to analyze group dynamics as well?
+That's an interesting question, Asa. I think the same mathematical principles could apply to group formation. What's your intuition about how multiple self-concepts might interact?
+Well, as Evan mentioned earlier in our lab meeting, we might see interference patterns between individual self-concepts. I think the group dynamics could be modeled using the same Hebbian principles.
+sample_filename = '/Users/josephwoelfel/asa/sample_conversation.txt'
+output_filename = '/Users/josephwoelfel/asa/speaker_analysis_results.json'
+
+## From: conversation_reprocessor.py
+
+Reprocesses existing conversation files to properly identify speakers (Joseph, Claude, Asa, Evan)
+def find_conversation_files(self, directory: str = "/Users/josephwoelfel/asa/") -> List[str]:
+"""Create visualization with multiple speakers including Asa and Evan."""
+'Asa': {'i', 'me', 'my', 'asa'},
+'Evan': {'i', 'me', 'my', 'evan'}
+'Evan_self': 'orange',
+ax.set_title('Multi-Speaker Self-Concept Formation\nJoseph, Claude, Asa, Evan in 3D Cognitive Space')
+Asa: Asa here I've been analyzing the data from our previous experiments, and I think we're seeing some interesting patterns in the cross-linguistic results.
+Joseph: That's excellent work, Asa. Your analysis of the cultural patterns is quite sophisticated. What specific patterns are you noticing?
+Asa: Well, I'm seeing stronger self-concept formation in individualistic languages compared to collectivistic ones, just as the theory predicts. The mass accumulation ratios support our hypotheses.
+
+## From: enhanced_speaker_identifier.py
+
+and contextual analysis for Asa and Evan identification.
+'typical_phrases': ['asa here', 'as asa', 'i think we'],
+'typical_phrases': ['as evan mentioned', 'evan here', 'my analysis'],
+if speaker_type in ['joseph', 'asa', 'evan']:  # Human speakers
+if match in ['asa', 'evan', 'joseph', 'claude']:
+if match in ['asa', 'evan', 'joseph', 'claude']:
+Hey Joseph, Asa here I've been following this conversation and I'm curious about something. Do you think we could extend this to analyze group dynamics as well?
+That's an interesting question, Asa. I think the same mathematical principles could apply to group formation. What's your intuition about how multiple self-concepts might interact?
+Well, as Evan mentioned earlier in our lab meeting, we might see interference patterns between individual self-concepts. I think the group dynamics could be modeled using the same Hebbian principles.
+Evan here actually, my analysis suggests we should be careful about assuming interference patterns. The mathematical structure might support constructive rather than destructive interactions between self-concepts.

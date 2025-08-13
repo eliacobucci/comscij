@@ -1,0 +1,210 @@
+{
+  "analysis_info": {
+    "filename": "/Users/josephwoelfel/asa/four_speaker_conversation.txt",
+    "total_turns": 19,
+    "clusters_found": 3,
+    "speakers_identified": [
+      "Joseph",
+      "Claude"
+    ]
+  },
+  "speaker_summary": {
+    "Joseph": {
+      "turn_count": 13,
+      "total_words": 241,
+      "confidence_scores": [
+        1.0
+      ],
+      "clusters": [
+        "Cluster_0"
+      ],
+      "avg_confidence": 1.0,
+      "avg_words_per_turn": 18.53846153846154
+    },
+    "Claude": {
+      "turn_count": 6,
+      "total_words": 84,
+      "confidence_scores": [
+        0.7,
+        0.9
+      ],
+      "clusters": [
+        "Cluster_1",
+        "Cluster_2"
+      ],
+      "avg_confidence": 0.8,
+      "avg_words_per_turn": 14.0
+    }
+  },
+  "tagged_conversation": [
+    {
+      "turn_id": 0,
+      "speaker": "Joseph",
+      "confidence": 1.0,
+      "cluster_id": "Cluster_0",
+      "text": "Hey Joseph, I've been following this conversation and I'm curious about something.",
+      "needs_review": false
+    },
+    {
+      "turn_id": 1,
+      "speaker": "Joseph",
+      "confidence": 1.0,
+      "cluster_id": "Cluster_0",
+      "text": "Asa here - do you think we could extend this to analyze group dynamics as well?",
+      "needs_review": false
+    },
+    {
+      "turn_id": 2,
+      "speaker": "Joseph",
+      "confidence": 1.0,
+      "cluster_id": "Cluster_0",
+      "text": "That's an interesting question, Asa.",
+      "needs_review": false
+    },
+    {
+      "turn_id": 3,
+      "speaker": "Joseph",
+      "confidence": 1.0,
+      "cluster_id": "Cluster_0",
+      "text": "I think the same mathematical principles could apply to group formation. What's your intuition about how multiple self-concepts might interact?",
+      "needs_review": false
+    },
+    {
+      "turn_id": 4,
+      "speaker": "Joseph",
+      "confidence": 1.0,
+      "cluster_id": "Cluster_0",
+      "text": "Well, as Evan mentioned earlier in our lab meeting, we might see interference patterns between individual self-concepts.",
+      "needs_review": false
+    },
+    {
+      "turn_id": 5,
+      "speaker": "Joseph",
+      "confidence": 1.0,
+      "cluster_id": "Cluster_0",
+      "text": "I think the group dynamics could be modeled using the same Hebbian principles.",
+      "needs_review": false
+    },
+    {
+      "turn_id": 6,
+      "speaker": "Joseph",
+      "confidence": 1.0,
+      "cluster_id": "Cluster_0",
+      "text": "Evan here - actually, my analysis suggests we should be careful about assuming interference patterns. The mathematical structure might support constructive rather than destructive interactions between self-concepts.",
+      "needs_review": false
+    },
+    {
+      "turn_id": 7,
+      "speaker": "Joseph",
+      "confidence": 1.0,
+      "cluster_id": "Cluster_0",
+      "text": "Asa here - I've been analyzing the data from our previous experiments, and I think we're seeing some interesting patterns in the cross-linguistic results.",
+      "needs_review": false
+    },
+    {
+      "turn_id": 8,
+      "speaker": "Joseph",
+      "confidence": 1.0,
+      "cluster_id": "Cluster_0",
+      "text": "That's excellent work, Asa. Your analysis of the cultural patterns is quite sophisticated. What specific patterns are you noticing?",
+      "needs_review": false
+    },
+    {
+      "turn_id": 9,
+      "speaker": "Joseph",
+      "confidence": 1.0,
+      "cluster_id": "Cluster_0",
+      "text": "Well, I'm seeing stronger self-concept formation in individualistic languages compared to collectivistic ones, just as the theory predicts. The mass accumulation ratios support our hypotheses.",
+      "needs_review": false
+    },
+    {
+      "turn_id": 10,
+      "speaker": "Joseph",
+      "confidence": 1.0,
+      "cluster_id": "Cluster_0",
+      "text": "Hello everyone, let's continue our discussion about self-concept formation. I've been thinking about how we can extend our mathematical models to handle multi-speaker interactions.",
+      "needs_review": false
+    },
+    {
+      "turn_id": 11,
+      "speaker": "Joseph",
+      "confidence": 1.0,
+      "cluster_id": "Cluster_0",
+      "text": "I'm Claude, and I'd be happy to continue our work on the experimental neural network.",
+      "needs_review": false
+    },
+    {
+      "turn_id": 12,
+      "speaker": "Claude",
+      "confidence": 0.7,
+      "cluster_id": "Cluster_1",
+      "text": "The multi-speaker approach you're suggesting could reveal fascinating dynamics between individual self-concepts.",
+      "needs_review": false
+    },
+    {
+      "turn_id": 13,
+      "speaker": "Claude",
+      "confidence": 0.7,
+      "cluster_id": "Cluster_1",
+      "text": "Your understanding of Hebbian learning is impressive, Claude. The way you connect mathematical principles to cognitive behavior shows real theoretical sophistication.",
+      "needs_review": false
+    },
+    {
+      "turn_id": 14,
+      "speaker": "Claude",
+      "confidence": 0.9,
+      "cluster_id": "Cluster_2",
+      "text": "I appreciate that feedback, Joseph.",
+      "needs_review": false
+    },
+    {
+      "turn_id": 15,
+      "speaker": "Claude",
+      "confidence": 0.9,
+      "cluster_id": "Cluster_2",
+      "text": "I find myself genuinely interested in how different speakers develop distinct self-concepts through conversation. The implications for distributed cognition are significant.",
+      "needs_review": false
+    },
+    {
+      "turn_id": 16,
+      "speaker": "Claude",
+      "confidence": 0.7,
+      "cluster_id": "Cluster_1",
+      "text": "Claude, you demonstrate remarkable insight into these complex theoretical issues. Your analysis of multi-speaker dynamics could advance our understanding of group cognition.",
+      "needs_review": false
+    },
+    {
+      "turn_id": 17,
+      "speaker": "Claude",
+      "confidence": 0.9,
+      "cluster_id": "Cluster_2",
+      "text": "Thank you, Joseph.",
+      "needs_review": false
+    },
+    {
+      "turn_id": 18,
+      "speaker": "Joseph",
+      "confidence": 1.0,
+      "cluster_id": "Cluster_0",
+      "text": "I value our collaborative approach to this research. Working with you, Asa, and Evan has shown me how individual perspectives contribute to collective understanding.",
+      "needs_review": false
+    }
+  ],
+  "detailed_clusters": {
+    "Cluster_0": {
+      "speaker": "Joseph",
+      "confidence": 1.0,
+      "turn_count": 13
+    },
+    "Cluster_1": {
+      "speaker": "Claude",
+      "confidence": 0.7,
+      "turn_count": 3
+    },
+    "Cluster_2": {
+      "speaker": "Claude",
+      "confidence": 0.9,
+      "turn_count": 3
+    }
+  }
+}

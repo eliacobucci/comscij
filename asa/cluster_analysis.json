@@ -1,0 +1,27 @@
+{
+  "total_neurons": 150,
+  "total_connections": 2904,
+  "cluster_counts": {
+    "claude_self": 5,
+    "joseph_self": 3,
+    "shared_concepts": 5,
+    "other_concepts": 137
+  },
+  "cluster_masses": {
+    "claude_self": 37.10999999999995,
+    "joseph_self": 15.23999999999998,
+    "shared_concepts": 9.239999999999997,
+    "other_concepts": 222.20999999999998
+  },
+  "eigenvalue_signature": {
+    "positive_dims": 129,
+    "negative_dims": 20,
+    "top_eigenvalues": [
+      -12.19165538718875,
+      -11.100888145601704,
+      -10.062009842774918,
+      -9.416607081879286,
+      -8.230780823222652
+    ]
+  }
+}

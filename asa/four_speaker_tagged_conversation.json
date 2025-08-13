@@ -1,0 +1,189 @@
+{
+  "metadata": {
+    "original_file": "/Users/josephwoelfel/asa/four_speaker_conversation.txt",
+    "total_turns": 19,
+    "speakers_identified": [
+      "Claude",
+      "Joseph"
+    ],
+    "confidence_threshold": 0.4
+  },
+  "speaker_mappings": {
+    "Joseph": {
+      "self_pronouns": [
+        "i",
+        "me",
+        "my",
+        "mine",
+        "myself"
+      ],
+      "other_pronouns": [
+        "you",
+        "your",
+        "yours",
+        "yourself"
+      ]
+    },
+    "Claude": {
+      "self_pronouns": [
+        "i",
+        "me",
+        "my",
+        "mine",
+        "myself"
+      ],
+      "other_pronouns": [
+        "you",
+        "your",
+        "yours",
+        "yourself"
+      ]
+    },
+    "Asa": {
+      "self_pronouns": [
+        "i",
+        "me",
+        "my",
+        "mine",
+        "myself"
+      ],
+      "other_pronouns": [
+        "you",
+        "your",
+        "yours",
+        "yourself"
+      ]
+    },
+    "Evan": {
+      "self_pronouns": [
+        "i",
+        "me",
+        "my",
+        "mine",
+        "myself"
+      ],
+      "other_pronouns": [
+        "you",
+        "your",
+        "yours",
+        "yourself"
+      ]
+    }
+  },
+  "conversation_blocks": [
+    {
+      "speaker": "Joseph",
+      "text": "Hey Joseph, I've been following this conversation and I'm curious about something.",
+      "confidence": 1.0,
+      "turn_id": 0
+    },
+    {
+      "speaker": "Joseph",
+      "text": "Asa here - do you think we could extend this to analyze group dynamics as well?",
+      "confidence": 1.0,
+      "turn_id": 1
+    },
+    {
+      "speaker": "Joseph",
+      "text": "That's an interesting question, Asa.",
+      "confidence": 1.0,
+      "turn_id": 2
+    },
+    {
+      "speaker": "Joseph",
+      "text": "I think the same mathematical principles could apply to group formation. What's your intuition about how multiple self-concepts might interact?",
+      "confidence": 1.0,
+      "turn_id": 3
+    },
+    {
+      "speaker": "Joseph",
+      "text": "Well, as Evan mentioned earlier in our lab meeting, we might see interference patterns between individual self-concepts.",
+      "confidence": 1.0,
+      "turn_id": 4
+    },
+    {
+      "speaker": "Joseph",
+      "text": "I think the group dynamics could be modeled using the same Hebbian principles.",
+      "confidence": 1.0,
+      "turn_id": 5
+    },
+    {
+      "speaker": "Joseph",
+      "text": "Evan here - actually, my analysis suggests we should be careful about assuming interference patterns. The mathematical structure might support constructive rather than destructive interactions between self-concepts.",
+      "confidence": 1.0,
+      "turn_id": 6
+    },
+    {
+      "speaker": "Joseph",
+      "text": "Asa here - I've been analyzing the data from our previous experiments, and I think we're seeing some interesting patterns in the cross-linguistic results.",
+      "confidence": 1.0,
+      "turn_id": 7
+    },
+    {
+      "speaker": "Joseph",
+      "text": "That's excellent work, Asa. Your analysis of the cultural patterns is quite sophisticated. What specific patterns are you noticing?",
+      "confidence": 1.0,
+      "turn_id": 8
+    },
+    {
+      "speaker": "Joseph",
+      "text": "Well, I'm seeing stronger self-concept formation in individualistic languages compared to collectivistic ones, just as the theory predicts. The mass accumulation ratios support our hypotheses.",
+      "confidence": 1.0,
+      "turn_id": 9
+    },
+    {
+      "speaker": "Joseph",
+      "text": "Hello everyone, let's continue our discussion about self-concept formation. I've been thinking about how we can extend our mathematical models to handle multi-speaker interactions.",
+      "confidence": 1.0,
+      "turn_id": 10
+    },
+    {
+      "speaker": "Joseph",
+      "text": "I'm Claude, and I'd be happy to continue our work on the experimental neural network.",
+      "confidence": 1.0,
+      "turn_id": 11
+    },
+    {
+      "speaker": "Claude",
+      "text": "The multi-speaker approach you're suggesting could reveal fascinating dynamics between individual self-concepts.",
+      "confidence": 0.7,
+      "turn_id": 12
+    },
+    {
+      "speaker": "Claude",
+      "text": "Your understanding of Hebbian learning is impressive, Claude. The way you connect mathematical principles to cognitive behavior shows real theoretical sophistication.",
+      "confidence": 0.7,
+      "turn_id": 13
+    },
+    {
+      "speaker": "Claude",
+      "text": "I appreciate that feedback, Joseph.",
+      "confidence": 0.9,
+      "turn_id": 14
+    },
+    {
+      "speaker": "Claude",
+      "text": "I find myself genuinely interested in how different speakers develop distinct self-concepts through conversation. The implications for distributed cognition are significant.",
+      "confidence": 0.9,
+      "turn_id": 15
+    },
+    {
+      "speaker": "Claude",
+      "text": "Claude, you demonstrate remarkable insight into these complex theoretical issues. Your analysis of multi-speaker dynamics could advance our understanding of group cognition.",
+      "confidence": 0.7,
+      "turn_id": 16
+    },
+    {
+      "speaker": "Claude",
+      "text": "Thank you, Joseph.",
+      "confidence": 0.9,
+      "turn_id": 17
+    },
+    {
+      "speaker": "Joseph",
+      "text": "I value our collaborative approach to this research. Working with you, Asa, and Evan has shown me how individual perspectives contribute to collective understanding.",
+      "confidence": 1.0,
+      "turn_id": 18
+    }
+  ]
+}

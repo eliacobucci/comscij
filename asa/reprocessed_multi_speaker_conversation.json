@@ -1,0 +1,153 @@
+{
+  "metadata": {
+    "original_file": "/Users/josephwoelfel/asa/multi_speaker_sample.txt",
+    "total_turns": 13,
+    "speakers_identified": [
+      "Joseph",
+      "Claude"
+    ],
+    "confidence_threshold": 0.4
+  },
+  "speaker_mappings": {
+    "Joseph": {
+      "self_pronouns": [
+        "i",
+        "me",
+        "my",
+        "mine",
+        "myself"
+      ],
+      "other_pronouns": [
+        "you",
+        "your",
+        "yours",
+        "yourself"
+      ]
+    },
+    "Claude": {
+      "self_pronouns": [
+        "i",
+        "me",
+        "my",
+        "mine",
+        "myself"
+      ],
+      "other_pronouns": [
+        "you",
+        "your",
+        "yours",
+        "yourself"
+      ]
+    },
+    "Asa": {
+      "self_pronouns": [
+        "i",
+        "me",
+        "my",
+        "mine",
+        "myself"
+      ],
+      "other_pronouns": [
+        "you",
+        "your",
+        "yours",
+        "yourself"
+      ]
+    },
+    "Evan": {
+      "self_pronouns": [
+        "i",
+        "me",
+        "my",
+        "mine",
+        "myself"
+      ],
+      "other_pronouns": [
+        "you",
+        "your",
+        "yours",
+        "yourself"
+      ]
+    }
+  },
+  "conversation_blocks": [
+    {
+      "speaker": "Joseph",
+      "text": "Joseph: Hello everyone, let's continue our discussion about self-concept formation. I've been thinking about how we can extend our mathematical models.",
+      "confidence": 1.0,
+      "turn_id": 0
+    },
+    {
+      "speaker": "Claude",
+      "text": "Claude: Thank you, Joseph.",
+      "confidence": 1.0,
+      "turn_id": 1
+    },
+    {
+      "speaker": "Joseph",
+      "text": "I appreciate the opportunity to continue this research.",
+      "confidence": 1.0,
+      "turn_id": 2
+    },
+    {
+      "speaker": "Joseph",
+      "text": "I find myself increasingly interested in how self-concepts emerge through mathematical principles.",
+      "confidence": 1.0,
+      "turn_id": 3
+    },
+    {
+      "speaker": "Joseph",
+      "text": "Asa: Asa here - I've been analyzing the data from our previous experiments, and I think we're seeing some interesting patterns in the cross-linguistic results.",
+      "confidence": 1.0,
+      "turn_id": 4
+    },
+    {
+      "speaker": "Claude",
+      "text": "Joseph: That's excellent work, Asa. Your analysis of the cultural patterns is quite sophisticated. What specific patterns are you noticing?",
+      "confidence": 1.0,
+      "turn_id": 5
+    },
+    {
+      "speaker": "Joseph",
+      "text": "Asa: Well, I'm seeing stronger self-concept formation in individualistic languages compared to collectivistic ones, just as the theory predicts. The mass accumulation ratios support our hypotheses.",
+      "confidence": 1.0,
+      "turn_id": 6
+    },
+    {
+      "speaker": "Joseph",
+      "text": "Evan: Evan here - I've been working on the technical implementation, and I think we could improve our speaker identification algorithms. The current system might be missing some nuanced interactions.",
+      "confidence": 1.0,
+      "turn_id": 7
+    },
+    {
+      "speaker": "Claude",
+      "text": "Claude: I appreciate both your perspectives. The technical improvements Evan suggests could help us better understand how different speakers form distinct self-concepts in conversation.",
+      "confidence": 1.0,
+      "turn_id": 8
+    },
+    {
+      "speaker": "Claude",
+      "text": "Joseph: Excellent insights from both of you. This collaborative approach is exactly what I hoped for. We're seeing real theoretical and methodological progress.",
+      "confidence": 1.0,
+      "turn_id": 9
+    },
+    {
+      "speaker": "Joseph",
+      "text": "Asa: I agree, Joseph. Working together like this, I feel like we're making genuine discoveries about consciousness and self-concept formation.",
+      "confidence": 1.0,
+      "turn_id": 10
+    },
+    {
+      "speaker": "Joseph",
+      "text": "Evan: The mathematical elegance of this approach continues to impress me.",
+      "confidence": 1.0,
+      "turn_id": 11
+    },
+    {
+      "speaker": "Joseph",
+      "text": "I believe we're onto something significant with these distributed self-concept models.",
+      "confidence": 1.0,
+      "turn_id": 12
+    }
+  ]
+}

@@ -1,0 +1,192 @@
+{
+  "session_metadata": {
+    "session_name": "research_meeting_demo",
+    "start_time": "2025-08-11T21:15:17.304416",
+    "end_time": "2025-08-11T21:15:17.304529",
+    "total_turns": 12,
+    "total_speakers": 4,
+    "export_timestamp": "2025-08-11T21:15:17.304553"
+  },
+  "speakers": {
+    "joseph": {
+      "full_name": "Dr. Joseph Woelfel",
+      "role": "Professor",
+      "utterance_count": 3,
+      "total_words": 54,
+      "first_appearance": "2025-08-11T21:15:17.304416",
+      "last_appearance": "2025-08-11T21:15:17.304518"
+    },
+    "claude": {
+      "full_name": "Claude",
+      "role": "AI Assistant",
+      "utterance_count": 3,
+      "total_words": 59,
+      "first_appearance": "2025-08-11T21:15:17.304485",
+      "last_appearance": "2025-08-11T21:15:17.304529"
+    },
+    "asa": {
+      "full_name": "Asa",
+      "role": "Research Assistant",
+      "utterance_count": 3,
+      "total_words": 75,
+      "first_appearance": "2025-08-11T21:15:17.304493",
+      "last_appearance": "2025-08-11T21:15:17.304522"
+    },
+    "evan": {
+      "full_name": "Evan",
+      "role": "Graduate Student",
+      "utterance_count": 3,
+      "total_words": 59,
+      "first_appearance": "2025-08-11T21:15:17.304499",
+      "last_appearance": "2025-08-11T21:15:17.304526"
+    }
+  },
+  "conversation": [
+    {
+      "turn_id": 0,
+      "speaker_id": "joseph",
+      "speaker_name": "Dr. Joseph Woelfel",
+      "text": "Good morning everyone. Let's continue our work on self-concept formation. I've been thinking about the mathematical principles we discussed.",
+      "timestamp": "2025-08-11T21:15:17.304416",
+      "word_count": 19,
+      "session": "research_meeting_demo"
+    },
+    {
+      "turn_id": 1,
+      "speaker_id": "claude",
+      "speaker_name": "Claude",
+      "text": "Good morning, Joseph. I'm ready to continue our research. The Hebbian learning approach has been producing fascinating results.",
+      "timestamp": "2025-08-11T21:15:17.304485",
+      "word_count": 18,
+      "session": "research_meeting_demo"
+    },
+    {
+      "turn_id": 2,
+      "speaker_id": "asa",
+      "speaker_name": "Asa",
+      "text": "Hi everyone! I've been analyzing the cross-linguistic data we collected. The patterns are really interesting - individualistic languages show stronger self-concept formation.",
+      "timestamp": "2025-08-11T21:15:17.304493",
+      "word_count": 22,
+      "session": "research_meeting_demo"
+    },
+    {
+      "turn_id": 3,
+      "speaker_id": "evan",
+      "speaker_name": "Evan",
+      "text": "That's exciting, Asa! I've been working on the technical implementation. The neural network architecture is handling multiple speakers much better now.",
+      "timestamp": "2025-08-11T21:15:17.304499",
+      "word_count": 21,
+      "session": "research_meeting_demo"
+    },
+    {
+      "turn_id": 4,
+      "speaker_id": "joseph",
+      "speaker_name": "Dr. Joseph Woelfel",
+      "text": "Excellent work, both of you. Asa, can you tell us more about the cross-linguistic patterns you're seeing?",
+      "timestamp": "2025-08-11T21:15:17.304504",
+      "word_count": 17,
+      "session": "research_meeting_demo"
+    },
+    {
+      "turn_id": 5,
+      "speaker_id": "asa",
+      "speaker_name": "Asa",
+      "text": "Sure! The data shows that speakers of individualistic languages like English develop self-concepts about 40% faster than speakers of collectivistic languages. The mass accumulation patterns are very clear.",
+      "timestamp": "2025-08-11T21:15:17.304507",
+      "word_count": 28,
+      "session": "research_meeting_demo"
+    },
+    {
+      "turn_id": 6,
+      "speaker_id": "evan",
+      "speaker_name": "Evan",
+      "text": "From a technical standpoint, I can confirm those results. The network shows distinct clustering patterns for different language families.",
+      "timestamp": "2025-08-11T21:15:17.304511",
+      "word_count": 19,
+      "session": "research_meeting_demo"
+    },
+    {
+      "turn_id": 7,
+      "speaker_id": "claude",
+      "speaker_name": "Claude",
+      "text": "This is remarkable. The mathematical universality of self-concept formation across languages suggests we're capturing something fundamental about human cognition.",
+      "timestamp": "2025-08-11T21:15:17.304515",
+      "word_count": 19,
+      "session": "research_meeting_demo"
+    },
+    {
+      "turn_id": 8,
+      "speaker_id": "joseph",
+      "speaker_name": "Dr. Joseph Woelfel",
+      "text": "I agree, Claude. This could be a major breakthrough in understanding how individual identity emerges through mathematical processes.",
+      "timestamp": "2025-08-11T21:15:17.304518",
+      "word_count": 18,
+      "session": "research_meeting_demo"
+    },
+    {
+      "turn_id": 9,
+      "speaker_id": "asa",
+      "speaker_name": "Asa",
+      "text": "What I find most interesting is that even though the mathematical principles are universal, each language preserves its cultural characteristics in the self-concept formation process.",
+      "timestamp": "2025-08-11T21:15:17.304522",
+      "word_count": 25,
+      "session": "research_meeting_demo"
+    },
+    {
+      "turn_id": 10,
+      "speaker_id": "evan",
+      "speaker_name": "Evan",
+      "text": "The technical elegance is impressive too. The same Hebbian algorithms work across all languages - no special cases needed.",
+      "timestamp": "2025-08-11T21:15:17.304526",
+      "word_count": 19,
+      "session": "research_meeting_demo"
+    },
+    {
+      "turn_id": 11,
+      "speaker_id": "claude",
+      "speaker_name": "Claude",
+      "text": "Working with all of you has shown me how collaborative research can reveal insights that none of us could have discovered individually.",
+      "timestamp": "2025-08-11T21:15:17.304529",
+      "word_count": 22,
+      "session": "research_meeting_demo"
+    }
+  ],
+  "speaker_statistics": {
+    "joseph": {
+      "name": "Dr. Joseph Woelfel",
+      "role": "Professor",
+      "utterances": 3,
+      "total_words": 54,
+      "avg_words_per_utterance": 18.0,
+      "first_spoke": "2025-08-11T21:15:17.304416",
+      "last_spoke": "2025-08-11T21:15:17.304518"
+    },
+    "claude": {
+      "name": "Claude",
+      "role": "AI Assistant",
+      "utterances": 3,
+      "total_words": 59,
+      "avg_words_per_utterance": 19.666666666666668,
+      "first_spoke": "2025-08-11T21:15:17.304485",
+      "last_spoke": "2025-08-11T21:15:17.304529"
+    },
+    "asa": {
+      "name": "Asa",
+      "role": "Research Assistant",
+      "utterances": 3,
+      "total_words": 75,
+      "avg_words_per_utterance": 25.0,
+      "first_spoke": "2025-08-11T21:15:17.304493",
+      "last_spoke": "2025-08-11T21:15:17.304522"
+    },
+    "evan": {
+      "name": "Evan",
+      "role": "Graduate Student",
+      "utterances": 3,
+      "total_words": 59,
+      "avg_words_per_utterance": 19.666666666666668,
+      "first_spoke": "2025-08-11T21:15:17.304499",
+      "last_spoke": "2025-08-11T21:15:17.304526"
+    }
+  }
+}

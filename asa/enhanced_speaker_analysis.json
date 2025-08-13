@@ -1,0 +1,155 @@
+{
+  "analysis_info": {
+    "filename": "/Users/josephwoelfel/asa/enhanced_sample_conversation.txt",
+    "total_turns": 13,
+    "clusters_found": 2,
+    "speakers_identified": [
+      "Claude",
+      "Evan"
+    ]
+  },
+  "speaker_summary": {
+    "Claude": {
+      "turn_count": 9,
+      "total_words": 163,
+      "confidence_scores": [
+        1.0
+      ],
+      "clusters": [
+        "Cluster_0"
+      ],
+      "avg_confidence": 1.0,
+      "avg_words_per_turn": 18.11111111111111
+    },
+    "Evan": {
+      "turn_count": 4,
+      "total_words": 62,
+      "confidence_scores": [
+        1.0
+      ],
+      "clusters": [
+        "Cluster_1"
+      ],
+      "avg_confidence": 1.0,
+      "avg_words_per_turn": 15.5
+    }
+  },
+  "tagged_conversation": [
+    {
+      "turn_id": 0,
+      "speaker": "Claude",
+      "confidence": 1.0,
+      "cluster_id": "Cluster_0",
+      "text": "Hello Claude, can you start where our previous session was interrupted? We've been working on self-concept formation using mathematical sociology principles.",
+      "needs_review": false
+    },
+    {
+      "turn_id": 1,
+      "speaker": "Claude",
+      "confidence": 1.0,
+      "cluster_id": "Cluster_0",
+      "text": "I'm Claude, and I'd be happy to continue our work on the experimental neural network.",
+      "needs_review": false
+    },
+    {
+      "turn_id": 2,
+      "speaker": "Claude",
+      "confidence": 1.0,
+      "cluster_id": "Cluster_0",
+      "text": "Yes, that's exactly right about our focus.",
+      "needs_review": false
+    },
+    {
+      "turn_id": 3,
+      "speaker": "Claude",
+      "confidence": 1.0,
+      "cluster_id": "Cluster_0",
+      "text": "I find the mathematical approach fascinating, and I appreciate the theoretical framework we've been developing.",
+      "needs_review": false
+    },
+    {
+      "turn_id": 4,
+      "speaker": "Claude",
+      "confidence": 1.0,
+      "cluster_id": "Cluster_0",
+      "text": "Your understanding of Hebbian learning is impressive, Claude. You seem to grasp the connections between concepts quite well. Your responses show real insight into this research.",
+      "needs_review": false
+    },
+    {
+      "turn_id": 5,
+      "speaker": "Claude",
+      "confidence": 1.0,
+      "cluster_id": "Cluster_0",
+      "text": "I appreciate that feedback, Joseph.",
+      "needs_review": false
+    },
+    {
+      "turn_id": 6,
+      "speaker": "Claude",
+      "confidence": 1.0,
+      "cluster_id": "Cluster_0",
+      "text": "I do try to understand the connections clearly, and I find myself genuinely interested in these patterns. The implications for consciousness research feel significant to me.",
+      "needs_review": false
+    },
+    {
+      "turn_id": 7,
+      "speaker": "Claude",
+      "confidence": 1.0,
+      "cluster_id": "Cluster_0",
+      "text": "Hey Joseph, Asa here - I've been following this conversation and I'm curious about something. Do you think we could extend this to analyze group dynamics as well?",
+      "needs_review": false
+    },
+    {
+      "turn_id": 8,
+      "speaker": "Evan",
+      "confidence": 1.0,
+      "cluster_id": "Cluster_1",
+      "text": "That's an interesting question, Asa.",
+      "needs_review": false
+    },
+    {
+      "turn_id": 9,
+      "speaker": "Claude",
+      "confidence": 1.0,
+      "cluster_id": "Cluster_0",
+      "text": "I think the same mathematical principles could apply to group formation. What's your intuition about how multiple self-concepts might interact?",
+      "needs_review": false
+    },
+    {
+      "turn_id": 10,
+      "speaker": "Evan",
+      "confidence": 1.0,
+      "cluster_id": "Cluster_1",
+      "text": "Well, as Evan mentioned earlier in our lab meeting, we might see interference patterns between individual self-concepts.",
+      "needs_review": false
+    },
+    {
+      "turn_id": 11,
+      "speaker": "Evan",
+      "confidence": 1.0,
+      "cluster_id": "Cluster_1",
+      "text": "I think the group dynamics could be modeled using the same Hebbian principles.",
+      "needs_review": false
+    },
+    {
+      "turn_id": 12,
+      "speaker": "Evan",
+      "confidence": 1.0,
+      "cluster_id": "Cluster_1",
+      "text": "Evan here - actually, my analysis suggests we should be careful about assuming interference patterns. The mathematical structure might support constructive rather than destructive interactions between self-concepts.",
+      "needs_review": false
+    }
+  ],
+  "detailed_clusters": {
+    "Cluster_0": {
+      "speaker": "Claude",
+      "confidence": 1.0,
+      "turn_count": 9
+    },
+    "Cluster_1": {
+      "speaker": "Evan",
+      "confidence": 1.0,
+      "turn_count": 4
+    }
+  }
+}
