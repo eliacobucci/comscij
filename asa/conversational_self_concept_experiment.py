@@ -15,12 +15,12 @@ class HueyConversationalNetwork(ExperimentalNetwork):
     Treats self-concepts as regular concepts with natural decay dynamics.
     """
     
-    def __init__(self, max_neurons=100, window_size=7):
+    def __init__(self, max_neurons=100, window_size=7, learning_rate=0.15):
         # Use sliding windows for natural concept competition
         super().__init__(window_size=window_size, max_neurons=max_neurons)  
         
         # Enhanced learning for conversational context
-        self.hebbian_learning_rate = 0.15
+        self.hebbian_learning_rate = learning_rate
         self.activation_decay_rate = 0.02
         self.connection_decay_rate = 0.008
         self.mass_decay_rate = 0.003
@@ -32,6 +32,7 @@ class HueyConversationalNetwork(ExperimentalNetwork):
         print("🧠 Huey Conversational Network initialized")
         print(f"   Max neurons: {max_neurons}")
         print(f"   Processing mode: Sliding windows (size {window_size})")
+        print(f"   Learning rate: {learning_rate}")
         
         # Track current speaker for neuron activation
         self.current_speaker = None

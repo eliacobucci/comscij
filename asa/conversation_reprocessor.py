@@ -206,20 +206,27 @@ class ConversationReprocessor:
         print(f"💾 Multi-speaker conversation saved: {output_filename}")
         return output_data
     
-    def run_self_concept_analysis_on_reprocessed(self, conversation_data: Dict) -> Dict:
+    def run_self_concept_analysis_on_reprocessed(self, conversation_data: Dict, learning_rate: float = 0.15) -> Dict:
         """Run self-concept analysis on reprocessed conversation data."""
         
         print(f"\n🧠 Running self-concept analysis on reprocessed data...")
         
         # Create network
-        net = HueyConversationalNetwork(max_neurons=200)
+        net = HueyConversationalNetwork(max_neurons=200, learning_rate=learning_rate)
         
-        # Add all identified speakers
+        # Add all identified speakers - create pronouns for any speaker not in our predefined list
         speakers_found = conversation_data['metadata']['speakers_identified']
-        valid_speakers = [s for s in speakers_found if s in self.speaker_pronouns]
+        default_pronouns = {
+            'self_pronouns': ['i', 'me', 'my', 'mine', 'myself'],
+            'other_pronouns': ['you', 'your', 'yours', 'yourself']
+        }
         
-        for speaker in valid_speakers:
-            pronouns = self.speaker_pronouns[speaker]
+        for speaker in speakers_found:
+            if speaker in self.speaker_pronouns:
+                pronouns = self.speaker_pronouns[speaker]
+            else:
+                pronouns = default_pronouns
+                
             net.add_speaker(speaker, pronouns['self_pronouns'], pronouns['other_pronouns'])
             print(f"   Added speaker: {speaker}")
         
@@ -228,7 +235,7 @@ class ConversationReprocessor:
             speaker = block['speaker']
             text = block['text']
             
-            if speaker in valid_speakers:
+            if speaker in speakers_found:
                 net.process_speaker_text(speaker, text)
         
         # Analyze results
@@ -239,9 +246,9 @@ class ConversationReprocessor:
         return {
             'network': net,
             'speaker_analyses': speaker_analyses,
-            'valid_speakers': valid_speakers,
+            'valid_speakers': speakers_found,
             'total_blocks_processed': len([b for b in conversation_data['conversation_blocks'] 
-                                         if b['speaker'] in valid_speakers])
+                                         if b['speaker'] in speakers_found])
         }
     
     def create_multi_speaker_visualization(self, analysis_results: Dict, output_filename: str):

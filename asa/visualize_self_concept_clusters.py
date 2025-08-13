@@ -4,7 +4,7 @@
 Creates 3D plots showing how self-concepts form and cluster in our neural networks.
 """
 
-from conversational_self_concept_experiment import ConversationalSelfConceptNetwork, create_test_conversation
+from conversational_self_concept_experiment import HueyConversationalNetwork, create_test_conversation
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')
