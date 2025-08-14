@@ -31,9 +31,14 @@ class ExperimentalNetwork:
         
         # Hebbian learning parameters
         self.hebbian_constant = 0.1  # Learning rate
-        self.mass_growth_rate = 0.05  # How fast connections gain mass
-        self.mass_decay_rate = 0.02   # How fast unused connections lose mass
-        self.max_mass = 10.0          # Maximum inertial mass for a connection
+        
+        # Biologically accurate synaptic mass parameters
+        self.M_max = 10.0           # Maximum achievable synaptic mass (saturation point)
+        self.A_0 = 0.3              # Activity threshold for LTP (inflection point)
+        self.k_steepness = 8.0      # Steepness of logistic growth (sensitivity)
+        self.homeostatic_factor = 0.1  # Homeostatic scaling correction
+        self.ltd_threshold = 0.15   # LTD (shrinkage) threshold for weak activity
+        self.mass_decay_rate = 0.02   # Passive decay rate for unused connections
         
         # Activation function parameters
         self.bias = 0.0  # Bias term for activation
@@ -50,6 +55,10 @@ class ExperimentalNetwork:
         self.pruning_threshold = 0.8  # When to start pruning (80% of max_neurons)
         self.last_usage = {}          # Track when each neuron was last active
         
+        # Connection usage tracking for biologically accurate decay
+        self.connection_last_active = {}  # Track when each connection was last active
+        self.unused_decay_rate = 0.005    # Gentle decay for completely unused connections
+        
     def process_text_stream(self, text):
         """
         Process text as a stream through a moving window.
@@ -59,8 +68,8 @@ class ExperimentalNetwork:
         """
         words = text.split()
         
-        print(f"Processing text stream with {len(words)} words using window size {self.window_size}")
-        print("=" * 60)
+        # print(f"Processing text stream with {len(words)} words using window size {self.window_size}")
+        # print("=" * 60)
         
         # Process each window position
         for i in range(len(words) - self.window_size + 1):
@@ -75,7 +84,7 @@ class ExperimentalNetwork:
             window (list): Current window of words
             window_position (int): Position of window in text stream
         """
-        print(f"Window {window_position:2d}: {' '.join(window)}")
+        # print(f"Window {window_position:2d}: {' '.join(window)}")
         
         # Process each word in the window
         window_neurons = []
@@ -93,7 +102,7 @@ class ExperimentalNetwork:
         self._calculate_all_activations(window_neurons)
         
         # Show current activations for this window
-        print(f"              Window neurons: {[f'{self.neuron_to_word[idx]}({self.activations[idx]:.2f})' for idx in window_neurons]}")
+        # print(f"              Window neurons: {[f'{self.neuron_to_word[idx]}({self.activations[idx]:.2f})' for idx in window_neurons]}")
         
         # Show non-window neurons with significant activation
         self._show_nonwindow_activations(window_neurons)
@@ -126,7 +135,7 @@ class ExperimentalNetwork:
             self.neuron_to_word[idx] = word
             self.activations[idx] = 1.0  # Set activation to 1.0 for new word
             self.neuron_count += 1
-            print(f"              NEW: '{word}' -> neuron {idx} (activation = 1.0)")
+            # print(f"              NEW: '{word}' -> neuron {idx} (activation = 1.0)")
             self.last_usage[idx] = self.processed_words  # Track usage time
             return idx
         else:
@@ -144,14 +153,15 @@ class ExperimentalNetwork:
         Args:
             window_neurons (list): List of neuron indices in current window
         """
-        # Apply decay to ALL connections first (synaptic forgetting)
-        self._decay_all_masses()
+        # Apply decay only to unused connections (biologically accurate)
+        self._decay_unused_masses()
         self._decay_all_connections(window_neurons)
         
-        # Create/strengthen pairwise connections (asymmetric)
-        for i in window_neurons:
-            for j in window_neurons:
-                if i != j:  # No self-connections
+        # Create/strengthen unidirectional connections based on sequential order
+        # Earlier neurons in window connect to later neurons (temporal causality)
+        for pos_i, i in enumerate(window_neurons):
+            for pos_j, j in enumerate(window_neurons):
+                if pos_i < pos_j:  # Only create connections from earlier to later positions
                     # Get activations
                     ai = self.activations[i]
                     aj = self.activations[j]
@@ -171,34 +181,92 @@ class ExperimentalNetwork:
                     delta_w = self.hebbian_constant * ai * aj * inertial_resistance
                     new_strength = current_strength + delta_w
                     
-                    # Grow inertial mass (connection becomes more "established")
-                    mass_growth = self.mass_growth_rate * ai * aj  # Growth proportional to activity
-                    new_mass = min(current_mass + mass_growth, self.max_mass)
+                    # Calculate synaptic mass using biologically accurate logistic model
+                    activity = ai * aj  # Combined pre/post synaptic activity
+                    mass_change = self._calculate_synaptic_mass_change(activity, current_mass)
+                    new_mass = max(0.0, min(current_mass + mass_change, self.M_max))
                     
                     # Store updated connection and mass
                     self.connections[conn_key] = new_strength
                     self.inertial_mass[conn_key] = new_mass
+                    
+                    # Track that this connection was active in current window
+                    self.connection_last_active[conn_key] = self.processed_words
     
-    def _decay_all_masses(self):
+    def _calculate_synaptic_mass_change(self, activity, current_mass):
         """
-        Decay inertial mass for all connections (synaptic pruning).
-        Unused connections gradually lose their "organic mass" and become easier to change.
-        """
-        keys_to_remove = []
-        for conn_key in list(self.inertial_mass.keys()):
-            current_mass = self.inertial_mass[conn_key]
-            new_mass = max(0.0, current_mass - self.mass_decay_rate)
-            
-            if new_mass > 0.01:  # Keep if still has significant mass
-                self.inertial_mass[conn_key] = new_mass
-            else:
-                # Remove very small masses (complete pruning)
-                keys_to_remove.append(conn_key)
+        Calculate synaptic mass change using biologically accurate logistic model.
         
-        # Clean up near-zero masses
+        M(A) ≈ M_max / (1 + e^(-k(A - A_0))) + corrections
+        
+        Args:
+            activity (float): Combined pre/post synaptic activity (ai * aj)
+            current_mass (float): Current synaptic mass
+            
+        Returns:
+            float: Change in synaptic mass (can be positive or negative)
+        """
+        import math
+        
+        # Core logistic function for LTP
+        # Target mass based on current activity level
+        try:
+            logistic_mass = self.M_max / (1.0 + math.exp(-self.k_steepness * (activity - self.A_0)))
+        except OverflowError:
+            # Handle extreme values
+            logistic_mass = self.M_max if activity > self.A_0 else 0.0
+        
+        # Homeostatic scaling correction (reduces growth at very high activity)
+        homeostatic_correction = -self.homeostatic_factor * max(0, activity - 0.8) * current_mass
+        
+        # LTD correction (shrinkage for weak activity)
+        if activity < self.ltd_threshold:
+            ltd_correction = -0.1 * (self.ltd_threshold - activity) * current_mass
+        else:
+            ltd_correction = 0.0
+        
+        # Calculate desired mass change toward logistic target
+        mass_difference = logistic_mass - current_mass
+        learning_rate = 0.15  # How fast we approach the target
+        
+        # Total mass change = movement toward target + corrections
+        total_change = (learning_rate * mass_difference + 
+                       homeostatic_correction + 
+                       ltd_correction)
+        
+        return total_change
+    
+    def _decay_unused_masses(self):
+        """
+        Apply gentle decay only to connections that haven't been active recently.
+        Active connections are handled by the biologically accurate logistic model.
+        This prevents accumulation of "zombie mass" in completely unused connections.
+        """
+        current_time = self.processed_words
+        unused_window = 20  # Consider unused if not active for 20 windows
+        keys_to_remove = []
+        
+        for conn_key in list(self.inertial_mass.keys()):
+            last_active = self.connection_last_active.get(conn_key, 0)
+            time_since_active = current_time - last_active
+            
+            # Only decay if connection hasn't been active recently
+            if time_since_active > unused_window:
+                current_mass = self.inertial_mass[conn_key]
+                new_mass = max(0.0, current_mass - self.unused_decay_rate)
+                
+                if new_mass > 0.001:  # Keep if still has significant mass
+                    self.inertial_mass[conn_key] = new_mass
+                else:
+                    # Remove very small masses (complete pruning)
+                    keys_to_remove.append(conn_key)
+        
+        # Clean up near-zero masses and their tracking
         for key in keys_to_remove:
             if key in self.inertial_mass:
                 del self.inertial_mass[key]
+            if key in self.connection_last_active:
+                del self.connection_last_active[key]
     
     def _apply_activation_decay(self):
         """
@@ -271,7 +339,7 @@ class ExperimentalNetwork:
             return  # Neuron already dead
         
         word = self.neuron_to_word[neuron_idx]
-        print(f"              DEATH: '{word}' (neuron {neuron_idx}) pruned due to low importance")
+        # print(f"              DEATH: '{word}' (neuron {neuron_idx}) pruned due to low importance")
         
         # Remove from mappings
         del self.word_to_neuron[word]
@@ -307,10 +375,11 @@ class ExperimentalNetwork:
             window_neurons (list): Current window neurons (these connections will be strengthened, not decayed)
         """
         # Create set of window connections that will NOT decay (they're being actively used)
+        # Only unidirectional connections based on sequential order
         active_connections = set()
-        for i in window_neurons:
-            for j in window_neurons:
-                if i != j:
+        for pos_i, i in enumerate(window_neurons):
+            for pos_j, j in enumerate(window_neurons):
+                if pos_i < pos_j:  # Only connections from earlier to later positions
                     active_connections.add((i, j))
         
         # Decay all OTHER connections
@@ -358,9 +427,11 @@ class ExperimentalNetwork:
                         connections_info.append(f"{word_i}→{word_j}({strength:.2f}|m{mass:.1f})")
         
         if connections_info:
-            print(f"              Connections: {', '.join(connections_info)}")
+            pass
+            # print(f"              Connections: {', '.join(connections_info)}")
         else:
-            print(f"              Connections: (none significant)")
+            pass
+            # print(f"              Connections: (none significant)")
     
     def _calculate_all_activations(self, window_neurons):
         """
@@ -420,9 +491,11 @@ class ExperimentalNetwork:
                     nonwindow_activations.append(f"{word}({activation:.2f})")
         
         if nonwindow_activations:
-            print(f"              Other active: {', '.join(nonwindow_activations)}")
+            pass
+            # print(f"              Other active: {', '.join(nonwindow_activations)}")
         else:
-            print(f"              Other active: (none significant)")
+            pass
+            # print(f"              Other active: (none significant)")
     
     def show_connection_analysis(self, words):
         """

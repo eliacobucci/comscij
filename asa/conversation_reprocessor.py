@@ -252,7 +252,7 @@ class ConversationReprocessor:
         }
     
     def create_multi_speaker_visualization(self, analysis_results: Dict, output_filename: str):
-        """Create visualization with multiple speakers including Asa and Evan."""
+        """Create visualization dynamically detecting speakers from the data."""
         
         from visualize_self_concept_clusters import extract_cluster_data, identify_self_concept_clusters, create_3d_self_concept_plot
         import matplotlib.pyplot as plt
@@ -267,23 +267,33 @@ class ConversationReprocessor:
             print("❌ Failed to extract cluster data")
             return
         
-        # Enhanced cluster identification for multiple speakers
-        clusters = {
-            'Joseph_self': [],
-            'Claude_self': [],
-            'Asa_self': [],
-            'Evan_self': [],
-            'shared_concepts': [],
-            'other_concepts': []
-        }
+        # Dynamically detect speakers from the network
+        detected_speakers = []
+        if hasattr(network, 'speakers') and network.speakers:
+            detected_speakers = list(network.speakers.keys())
+        else:
+            # Fallback: detect from speaker_analysis results
+            if 'speaker_analyses' in analysis_results:
+                detected_speakers = list(analysis_results['speaker_analyses'].keys())
         
-        # Speaker-specific self-words
-        speaker_words = {
-            'Joseph': {'i', 'me', 'my', 'joseph', 'joe', 'woelfel'},
-            'Claude': {'i', 'me', 'my', 'claude', 'ai'},
-            'Asa': {'i', 'me', 'my', 'asa'},
-            'Evan': {'i', 'me', 'my', 'evan'}
-        }
+        print(f"🔍 Detected speakers for visualization: {detected_speakers}")
+        
+        # Dynamic cluster structure
+        clusters = {}
+        for speaker in detected_speakers:
+            clusters[f'{speaker}_self'] = []
+        clusters['shared_concepts'] = []
+        clusters['other_concepts'] = []
+        
+        # Dynamic speaker-specific self-words
+        speaker_words = {}
+        for speaker in detected_speakers:
+            speaker_words[speaker] = {'i', 'me', 'my', speaker.lower()}
+            # Add common variations
+            if speaker.lower() == 'joseph':
+                speaker_words[speaker].update({'joe', 'woelfel'})
+            elif speaker.lower() == 'claude':
+                speaker_words[speaker].update({'ai'})
         
         shared_concepts = {'research', 'work', 'analysis', 'experiment', 'network', 'concept'}
         
@@ -320,15 +330,18 @@ class ConversationReprocessor:
         fig = plt.figure(figsize=(16, 12))
         ax = fig.add_subplot(111, projection='3d')
         
-        # Color scheme for multiple speakers
-        colors = {
-            'Joseph_self': 'blue',
-            'Claude_self': 'red', 
-            'Asa_self': 'green',
-            'Evan_self': 'orange',
-            'shared_concepts': 'purple',
-            'other_concepts': 'lightgray'
-        }
+        # Dynamic color scheme for any number of speakers
+        base_colors = ['blue', 'red', 'green', 'orange', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan']
+        colors = {}
+        
+        # Assign colors to speaker clusters
+        speaker_clusters = [name for name in clusters.keys() if name.endswith('_self')]
+        for i, cluster_name in enumerate(speaker_clusters):
+            colors[cluster_name] = base_colors[i % len(base_colors)]
+        
+        # Fixed colors for special clusters
+        colors['shared_concepts'] = 'purple'
+        colors['other_concepts'] = 'lightgray'
         
         # Plot each cluster type
         for cluster_name, cluster_items in clusters.items():
@@ -361,7 +374,10 @@ class ConversationReprocessor:
         ax.set_xlabel(f'Eigenvector 1 (λ={eigenvals[0]:.3f})')
         ax.set_ylabel(f'Eigenvector 2 (λ={eigenvals[1]:.3f})')
         ax.set_zlabel(f'Eigenvector 3 (λ={eigenvals[2]:.3f})')
-        ax.set_title('Multi-Speaker Self-Concept Formation\nJoseph, Claude, Asa, Evan in 3D Cognitive Space')
+        # Dynamic title based on detected speakers
+        speaker_names = [name.replace('_self', '') for name in speaker_clusters]
+        speaker_list = ', '.join(speaker_names) if speaker_names else 'Unknown Speakers'
+        ax.set_title(f'Multi-Speaker Self-Concept Formation\n{speaker_list} in 3D Cognitive Space')
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
         plt.tight_layout()
         

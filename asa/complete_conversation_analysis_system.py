@@ -194,14 +194,14 @@ class HueyCompleteSystem:
         report_lines.append("- **Visualization**: 3D eigenanalysis of connection matrix")
         report_lines.append("- **Data Format**: Structured JSON with timestamp and metadata")
         
-        # Save report
+        # Save report (disabled to prevent creating MD files)
         report_text = '\n'.join(report_lines)
-        report_filename = f"/Users/josephwoelfel/asa/{self.session_name}_complete_report.md"
-        
-        with open(report_filename, 'w') as f:
-            f.write(report_text)
-        
-        print(f"📄 Complete report saved: {report_filename}")
+        # report_filename = f"/Users/josephwoelfel/asa/{self.session_name}_complete_report.md"
+        # 
+        # with open(report_filename, 'w') as f:
+        #     f.write(report_text)
+        # 
+        # print(f"📄 Complete report saved: {report_filename}")
         return report_text
     
     def print_summary(self, results):
@@ -230,7 +230,7 @@ class HueyCompleteSystem:
         print(f"   • {self.session_name}_tagged_conversation.json")
         print(f"   • {self.session_name}_self_concept_ready.json") 
         print(f"   • {self.session_name}_complete_analysis.png")
-        print(f"   • {self.session_name}_complete_report.md")
+        # print(f"   • {self.session_name}_complete_report.md")
 
 def create_interactive_conversation():
     """Interactive conversation creation for Jupyter notebooks."""
@@ -487,11 +487,12 @@ def run_file_analysis(filename, session_name=None, learning_rate=None):
         return None, None
 
 if __name__ == "__main__":
-    system, results = demo_huey_system()
+    # Demo disabled - use functions directly for analysis
+    # system, results = demo_huey_system()
     
-    print(f"\n🧠 HUEY READY FOR REAL RESEARCH!")
-    print("No more ambiguous speakers. No more guessing algorithms.")
-    print("Just perfect Hebbian self-concept analysis.")
+    print(f"🧠 HUEY: COMPLETE CONVERSATION ANALYSIS SYSTEM")
+    print("=" * 60)
+    print("Ready for real research!")
     print("\nTo use with custom conversations:")
     print("- run_interactive_analysis() for interactive input (prompts for learning rate)")
     print("- run_file_analysis('filename.txt') to load from file (prompts for learning rate)")

@@ -54,15 +54,15 @@ class HueyConversationalNetwork(ExperimentalNetwork):
             print(f"❌ Unknown speaker: {speaker_name}")
             return
         
-        print(f"\n💭 PROCESSING {speaker_name.upper()} TEXT:")
-        print(f"   Text: {text_block[:100]}{'...' if len(text_block) > 100 else ''}")
+        # print(f"\n💭 PROCESSING {speaker_name.upper()} TEXT:")
+        # print(f"   Text: {text_block[:100]}{'...' if len(text_block) > 100 else ''}")
         
         # Set current speaker for neuron activation
         self.current_speaker = speaker_name
         
         # Clean and tokenize the text
         tokens = self.tokenize_speaker_block(text_block)
-        print(f"   Tokens ({len(tokens)}): {tokens[:15]}{'...' if len(tokens) > 15 else ''}")
+        # print(f"   Tokens ({len(tokens)}): {tokens[:15]}{'...' if len(tokens) > 15 else ''}")
         
         # Add speaker self-neuron to ensure it's active during this speaker's turn
         speaker_neuron_word = f"speaker_{speaker_name.lower()}"
