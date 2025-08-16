@@ -61,14 +61,11 @@ class HueyConversationalNetwork(ExperimentalNetwork):
         self.current_speaker = speaker_name
         
         # Clean and tokenize the text
-        tokens = self.tokenize_speaker_block(text_block)
+        tokens = self.tokenize_speaker_text(text_block)
         # print(f"   Tokens ({len(tokens)}): {tokens[:15]}{'...' if len(tokens) > 15 else ''}")
         
-        # Add speaker self-neuron to ensure it's active during this speaker's turn
-        speaker_neuron_word = f"speaker_{speaker_name.lower()}"
-        
-        # Process tokens using sliding windows (treating self-concept as just another concept)
-        self.process_text_sequence(tokens + [speaker_neuron_word])
+        # Process tokens using sliding windows (speaker neuron will be injected automatically)
+        self.process_text_sequence(tokens)
         
         # Track speaker's development
         speaker_info = self.speakers[speaker_name]
@@ -89,7 +86,7 @@ class HueyConversationalNetwork(ExperimentalNetwork):
         # Clear current speaker
         self.current_speaker = None
     
-    def tokenize_speaker_block(self, text_block):
+    def tokenize_speaker_text(self, text_block):
         """Tokenize a speaker's text block, preserving important phrases."""
         
         # Basic cleaning
@@ -104,8 +101,28 @@ class HueyConversationalNetwork(ExperimentalNetwork):
     def process_text_sequence(self, tokens):
         """Process tokens using sliding windows with natural decay for all concepts."""
         
-        # Convert tokens back to text and process with sliding windows
-        text = ' '.join(tokens)
+        # If we have a current speaker, inject their neuron into all sliding windows
+        if self.current_speaker:
+            speaker_neuron_word = f"speaker_{self.current_speaker.lower()}"
+            
+            # Add speaker neuron to every sliding window by injecting it throughout the token sequence
+            enhanced_tokens = []
+            window_interval = self.window_size // 2  # Inject speaker neuron every few tokens
+            
+            for i, token in enumerate(tokens):
+                enhanced_tokens.append(token)
+                # Inject speaker neuron at regular intervals to maintain activation
+                if i % window_interval == 0:
+                    enhanced_tokens.append(speaker_neuron_word)
+            
+            # Ensure speaker neuron appears at the end too
+            enhanced_tokens.append(speaker_neuron_word)
+            
+            # Convert enhanced tokens back to text and process
+            text = ' '.join(enhanced_tokens)
+        else:
+            # No current speaker, process normally
+            text = ' '.join(tokens)
         
         # This uses the ExperimentalNetwork's sliding window processing
         # which treats all concepts equally with natural decay
@@ -117,6 +134,77 @@ class HueyConversationalNetwork(ExperimentalNetwork):
         speaker_info = self.speakers[speaker_name]
         self_pronouns = speaker_info['self_pronouns']
         
+        # Get the speaker-specific neuron
+        speaker_neuron_word = f"speaker_{speaker_name.lower()}"
+        speaker_neuron_id = self.word_to_neuron.get(speaker_neuron_word)
+        
+        self_concept_mass = 0.0
+        self_concept_neurons = {}
+        
+        if speaker_neuron_id is None:
+            # If no speaker neuron exists, fall back to original method
+            print(f"   Warning: No speaker neuron found for {speaker_name}, using fallback method")
+            return self._analyze_speaker_self_concept_fallback(speaker_name, speaker_info, self_pronouns)
+        
+        # Look for connections between speaker neuron and self-pronouns
+        for pronoun in self_pronouns:
+            if pronoun.lower() in self.word_to_neuron:
+                pronoun_neuron_id = self.word_to_neuron[pronoun.lower()]
+                
+                # Calculate mass from speaker-specific connections
+                pronoun_mass = 0.0
+                connections = []
+                
+                # Check direct connections between speaker and this pronoun
+                conn_key1 = (speaker_neuron_id, pronoun_neuron_id)
+                conn_key2 = (pronoun_neuron_id, speaker_neuron_id)
+                
+                if conn_key1 in self.inertial_mass:
+                    mass = self.inertial_mass[conn_key1]
+                    pronoun_mass += mass
+                    strength = self.connections.get(conn_key1, 0.0)
+                    connections.append((f"speaker_to_{pronoun}", strength, mass))
+                
+                if conn_key2 in self.inertial_mass:
+                    mass = self.inertial_mass[conn_key2]
+                    pronoun_mass += mass
+                    strength = self.connections.get(conn_key2, 0.0)
+                    connections.append((f"{pronoun}_to_speaker", strength, mass))
+                
+                # Also include connections from pronoun to other concepts that are connected to this speaker
+                for conn_key, mass in self.inertial_mass.items():
+                    if pronoun_neuron_id in conn_key:
+                        other_neuron = conn_key[0] if conn_key[1] == pronoun_neuron_id else conn_key[1]
+                        if other_neuron != speaker_neuron_id and other_neuron in self.neuron_to_word:
+                            # Check if this other concept is also connected to our speaker
+                            speaker_to_other = (speaker_neuron_id, other_neuron)
+                            other_to_speaker = (other_neuron, speaker_neuron_id)
+                            
+                            if speaker_to_other in self.inertial_mass or other_to_speaker in self.inertial_mass:
+                                # This concept is triangulated: speaker -> pronoun -> concept
+                                other_word = self.neuron_to_word[other_neuron]
+                                strength = self.connections.get(conn_key, 0.0)
+                                connections.append((other_word, strength, mass * 0.3))  # Weight triangulated connections less
+                                pronoun_mass += mass * 0.3
+                
+                if pronoun_mass > 0:
+                    self_concept_neurons[pronoun] = {
+                        'neuron_id': pronoun_neuron_id,
+                        'mass': pronoun_mass,
+                        'connections': sorted(connections, key=lambda x: x[2], reverse=True)[:10]  # Sort by mass
+                    }
+                    self_concept_mass += pronoun_mass
+        
+        return {
+            'speaker': speaker_name,
+            'self_concept_mass': self_concept_mass,
+            'self_concept_neurons': self_concept_neurons,
+            'blocks_processed': speaker_info['blocks_processed']
+        }
+    
+    def _analyze_speaker_self_concept_fallback(self, speaker_name, speaker_info, self_pronouns):
+        """Fallback method when speaker neuron doesn't exist."""
+        
         self_concept_mass = 0.0
         self_concept_neurons = {}
         
@@ -124,7 +212,7 @@ class HueyConversationalNetwork(ExperimentalNetwork):
             if pronoun.lower() in self.word_to_neuron:
                 neuron_id = self.word_to_neuron[pronoun.lower()]
                 
-                # Calculate mass associated with this self-pronoun
+                # Calculate mass associated with this self-pronoun (original method)
                 pronoun_mass = 0.0
                 connections = []
                 
