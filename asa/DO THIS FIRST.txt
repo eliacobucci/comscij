@@ -1,0 +1,4 @@
+PASTE THIS BEFORE ANYTHING: 
+
+import sys
+sys.path.append('/Users/josephwoelfel/asa')

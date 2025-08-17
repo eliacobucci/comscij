@@ -3,6 +3,8 @@
 Huey: Conversational Self-Concept Analysis System
 A Hebbian learning-based system for analyzing self-concept formation in conversations.
 Uses sliding windows with natural decay where self-concepts are treated as regular concepts.
+
+Copyright (c) 2025 Emary Iacobucci and Joseph Woelfel. All rights reserved.
 """
 
 from experimental_network_complete import ExperimentalNetwork
@@ -29,13 +31,39 @@ class HueyConversationalNetwork(ExperimentalNetwork):
         self.speakers = {}
         self.conversation_history = []
         
+        # Load kill words
+        self.kill_words = self.load_kill_words()
+        
         print("🧠 Huey Conversational Network initialized")
         print(f"   Max neurons: {max_neurons}")
         print(f"   Processing mode: Sliding windows (size {window_size})")
         print(f"   Learning rate: {learning_rate}")
+        if self.kill_words:
+            print(f"   Kill words loaded: {len(self.kill_words)} words excluded")
         
         # Track current speaker for neuron activation
         self.current_speaker = None
+    
+    def load_kill_words(self):
+        """Load words to exclude from analysis from KILL.txt file."""
+        try:
+            with open('KILL.txt', 'r', encoding='utf-8') as f:
+                kill_words = set()
+                for line in f:
+                    # Clean and add words, one per line or space-separated
+                    words = line.strip().lower().split()
+                    for word in words:
+                        # Remove punctuation and add if not empty
+                        clean_word = re.sub(r'[^\w]', '', word)
+                        if clean_word:
+                            kill_words.add(clean_word)
+                return kill_words
+        except FileNotFoundError:
+            print("   No KILL.txt file found - no words excluded")
+            return set()
+        except Exception as e:
+            print(f"   Error loading KILL.txt: {e}")
+            return set()
     
     def add_speaker(self, speaker_name, self_pronouns, other_pronouns):
         """Add a speaker with their pronoun patterns."""
@@ -87,16 +115,20 @@ class HueyConversationalNetwork(ExperimentalNetwork):
         self.current_speaker = None
     
     def tokenize_speaker_text(self, text_block):
-        """Tokenize a speaker's text block, preserving important phrases."""
+        """Tokenize a speaker's text block, preserving important phrases and excluding kill words."""
         
         # Basic cleaning
         text = re.sub(r'[^\w\s\']', ' ', text_block.lower())
         tokens = text.split()
         
-        # Remove empty tokens
-        tokens = [t.strip() for t in tokens if t.strip()]
+        # Remove empty tokens and kill words
+        filtered_tokens = []
+        for token in tokens:
+            clean_token = token.strip()
+            if clean_token and clean_token not in self.kill_words:
+                filtered_tokens.append(clean_token)
         
-        return tokens
+        return filtered_tokens
     
     def process_text_sequence(self, tokens):
         """Process tokens using sliding windows with natural decay for all concepts."""

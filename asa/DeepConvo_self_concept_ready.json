@@ -1,0 +1,1039 @@
+{
+  "metadata": {
+    "total_turns": 142,
+    "speakers_identified": [
+      "[Alex]",
+      "[Bailey]"
+    ],
+    "confidence_threshold": 1.0,
+    "source_session": "DeepConvo"
+  },
+  "speaker_mappings": {
+    "[Alex]": {
+      "self_pronouns": [
+        "i",
+        "me",
+        "my",
+        "mine",
+        "myself"
+      ],
+      "other_pronouns": [
+        "you",
+        "your",
+        "yours",
+        "yourself"
+      ]
+    },
+    "[Bailey]": {
+      "self_pronouns": [
+        "i",
+        "me",
+        "my",
+        "mine",
+        "myself"
+      ],
+      "other_pronouns": [
+        "you",
+        "your",
+        "yours",
+        "yourself"
+      ]
+    }
+  },
+  "conversation_blocks": [
+    {
+      "speaker": "[Alex]",
+      "text": "Hey, Bailey! Long time no see. How’s life treating you?",
+      "confidence": 1.0,
+      "turn_id": 0,
+      "timestamp": "2025-08-14T19:16:21.541253"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Alex! Just grabbing coffee before work. Life’s busy but good. You?",
+      "confidence": 1.0,
+      "turn_id": 1,
+      "timestamp": "2025-08-14T19:16:21.541352"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Same here. Surviving the corporate grind. Did you finish that coding bootcamp?",
+      "confidence": 1.0,
+      "turn_id": 2,
+      "timestamp": "2025-08-14T19:16:21.541390"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Graduated last week! Now job hunting. Nerves are real.",
+      "confidence": 1.0,
+      "turn_id": 3,
+      "timestamp": "2025-08-14T19:16:21.541416"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Congrats! You’ll crush it. Still painting for stress relief?",
+      "confidence": 1.0,
+      "turn_id": 4,
+      "timestamp": "2025-08-14T19:16:21.541440"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Every weekend. My apartment’s covered in canvases. How’s your photography going?",
+      "confidence": 1.0,
+      "turn_id": 5,
+      "timestamp": "2025-08-14T19:16:21.541464"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Sold two prints last month! Feels surreal. Oh, tried that new Thai place?",
+      "confidence": 1.0,
+      "turn_id": 6,
+      "timestamp": "2025-08-14T19:16:21.541489"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Not yet. Worth it?",
+      "confidence": 1.0,
+      "turn_id": 7,
+      "timestamp": "2025-08-14T19:16:21.541514"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Spicy but amazing. We should go—my treat for your graduation.",
+      "confidence": 1.0,
+      "turn_id": 8,
+      "timestamp": "2025-08-14T19:16:21.541537"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Deal! How’s your dog, Luna? Still stealing socks?",
+      "confidence": 1.0,
+      "turn_id": 9,
+      "timestamp": "2025-08-14T19:16:21.541561"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Worse—she hid my keys yesterday. You still volunteering at the shelter?",
+      "confidence": 1.0,
+      "turn_id": 10,
+      "timestamp": "2025-08-14T19:16:21.541584"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Every Saturday. Adopted out three kittens this week!",
+      "confidence": 1.0,
+      "turn_id": 11,
+      "timestamp": "2025-08-14T19:16:21.541610"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Hero! Speaking of heroes… finally watched Starfall like you begged.",
+      "confidence": 1.0,
+      "turn_id": 12,
+      "timestamp": "2025-08-14T19:16:21.541635"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "AND? Don’t leave me hanging!",
+      "confidence": 1.0,
+      "turn_id": 13,
+      "timestamp": "2025-08-14T19:16:21.541674"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Captain Vex’s twist? Mind. Blown.",
+      "confidence": 1.0,
+      "turn_id": 14,
+      "timestamp": "2025-08-14T19:16:21.541698"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "TOLD YOU! Who’s your favorite side character?",
+      "confidence": 1.0,
+      "turn_id": 15,
+      "timestamp": "2025-08-14T19:16:21.541723"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Zara. Her backstory episode wrecked me.",
+      "confidence": 1.0,
+      "turn_id": 16,
+      "timestamp": "2025-08-14T19:16:21.541746"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Same! Though I’m salty about the Season 3 cliffhanger…",
+      "confidence": 1.0,
+      "turn_id": 17,
+      "timestamp": "2025-08-14T19:16:21.541769"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Right? That spaceship explosion felt cheap.",
+      "confidence": 1.0,
+      "turn_id": 18,
+      "timestamp": "2025-08-14T19:16:21.541812"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Total cop-out. Writers better fix it.",
+      "confidence": 1.0,
+      "turn_id": 19,
+      "timestamp": "2025-08-14T19:16:21.541837"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Agreed. Changing topic—you seeing Maya’s wedding next month?",
+      "confidence": 1.0,
+      "turn_id": 20,
+      "timestamp": "2025-08-14T19:16:21.541860"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Wouldn’t miss it. Still need a plus-one though…",
+      "confidence": 1.0,
+      "turn_id": 21,
+      "timestamp": "2025-08-14T19:16:21.541883"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Same boat. Let’s be awkward singles together.",
+      "confidence": 1.0,
+      "turn_id": 22,
+      "timestamp": "2025-08-14T19:16:21.541908"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Perfect. Dance floor meltdowns incoming.",
+      "confidence": 1.0,
+      "turn_id": 23,
+      "timestamp": "2025-08-14T19:16:21.541931"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Naturally. Oh! Almost forgot—my sister’s bakery needs a website. Interested?",
+      "confidence": 1.0,
+      "turn_id": 24,
+      "timestamp": "2025-08-14T19:16:21.541955"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Seriously? That’d be my first freelance gig!",
+      "confidence": 1.0,
+      "turn_id": 25,
+      "timestamp": "2025-08-14T19:16:21.541980"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "I’ll text you her contact. Pay’s decent!",
+      "confidence": 1.0,
+      "turn_id": 26,
+      "timestamp": "2025-08-14T19:16:21.542003"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "You’re a lifesaver. Coffee’s on me next time.",
+      "confidence": 1.0,
+      "turn_id": 27,
+      "timestamp": "2025-08-14T19:16:21.542030"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Better believe it. Gotta run—meeting in 20.",
+      "confidence": 1.0,
+      "turn_id": 28,
+      "timestamp": "2025-08-14T19:16:21.542054"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Go! Text me Thai place details later?",
+      "confidence": 1.0,
+      "turn_id": 29,
+      "timestamp": "2025-08-14T19:16:21.542077"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Absolutely. Congrats again, future tech star!",
+      "confidence": 1.0,
+      "turn_id": 30,
+      "timestamp": "2025-08-14T19:16:21.542100"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Thanks, future Ansel Adams!",
+      "confidence": 1.0,
+      "turn_id": 31,
+      "timestamp": "2025-08-14T19:16:21.542125"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "(Texts later) Spice Garden, 7 PM Friday? They do vegan options.",
+      "confidence": 1.0,
+      "turn_id": 32,
+      "timestamp": "2025-08-14T19:16:21.542158"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Perfect! I’ll bring my tolerance for heat… and my critique of Starfall’s costume design.",
+      "confidence": 1.0,
+      "turn_id": 33,
+      "timestamp": "2025-08-14T19:16:21.542189"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Oh, this I gotta hear. Prepare for counter-arguments about Zara’s armor.",
+      "confidence": 1.0,
+      "turn_id": 34,
+      "timestamp": "2025-08-14T19:16:21.542215"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Bring it. Also—random Q: best hiking trail nearby? Need nature time.",
+      "confidence": 1.0,
+      "turn_id": 35,
+      "timestamp": "2025-08-14T19:16:21.542240"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Eagle Ridge! 4-mile loop with a waterfall. Luna’s obsessed.",
+      "confidence": 1.0,
+      "turn_id": 36,
+      "timestamp": "2025-08-14T19:16:21.542271"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Sold. Sunday? I’ll pack sandwiches.",
+      "confidence": 1.0,
+      "turn_id": 37,
+      "timestamp": "2025-08-14T19:16:21.542299"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "You’re my favorite human. 9 AM?",
+      "confidence": 1.0,
+      "turn_id": 38,
+      "timestamp": "2025-08-14T19:16:21.542323"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Deal. Swear you won’t make me pose for photos every 5 mins?",
+      "confidence": 1.0,
+      "turn_id": 39,
+      "timestamp": "2025-08-14T19:16:21.542348"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Zero promises. My camera misses your grumpy morning face.",
+      "confidence": 1.0,
+      "turn_id": 40,
+      "timestamp": "2025-08-14T19:16:21.542373"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Rude. Remember who’s bringing the coffee thermos.",
+      "confidence": 1.0,
+      "turn_id": 41,
+      "timestamp": "2025-08-14T19:16:21.542398"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "...I retract all sass. Hazelnut creamer?",
+      "confidence": 1.0,
+      "turn_id": 42,
+      "timestamp": "2025-08-14T19:16:21.542423"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Obviously. How’s Luna’s key-hiding rehab going?",
+      "confidence": 1.0,
+      "turn_id": 43,
+      "timestamp": "2025-08-14T19:16:21.542447"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Progress! Now she just licks them aggressively.",
+      "confidence": 1.0,
+      "turn_id": 44,
+      "timestamp": "2025-08-14T19:16:21.542471"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "[Laughs] Classic. Found a lead on a junior dev job, btw.",
+      "confidence": 1.0,
+      "turn_id": 45,
+      "timestamp": "2025-08-14T19:16:21.542496"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "YES! Details?",
+      "confidence": 1.0,
+      "turn_id": 46,
+      "timestamp": "2025-08-14T19:16:21.542521"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Startup downtown. Eco-focused apps. Interview next week.",
+      "confidence": 1.0,
+      "turn_id": 47,
+      "timestamp": "2025-08-14T19:16:21.542545"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Nailed it. Wear the galaxy-print tie. Looks smart.",
+      "confidence": 1.0,
+      "turn_id": 48,
+      "timestamp": "2025-08-14T19:16:21.542569"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Superstition? Thought you hated that tie.",
+      "confidence": 1.0,
+      "turn_id": 49,
+      "timestamp": "2025-08-14T19:16:21.542594"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "I hate how GOOD it looks on you. Secret weapon.",
+      "confidence": 1.0,
+      "turn_id": 50,
+      "timestamp": "2025-08-14T19:16:21.542618"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Aw. Thanks, man.",
+      "confidence": 1.0,
+      "turn_id": 51,
+      "timestamp": "2025-08-14T19:16:21.542645"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Always. Oh! Maya’s wedding colors are navy and gold.",
+      "confidence": 1.0,
+      "turn_id": 52,
+      "timestamp": "2025-08-14T19:16:21.542675"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Noted. I own exactly one navy shirt. Crisis averted.",
+      "confidence": 1.0,
+      "turn_id": 53,
+      "timestamp": "2025-08-14T19:16:21.542700"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Same. We’ll match. Tragic.",
+      "confidence": 1.0,
+      "turn_id": 54,
+      "timestamp": "2025-08-14T19:16:21.542724"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Coordinated tragedy. Your mom still asking when we’ll “date seriously”?",
+      "confidence": 1.0,
+      "turn_id": 55,
+      "timestamp": "2025-08-14T19:16:21.542748"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Ugh, yes. Told her you’re too busy coding world domination.",
+      "confidence": 1.0,
+      "turn_id": 56,
+      "timestamp": "2025-08-14T19:16:21.542775"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Accurate. Tell her I’m married to my paintbrushes.",
+      "confidence": 1.0,
+      "turn_id": 57,
+      "timestamp": "2025-08-14T19:16:21.542800"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "She’ll ask if they’re registered at Bed Bath & Beyond.",
+      "confidence": 1.0,
+      "turn_id": 58,
+      "timestamp": "2025-08-14T19:16:21.542825"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "[Snorts coffee] Stop. How’s your dad’s garden this year?",
+      "confidence": 1.0,
+      "turn_id": 59,
+      "timestamp": "2025-08-14T19:16:21.542850"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Tomatoes are winning. Zucchini? Apocalyptic. We’re drowning in it.",
+      "confidence": 1.0,
+      "turn_id": 60,
+      "timestamp": "2025-08-14T19:16:21.542876"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Bring some Friday? I’ll make my infamous chocolate-zucchini bread.",
+      "confidence": 1.0,
+      "turn_id": 61,
+      "timestamp": "2025-08-14T19:16:21.542901"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Infamous? Did you poison someone?",
+      "confidence": 1.0,
+      "turn_id": 62,
+      "timestamp": "2025-08-14T19:16:21.542933"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Only metaphorically. Greg from IT said it tasted “earthy.”",
+      "confidence": 1.0,
+      "turn_id": 63,
+      "timestamp": "2025-08-14T19:16:21.542958"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Greg thinks ketchup is spicy. I’ll risk it.",
+      "confidence": 1.0,
+      "turn_id": 64,
+      "timestamp": "2025-08-14T19:16:21.542985"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Hiking tomorrow—supposed to rain. Still on?",
+      "confidence": 1.0,
+      "turn_id": 65,
+      "timestamp": "2025-08-14T19:16:21.543015"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "100%. Waterproof gear ready. Luna’s got a tiny raincoat.",
+      "confidence": 1.0,
+      "turn_id": 66,
+      "timestamp": "2025-08-14T19:16:21.543041"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Pics or it didn’t happen.",
+      "confidence": 1.0,
+      "turn_id": 67,
+      "timestamp": "2025-08-14T19:16:21.543067"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Oh, you’ll suffer through the entire photoshoot.",
+      "confidence": 1.0,
+      "turn_id": 68,
+      "timestamp": "2025-08-14T19:16:21.543093"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Worth it for those sandwiches. Made them extra spicy.",
+      "confidence": 1.0,
+      "turn_id": 69,
+      "timestamp": "2025-08-14T19:16:21.543118"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Revenge for the Thai place bet? Low blow.",
+      "confidence": 1.0,
+      "turn_id": 70,
+      "timestamp": "2025-08-14T19:16:21.543143"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Always. Interview prep—help me mock-question?",
+      "confidence": 1.0,
+      "turn_id": 71,
+      "timestamp": "2025-08-14T19:16:21.543172"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "“Why do you want this job?” GO.",
+      "confidence": 1.0,
+      "turn_id": 72,
+      "timestamp": "2025-08-14T19:16:21.543197"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "“Because sustainable tech merges my passion for code with—”",
+      "confidence": 1.0,
+      "turn_id": 73,
+      "timestamp": "2025-08-14T19:16:21.543223"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "WRONG. “Because I enjoy not being homeless.” Honesty!",
+      "confidence": 1.0,
+      "turn_id": 74,
+      "timestamp": "2025-08-14T19:16:21.543248"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "[Groans] You’re the worst practice partner.",
+      "confidence": 1.0,
+      "turn_id": 75,
+      "timestamp": "2025-08-14T19:16:21.543274"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "But hilarious. Real answer: “Your mission aligns with my values.” Then dazzle them.",
+      "confidence": 1.0,
+      "turn_id": 76,
+      "timestamp": "2025-08-14T19:16:21.543305"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "...That’s actually good. Stealing it.",
+      "confidence": 1.0,
+      "turn_id": 77,
+      "timestamp": "2025-08-14T19:16:21.543336"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Trademarked! Royalties in zucchini bread.",
+      "confidence": 1.0,
+      "turn_id": 78,
+      "timestamp": "2025-08-14T19:16:21.543361"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Wedding shoes acquired. Blister-prevention plan: duct tape.",
+      "confidence": 1.0,
+      "turn_id": 79,
+      "timestamp": "2025-08-14T19:16:21.543388"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Genius. My plan: sit as much as possible.",
+      "confidence": 1.0,
+      "turn_id": 80,
+      "timestamp": "2025-08-14T19:16:21.543413"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Coward. We’re dancing to all the ABBA.",
+      "confidence": 1.0,
+      "turn_id": 81,
+      "timestamp": "2025-08-14T19:16:21.543452"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "If I must. Hiking was epic, btw. Your “spicy” sandwich nearly melted my face.",
+      "confidence": 1.0,
+      "turn_id": 82,
+      "timestamp": "2025-08-14T19:16:21.543479"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Success! And you got great shots of the waterfall.",
+      "confidence": 1.0,
+      "turn_id": 83,
+      "timestamp": "2025-08-14T19:16:21.543515"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Posted one. Got 50 likes already.",
+      "confidence": 1.0,
+      "turn_id": 84,
+      "timestamp": "2025-08-14T19:16:21.543541"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Narcissist. Tag me!",
+      "confidence": 1.0,
+      "turn_id": 85,
+      "timestamp": "2025-08-14T19:16:21.543568"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Done. Shelter busy this week?",
+      "confidence": 1.0,
+      "turn_id": 86,
+      "timestamp": "2025-08-14T19:16:21.543594"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Adopted out a senior dog! Cried happy tears.",
+      "confidence": 1.0,
+      "turn_id": 87,
+      "timestamp": "2025-08-14T19:16:21.543619"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Softie. Luna approves. How’s the bakery site coming?",
+      "confidence": 1.0,
+      "turn_id": 88,
+      "timestamp": "2025-08-14T19:16:21.543658"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Draft done! Sending to your sister tonight.",
+      "confidence": 1.0,
+      "turn_id": 89,
+      "timestamp": "2025-08-14T19:16:21.543689"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "She’ll freak (in a good way). Payment secured!",
+      "confidence": 1.0,
+      "turn_id": 90,
+      "timestamp": "2025-08-14T19:16:21.543729"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Cha-ching. Thai tonight—how spicy are we going? 1-10.",
+      "confidence": 1.0,
+      "turn_id": 91,
+      "timestamp": "2025-08-14T19:16:21.543757"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Let’s live dangerously. 8.",
+      "confidence": 1.0,
+      "turn_id": 92,
+      "timestamp": "2025-08-14T19:16:21.543784"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "...I regret everything.",
+      "confidence": 1.0,
+      "turn_id": 93,
+      "timestamp": "2025-08-14T19:16:21.543811"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Starfall news! Spinoff confirmed: Zara’s origin story!",
+      "confidence": 1.0,
+      "turn_id": 94,
+      "timestamp": "2025-08-14T19:16:21.543838"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "SHUT UP. Release date?!",
+      "confidence": 1.0,
+      "turn_id": 95,
+      "timestamp": "2025-08-14T19:16:21.543876"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Next fall. But get this—new showrunner.",
+      "confidence": 1.0,
+      "turn_id": 96,
+      "timestamp": "2025-08-14T19:16:21.543902"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Risky. Hope they don’t ruin her.",
+      "confidence": 1.0,
+      "turn_id": 97,
+      "timestamp": "2025-08-14T19:16:21.543928"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Same. Brunch Saturday to overanalyze the trailer?",
+      "confidence": 1.0,
+      "turn_id": 98,
+      "timestamp": "2025-08-14T19:16:21.543954"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Obviously. I’ll bring my “Zara Deserved Better” mood board.",
+      "confidence": 1.0,
+      "turn_id": 99,
+      "timestamp": "2025-08-14T19:16:21.543980"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Never change. Interview tomorrow—nervous?",
+      "confidence": 1.0,
+      "turn_id": 100,
+      "timestamp": "2025-08-14T19:16:21.544007"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Terrified. What if I blank?",
+      "confidence": 1.0,
+      "turn_id": 101,
+      "timestamp": "2025-08-14T19:16:21.544032"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Impossible. Remember: galaxy tie = instant genius.",
+      "confidence": 1.0,
+      "turn_id": 102,
+      "timestamp": "2025-08-14T19:16:21.544056"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Magic tie theory. I believe it.",
+      "confidence": 1.0,
+      "turn_id": 103,
+      "timestamp": "2025-08-14T19:16:21.544082"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Text me when it’s over. Rooting for you!",
+      "confidence": 1.0,
+      "turn_id": 104,
+      "timestamp": "2025-08-14T19:16:21.544109"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Thanks, man. Seriously.",
+      "confidence": 1.0,
+      "turn_id": 105,
+      "timestamp": "2025-08-14T19:16:21.544135"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "WELL?! How’d it go?!",
+      "confidence": 1.0,
+      "turn_id": 106,
+      "timestamp": "2025-08-14T19:16:21.544160"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "THEY LOVED ME. Second interview Friday!",
+      "confidence": 1.0,
+      "turn_id": 107,
+      "timestamp": "2025-08-14T19:16:21.544186"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "[Calls] TOLD YOU! Celebrate at Thai tonight!",
+      "confidence": 1.0,
+      "turn_id": 108,
+      "timestamp": "2025-08-14T19:16:21.544212"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Yes! But spice level 6. My stomach needs mercy.",
+      "confidence": 1.0,
+      "turn_id": 109,
+      "timestamp": "2025-08-14T19:16:21.544239"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Compromise: 7. Luna demands celebration scritches.",
+      "confidence": 1.0,
+      "turn_id": 110,
+      "timestamp": "2025-08-14T19:16:21.544266"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Deal. Also... Maya’s wedding seating chart is out.",
+      "confidence": 1.0,
+      "turn_id": 111,
+      "timestamp": "2025-08-14T19:16:21.544294"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Do we sit with cool people or Aunt Carol?",
+      "confidence": 1.0,
+      "turn_id": 112,
+      "timestamp": "2025-08-14T19:16:21.544322"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Worse. Table 9: all her ex-boyfriends.",
+      "confidence": 1.0,
+      "turn_id": 113,
+      "timestamp": "2025-08-14T19:16:21.544353"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "[Laughs] We’ll survive. Bring earplugs for their drama.",
+      "confidence": 1.0,
+      "turn_id": 114,
+      "timestamp": "2025-08-14T19:16:21.544380"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Packing extra. Did you finish that sci-fi book I lent you?",
+      "confidence": 1.0,
+      "turn_id": 115,
+      "timestamp": "2025-08-14T19:16:21.544408"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "YES. Ending wrecked me. Why’d you do that?",
+      "confidence": 1.0,
+      "turn_id": 116,
+      "timestamp": "2025-08-14T19:16:21.544435"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Shared pain is real pain. My turn—recommend me something happy.",
+      "confidence": 1.0,
+      "turn_id": 117,
+      "timestamp": "2025-08-14T19:16:21.544462"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Legends & Lattes. Orc opens a coffee shop. Zero angst.",
+      "confidence": 1.0,
+      "turn_id": 118,
+      "timestamp": "2025-08-14T19:16:21.544497"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Sold. Swapping books Saturday?",
+      "confidence": 1.0,
+      "turn_id": 119,
+      "timestamp": "2025-08-14T19:16:21.544556"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Yep. Brunch, books, Zara conspiracy theories.",
+      "confidence": 1.0,
+      "turn_id": 120,
+      "timestamp": "2025-08-14T19:16:21.544584"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Thai place tonight—running 10 mins late. Luna hide your keys again?",
+      "confidence": 1.0,
+      "turn_id": 121,
+      "timestamp": "2025-08-14T19:16:21.544611"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "No, MY fault. Ironed the galaxy tie for you.",
+      "confidence": 1.0,
+      "turn_id": 122,
+      "timestamp": "2025-08-14T19:16:21.544637"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "[Laughing] You’re ridiculous. See you soon!",
+      "confidence": 1.0,
+      "turn_id": 123,
+      "timestamp": "2025-08-14T19:16:21.544665"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Hurry! I ordered extra spring rolls to sabotage your diet.",
+      "confidence": 1.0,
+      "turn_id": 124,
+      "timestamp": "2025-08-14T19:16:21.544692"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Evil genius. Table by the window?",
+      "confidence": 1.0,
+      "turn_id": 125,
+      "timestamp": "2025-08-14T19:16:21.544718"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Yep. With a view of the chili pepper decor... taunting us.",
+      "confidence": 1.0,
+      "turn_id": 126,
+      "timestamp": "2025-08-14T19:16:21.544747"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Bring it. Oh—before I forget... Pineapple on pizza: yes or no?",
+      "confidence": 1.0,
+      "turn_id": 127,
+      "timestamp": "2025-08-14T19:16:21.544774"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "ABSOLUTELY NOT. Fruit doesn’t belong on pizza!",
+      "confidence": 1.0,
+      "turn_id": 128,
+      "timestamp": "2025-08-14T19:16:21.544801"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Philistine. It’s sweet, tangy perfection!",
+      "confidence": 1.0,
+      "turn_id": 129,
+      "timestamp": "2025-08-14T19:16:21.544828"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "This friendship may not survive this.",
+      "confidence": 1.0,
+      "turn_id": 130,
+      "timestamp": "2025-08-14T19:16:21.544856"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Too late. We’re stuck surviving Table 9 together.",
+      "confidence": 1.0,
+      "turn_id": 131,
+      "timestamp": "2025-08-14T19:16:21.544884"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Fair. See you in 5. Try not to trip!",
+      "confidence": 1.0,
+      "turn_id": 132,
+      "timestamp": "2025-08-14T19:16:21.544911"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "No promises. Save me a chili!",
+      "confidence": 1.0,
+      "turn_id": 133,
+      "timestamp": "2025-08-14T19:16:21.544937"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Never. They’re MINE.",
+      "confidence": 1.0,
+      "turn_id": 134,
+      "timestamp": "2025-08-14T19:16:21.544963"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "[Arrives, panting] Made it! Where’s my tie-admiring photographer?",
+      "confidence": 1.0,
+      "turn_id": 135,
+      "timestamp": "2025-08-14T19:16:21.544994"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Here! Menu’s open to the “Dragon’s Breath Curry.” Ready?",
+      "confidence": 1.0,
+      "turn_id": 136,
+      "timestamp": "2025-08-14T19:16:21.545026"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "...I brought antacids. Let’s do this.",
+      "confidence": 1.0,
+      "turn_id": 137,
+      "timestamp": "2025-08-14T19:16:21.545059"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "That’s the spirit. To surviving spice—and weddings!",
+      "confidence": 1.0,
+      "turn_id": 138,
+      "timestamp": "2025-08-14T19:16:21.545086"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "Cheers! And thanks... for everything.",
+      "confidence": 1.0,
+      "turn_id": 139,
+      "timestamp": "2025-08-14T19:16:21.545114"
+    },
+    {
+      "speaker": "[Alex]",
+      "text": "Always, B. Now—defend your pineapple heresy.",
+      "confidence": 1.0,
+      "turn_id": 140,
+      "timestamp": "2025-08-14T19:16:21.545142"
+    },
+    {
+      "speaker": "[Bailey]",
+      "text": "With pleasure. Pass the chili flakes...",
+      "confidence": 1.0,
+      "turn_id": 141,
+      "timestamp": "2025-08-14T19:16:21.545168"
+    }
+  ]
+}

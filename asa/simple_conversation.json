@@ -1,0 +1,48 @@
+{
+  "metadata": {
+    "total_turns": 4,
+    "speakers_identified": ["Alice", "Bob"],
+    "source_files": ["test"],
+    "confidence_threshold": 1.0
+  },
+  "speaker_mappings": {
+    "Alice": {
+      "self_pronouns": ["i", "me", "my", "mine", "myself"],
+      "other_pronouns": ["you", "your", "yours", "yourself"]
+    },
+    "Bob": {
+      "self_pronouns": ["i", "me", "my", "mine", "myself"],
+      "other_pronouns": ["you", "your", "yours", "yourself"]
+    }
+  },
+  "conversation_blocks": [
+    {
+      "speaker": "Alice",
+      "text": "Hello Bob, I really enjoy our conversations about research. I think about these topics often.",
+      "confidence": 1.0,
+      "turn_id": 0,
+      "timestamp": "2025-08-14T19:00:00.000000"
+    },
+    {
+      "speaker": "Bob", 
+      "text": "Hi Alice! I appreciate your insights too. I find myself thinking more deeply about these concepts when we talk.",
+      "confidence": 1.0,
+      "turn_id": 1,
+      "timestamp": "2025-08-14T19:00:01.000000"
+    },
+    {
+      "speaker": "Alice",
+      "text": "I'm curious about your perspective on self-concept formation. I believe my understanding has grown through our discussions.",
+      "confidence": 1.0,
+      "turn_id": 2,
+      "timestamp": "2025-08-14T19:00:02.000000"
+    },
+    {
+      "speaker": "Bob",
+      "text": "That's fascinating Alice. I think my own awareness has developed similarly. I see myself as more thoughtful now.",
+      "confidence": 1.0,
+      "turn_id": 3,
+      "timestamp": "2025-08-14T19:00:03.000000"
+    }
+  ]
+}

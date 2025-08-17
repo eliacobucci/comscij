@@ -2,8 +2,6 @@
 """
 Huey Speaker Detector: Automatic speaker identification for conversation files.
 Detects speaker patterns in text files and converts to Huey format.
-
-Copyright (c) 2025 Emary Iacobucci and Joseph Woelfel. All rights reserved.
 """
 
 import re
@@ -70,27 +68,14 @@ class HueySpeakerDetector:
         
         try:
             with open(filename, 'r', encoding='utf-8') as f:
-                content = f.read()
+                lines = f.readlines()
         except FileNotFoundError:
             return {'error': f"File not found: {filename}"}
         except Exception as e:
             return {'error': f"Error reading file: {str(e)}"}
         
-        # Handle line breaks between speaker and text - more aggressive approach
-        # Convert "Speaker:\n text" to "Speaker: text"
-        content = re.sub(r'([A-Za-z][A-Za-z0-9_\s]{1,20}?):\s*\n+\s*([^\n]+)', r'\1: \2', content, flags=re.MULTILINE)
-        content = re.sub(r'([A-Za-z][A-Za-z0-9_\s]{1,20}?)\s*-\s*\n+\s*([^\n]+)', r'\1 - \2', content, flags=re.MULTILINE)
-        content = re.sub(r'\[([A-Za-z][A-Za-z0-9_\s]{1,20}?)\]\s*\n+\s*([^\n]+)', r'[\1] \2', content, flags=re.MULTILINE)
-        content = re.sub(r'\(([A-Za-z][A-Za-z0-9_\s]{1,20}?)\)\s*\n+\s*([^\n]+)', r'(\1) \2', content, flags=re.MULTILINE)
-        
-        # Handle all-caps speaker names on separate lines
-        content = re.sub(r'^([A-Z][A-Z\s]{1,20}?)\s*\n+\s*([a-zA-Z][^\n]+)', r'\1: \2', content, flags=re.MULTILINE)
-        
-        # Handle speaker names followed by multiple newlines
-        content = re.sub(r'([A-Za-z][A-Za-z0-9_\s]{1,20}?):\s*\n{2,}\s*([^\n]+)', r'\1: \2', content, flags=re.MULTILINE)
-        
-        # Split back into lines and clean
-        lines = [line.strip() for line in content.split('\n') if line.strip()]
+        # Clean lines
+        lines = [line.strip() for line in lines if line.strip()]
         
         # Try different detection strategies
         strategies = [

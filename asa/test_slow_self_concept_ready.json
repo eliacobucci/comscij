@@ -1,0 +1,73 @@
+{
+  "metadata": {
+    "total_turns": 4,
+    "speakers_identified": [
+      "alice",
+      "bob"
+    ],
+    "confidence_threshold": 1.0,
+    "source_session": "test_slow"
+  },
+  "speaker_mappings": {
+    "alice": {
+      "self_pronouns": [
+        "i",
+        "me",
+        "my",
+        "mine",
+        "myself"
+      ],
+      "other_pronouns": [
+        "you",
+        "your",
+        "yours",
+        "yourself"
+      ]
+    },
+    "bob": {
+      "self_pronouns": [
+        "i",
+        "me",
+        "my",
+        "mine",
+        "myself"
+      ],
+      "other_pronouns": [
+        "you",
+        "your",
+        "yours",
+        "yourself"
+      ]
+    }
+  },
+  "conversation_blocks": [
+    {
+      "speaker": "alice",
+      "text": "I think this new approach to learning is fascinating.",
+      "confidence": 1.0,
+      "turn_id": 0,
+      "timestamp": "2025-08-13T19:46:33.810906"
+    },
+    {
+      "speaker": "bob",
+      "text": "I agree with you. Machine learning has incredible potential.",
+      "confidence": 1.0,
+      "turn_id": 1,
+      "timestamp": "2025-08-13T19:46:33.810951"
+    },
+    {
+      "speaker": "alice",
+      "text": "Exactly! I believe we are seeing the future of education.",
+      "confidence": 1.0,
+      "turn_id": 2,
+      "timestamp": "2025-08-13T19:46:33.810958"
+    },
+    {
+      "speaker": "bob",
+      "text": "And I think collaborative learning will be key to success.",
+      "confidence": 1.0,
+      "turn_id": 3,
+      "timestamp": "2025-08-13T19:46:33.810962"
+    }
+  ]
+}

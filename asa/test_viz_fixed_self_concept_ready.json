@@ -1,0 +1,59 @@
+{
+  "metadata": {
+    "total_turns": 2,
+    "speakers_identified": [
+      "alice",
+      "bob"
+    ],
+    "confidence_threshold": 1.0,
+    "source_session": "test_viz_fixed"
+  },
+  "speaker_mappings": {
+    "alice": {
+      "self_pronouns": [
+        "i",
+        "me",
+        "my",
+        "mine",
+        "myself"
+      ],
+      "other_pronouns": [
+        "you",
+        "your",
+        "yours",
+        "yourself"
+      ]
+    },
+    "bob": {
+      "self_pronouns": [
+        "i",
+        "me",
+        "my",
+        "mine",
+        "myself"
+      ],
+      "other_pronouns": [
+        "you",
+        "your",
+        "yours",
+        "yourself"
+      ]
+    }
+  },
+  "conversation_blocks": [
+    {
+      "speaker": "alice",
+      "text": "I think this is interesting.",
+      "confidence": 1.0,
+      "turn_id": 0,
+      "timestamp": "2025-08-13T19:39:54.795281"
+    },
+    {
+      "speaker": "bob",
+      "text": "I agree with you.",
+      "confidence": 1.0,
+      "turn_id": 1,
+      "timestamp": "2025-08-13T19:39:54.795388"
+    }
+  ]
+}

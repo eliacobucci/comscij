@@ -1,0 +1,6 @@
+Alice: Hello Bob, how are you today?
+Bob: I'm doing well Alice, thank you for asking. How about you?
+Alice: I'm great! I've been thinking about our project lately.
+Bob: That's wonderful! I've been working on my part as well.
+Alice: I really enjoy collaborating with you on this research.
+Bob: I feel the same way! Our partnership has been very productive.

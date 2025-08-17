@@ -88,3 +88,42 @@ Huey is designed for:
 Huey embodies the principle that the most elegant solutions treat all elements equally. By removing artificial hierarchies and letting self-concepts emerge through the same mechanisms as all other concepts, we achieve both mathematical universality and individual authenticity.
 
 **No guessing. No ambiguity. Just perfect Hebbian self-concept analysis.**
+
+## Scientific Standards
+
+Huey maintains the highest standards of scientific integrity and mathematical rigor:
+
+### Measurement Principles
+- **Real measurement only** - comparison to defined standards with ratio properties
+- **NO Likert scales** - ordinal rankings are not valid measurements
+- **Preserve original units** - never sacrifice precision for statistical convenience
+- **Operational definitions** - specify exactly what constitutes each phenomenon
+
+### Mathematical Integrity
+- **NO hidden standardization** - algorithms must preserve original metric
+- **NO correlation coefficients** treated as distances
+- **NO z-score standardization** - destroys magnitude information
+- **NO unit vector normalization** - forces artificial unit hypersphere
+- **Preserve eigenvalue signs** - negative eigenvalues contain real information
+
+### Pseudo-Riemannian Geometry
+Huey's connection space exhibits pseudo-Riemannian properties:
+- **Mixed signature metric** - both positive and negative eigenvalues
+- **Real eigenvectors only** - not complex numbers
+- **NO Euclidean assumptions** - many packages assume flat space incorrectly
+- **NO Procrustes transforms** - destroys pseudo-Riemannian structure
+- **Proper distance calculations** - respects the mixed metric signature
+
+### Verification Standards
+- **Falsifiable hypotheses** - clear predictions that can be tested and disproven
+- **Controlled comparisons** - systematic testing against psychological benchmarks
+- **Reproducible methods** - documented procedures others can replicate
+- **Independent verification** - claims must be checkable by others
+- **Einstein's criterion**: *"Those [experiences] about which we agree we call real"*
+
+### Code Auditing
+Regular checks ensure no hidden algorithms corrupt measurement integrity:
+- Eigenvalue handling preserves signs throughout
+- Connection strengths maintain original magnitudes
+- No statistical convenience functions distort the physics
+- Pseudo-Riemannian geometry remains intact

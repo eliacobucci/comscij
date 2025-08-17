@@ -2,6 +2,8 @@
 """
 Huey Complete Platform: Integrated Hebbian Self-Concept Analysis System
 Combines conversation analysis, querying, visualization, and temporal tracking.
+
+Copyright (c) 2025 Emary Iacobucci and Joseph Woelfel. All rights reserved.
 """
 
 from conversational_self_concept_experiment import HueyConversationalNetwork

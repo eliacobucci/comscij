@@ -1,27 +1,27 @@
 {
-  "total_neurons": 150,
-  "total_connections": 2904,
+  "total_neurons": 157,
+  "total_connections": 1468,
   "cluster_counts": {
-    "claude_self": 5,
-    "joseph_self": 3,
+    "joseph_self": 5,
+    "claude_self": 1,
     "shared_concepts": 5,
-    "other_concepts": 137
+    "other_concepts": 139
   },
   "cluster_masses": {
-    "claude_self": 37.10999999999995,
-    "joseph_self": 15.23999999999998,
-    "shared_concepts": 9.239999999999997,
-    "other_concepts": 222.20999999999998
+    "joseph_self": 1018.4139671320864,
+    "claude_self": 171.82670333290383,
+    "shared_concepts": 337.21512771680807,
+    "other_concepts": 8560.323468505347
   },
   "eigenvalue_signature": {
-    "positive_dims": 129,
-    "negative_dims": 20,
+    "positive_dims": 101,
+    "negative_dims": 49,
     "top_eigenvalues": [
-      -12.19165538718875,
-      -11.100888145601704,
-      -10.062009842774918,
-      -9.416607081879286,
-      -8.230780823222652
+      -6.089562739830368,
+      -5.323954412424021,
+      -4.885239381365642,
+      -4.505982831012416,
+      -4.2942452498144235
     ]
   }
 }

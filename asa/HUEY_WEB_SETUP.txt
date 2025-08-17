@@ -1,0 +1,72 @@
+# 🧠 Huey Web Interface Setup
+
+## 📦 What You Need to Install
+
+pip install streamlit plotly pandas numpy scipy matplotlib PyPDF2
+
+## 🚀 How to Run
+
+1. Open Terminal/Command Prompt
+2. Navigate to your Huey directory:
+   cd /Users/josephwoelfel/asa
+3. Start the web interface:
+   streamlit run huey_web_interface.py
+4. Your browser will open automatically to http://localhost:8501
+
+## 🎯 How to Use
+
+### Step 1: Initialize Huey
+- Use the sidebar to set your parameters:
+  - Max Neurons: How many concepts to track (500 is good)
+  - Window Size: Sliding window size (7 is good) 
+  - Learning Rate: How fast associations form (0.15 is good)
+- Click "🚀 Initialize Huey"
+
+### Step 2: Upload Your Conversation
+- Click "Choose a conversation file" 
+- Upload any .txt file with conversation
+- Click "🔍 Process Conversation"
+
+### Step 3: Analyze Results
+Use the tabs to explore:
+- 🔍 Concept Associations: See what connects to any concept
+- 🗺️ 3D Visualization: Interactive 3D concept map
+- ⚖️ Mass Comparison: Compare concept strengths
+- 🧮 Eigenvalue Analysis: Mathematical analysis of the space
+- 📊 Network Stats: Overall network information
+
+### Step 4: Export Results
+- 📋 Generate Analysis Report: Full markdown report
+- 💾 Export Session Data: Raw JSON data
+
+## 🔧 Troubleshooting
+
+If you get "Module not found" errors:
+pip install --upgrade streamlit plotly pandas numpy scipy matplotlib
+
+If the browser doesn't open automatically:
+- Go to http://localhost:8501 manually
+
+To stop the server:
+- Press Ctrl+C in the terminal
+
+## 💡 Tips
+
+- File Formats Supported:
+  • .txt files with conversation text
+  • .pdf files (text will be extracted automatically)
+
+- Speaker Format: Your conversation file should have speakers identified like:
+  Speaker1: Hello there
+  Speaker2: Hi back
+  OR with line breaks:
+  Speaker1:
+  Hello there
+  Speaker2:
+  Hi back
+
+- Word Exclusion: Create a KILL.txt file with words to exclude (one per line)
+- Learning Rate: Start with 0.15, experiment with higher/lower values
+- Concept Count: For 3D visualization, 20-100 concepts usually works best
+
+That's it! Much easier than the Jupyter notebook! 🎉
