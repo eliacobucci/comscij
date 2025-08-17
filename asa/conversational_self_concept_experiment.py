@@ -92,7 +92,7 @@ class HueyConversationalNetwork(ExperimentalNetwork):
         tokens = self.tokenize_speaker_text(text_block)
         # print(f"   Tokens ({len(tokens)}): {tokens[:15]}{'...' if len(tokens) > 15 else ''}")
         
-        # Process tokens using sliding windows (speaker neuron will be injected automatically)
+        # Process tokens using sliding windows (speaker neuron will be activated automatically)
         self.process_text_sequence(tokens)
         
         # Track speaker's development
@@ -131,34 +131,47 @@ class HueyConversationalNetwork(ExperimentalNetwork):
         return filtered_tokens
     
     def process_text_sequence(self, tokens):
-        """Process tokens using sliding windows with natural decay for all concepts."""
+        """Process tokens using sliding windows with speaker context activation."""
         
-        # If we have a current speaker, inject their neuron into all sliding windows
+        # Process the original tokens normally
+        text = ' '.join(tokens)
+        
+        # Override the ExperimentalNetwork's process_text_stream to include speaker context
         if self.current_speaker:
-            speaker_neuron_word = f"speaker_{self.current_speaker.lower()}"
-            
-            # Add speaker neuron to every sliding window by injecting it throughout the token sequence
-            enhanced_tokens = []
-            window_interval = self.window_size // 2  # Inject speaker neuron every few tokens
-            
-            for i, token in enumerate(tokens):
-                enhanced_tokens.append(token)
-                # Inject speaker neuron at regular intervals to maintain activation
-                if i % window_interval == 0:
-                    enhanced_tokens.append(speaker_neuron_word)
-            
-            # Ensure speaker neuron appears at the end too
-            enhanced_tokens.append(speaker_neuron_word)
-            
-            # Convert enhanced tokens back to text and process
-            text = ' '.join(enhanced_tokens)
+            self.process_text_stream_with_speaker_context(text)
         else:
-            # No current speaker, process normally
-            text = ' '.join(tokens)
+            self.process_text_stream(text)
+    
+    def process_text_stream_with_speaker_context(self, text):
+        """Process text stream with speaker neuron included in all windows."""
         
-        # This uses the ExperimentalNetwork's sliding window processing
-        # which treats all concepts equally with natural decay
-        self.process_text_stream(text)
+        # Get or create speaker neuron
+        speaker_neuron_word = f"speaker_{self.current_speaker.lower()}"
+        speaker_neuron_id = self._get_or_create_neuron(speaker_neuron_word)
+        
+        words = text.split()
+        
+        # Process each window position, including speaker neuron in every window
+        for i in range(len(words) - self.window_size + 1):
+            window = words[i:i + self.window_size]
+            
+            # Add speaker neuron to this window's processing
+            window_neurons = []
+            for word in window:
+                neuron_idx = self._get_or_create_neuron(word)
+                window_neurons.append(neuron_idx)
+            
+            # Always include the speaker neuron in this window
+            window_neurons.append(speaker_neuron_id)
+            
+            # Apply activation decay to ALL neurons first (organic forgetting)
+            self._apply_activation_decay()
+            
+            # Apply Hebbian learning among all neurons in the window (including speaker)
+            self._hebbian_learning(window_neurons)
+            
+            # Calculate new activations for ALL neurons using logistic function
+            self._calculate_all_activations(window_neurons)
     
     def analyze_speaker_self_concept(self, speaker_name):
         """Analyze how a specific speaker's self-concept has formed."""
@@ -361,7 +374,7 @@ def run_conversational_self_concept_experiment():
     print()
     
     # Create network
-    net = ConversationalSelfConceptNetwork(max_neurons=150)
+    net = HueyConversationalNetwork(max_neurons=150)
     
     # Define speakers
     net.add_speaker("Claude", 
@@ -379,7 +392,7 @@ def run_conversational_self_concept_experiment():
     
     # Process conversation block by block
     for speaker, text_block in conversation:
-        net.process_speaker_block(speaker, text_block)
+        net.process_speaker_text(speaker, text_block)
     
     print(f"\n🧠 FINAL NETWORK STATE:")
     print(f"   Total neurons: {net.neuron_count}")
