@@ -195,11 +195,22 @@ def process_uploaded_file(uploaded_file, huey):
         return {'error': str(e)}
 
 def create_3d_concept_plot(huey, num_concepts, min_mass):
-    """Create 3D concept visualization using Plotly"""
+    """Create 3D concept visualization using eigenvector coordinates"""
     try:
-        # Get concepts above threshold
-        concepts_data = []
+        # System artifacts to filter out
+        system_artifacts = {
+            'speaker_speaker_a', 'speaker_speaker_b', 'speaker_speaker_c', 
+            'speaker_speaker_d', 'speaker_speaker_e', 'speaker_speaker_f',
+            're', 'e', 'g', '4', 'lines'
+        }
+        
+        # Get all concepts and their masses, filtering out system artifacts
+        all_concepts = []
         for neuron_id, word in huey.network.neuron_to_word.items():
+            # Skip system artifacts
+            if word.lower() in system_artifacts:
+                continue
+                
             # Calculate concept mass from inertial_mass
             total_mass = 0.0
             if hasattr(huey.network, 'inertial_mass'):
@@ -207,30 +218,154 @@ def create_3d_concept_plot(huey, num_concepts, min_mass):
                     if i == neuron_id or j == neuron_id:
                         total_mass += mass
             
-            if total_mass >= min_mass and len(concepts_data) < num_concepts:
-                concepts_data.append({
-                    'name': word,
-                    'mass': total_mass,
-                    'id': neuron_id
-                })
+            all_concepts.append({
+                'name': word,
+                'mass': total_mass,
+                'id': neuron_id
+            })
         
-        concepts_data.sort(key=lambda x: x['mass'], reverse=True)
-        concepts_data = concepts_data[:num_concepts]
+        # Sort by mass and take top concepts
+        all_concepts.sort(key=lambda x: x['mass'], reverse=True)
+        concepts_data = all_concepts[:num_concepts]
         
         if len(concepts_data) < 3:
-            return None
+            st.error(f"Only found {len(concepts_data)} concepts total")
+            return None, None, None
+            
+        # Build association matrix for selected concepts
+        n_concepts = len(concepts_data)
+        association_matrix = np.zeros((n_concepts, n_concepts))
+        concept_ids = [c['id'] for c in concepts_data]
+        id_to_index = {concept_id: i for i, concept_id in enumerate(concept_ids)}
         
-        # Create 3D positions (simplified layout)
-        np.random.seed(42)
-        positions = np.random.randn(len(concepts_data), 3)
+        # Fill association matrix with connection strengths
+        connection_source = None
+        if hasattr(huey.network, 'synaptic_strengths'):
+            connection_source = 'synaptic_strengths'
+            for (i, j), strength in huey.network.synaptic_strengths.items():
+                if i in id_to_index and j in id_to_index:
+                    idx_i, idx_j = id_to_index[i], id_to_index[j]
+                    association_matrix[idx_i][idx_j] = strength
+                    association_matrix[idx_j][idx_i] = strength  # Make symmetric
+        elif hasattr(huey.network, 'inertial_mass'):
+            connection_source = 'inertial_mass'
+            max_mass = max(huey.network.inertial_mass.values()) if huey.network.inertial_mass else 1.0
+            for (i, j), mass in huey.network.inertial_mass.items():
+                if i in id_to_index and j in id_to_index:
+                    idx_i, idx_j = id_to_index[i], id_to_index[j]
+                    strength = mass / max_mass  # Normalize by actual max, not arbitrary 100
+                    association_matrix[idx_i][idx_j] = strength
+                    association_matrix[idx_j][idx_i] = strength
+        
+        # Apply double centering (Torgerson transformation) to get proper coordinates
+        try:
+            n = association_matrix.shape[0]
+            
+            # Convert similarities to distances: higher similarity = shorter distance
+            max_sim = np.max(association_matrix) if np.max(association_matrix) > 0 else 1.0
+            distance_matrix = max_sim - association_matrix
+            
+            # Square the distances
+            D_squared = distance_matrix ** 2
+            
+            # Double centering: H = I - (1/n)*ones, then B = -0.5 * H * D^2 * H
+            ones_matrix = np.ones((n, n)) / n
+            H = np.eye(n) - ones_matrix
+            B = -0.5 * H @ D_squared @ H
+            
+            # Eigendecomposition of double-centered matrix
+            eigenvalues, eigenvectors = np.linalg.eigh(B)
+            
+            # Sort by eigenvalue (descending)
+            idx = np.argsort(eigenvalues)[::-1]
+            eigenvalues = eigenvalues[idx]
+            eigenvectors = eigenvectors[:, idx]
+            
+            # Use top 3 dimensions with proper eigenvalue scaling
+            if eigenvectors.shape[1] >= 3:
+                x = eigenvectors[:, 0] * np.sqrt(np.abs(eigenvalues[0]))
+                y = eigenvectors[:, 1] * np.sqrt(np.abs(eigenvalues[1]))
+                z = eigenvectors[:, 2] * np.sqrt(np.abs(eigenvalues[2]))
+                
+                # Calculate percentage of variance explained by first 3 components
+                total_variance = np.sum(np.abs(eigenvalues))
+                variance_3d = np.sum(np.abs(eigenvalues[:3]))
+                variance_percent = (variance_3d / total_variance * 100) if total_variance > 0 else 0
+                
+            else:
+                # Fallback if less than 3 dimensions
+                x = eigenvectors[:, 0] if eigenvectors.shape[1] >= 1 else np.zeros(n_concepts)
+                y = eigenvectors[:, 1] if eigenvectors.shape[1] >= 2 else np.random.randn(n_concepts) * 0.1
+                z = np.random.randn(n_concepts) * 0.1
+                variance_percent = 0
+                
+            st.success(f"✅ Using eigenvector coordinates from {connection_source}")
+            st.write(f"Top 3 eigenvalues: {eigenvalues[:3]}")
+            st.write(f"Variance explained by 3D plot: {variance_percent:.1f}%")
+            
+        except np.linalg.LinAlgError:
+            st.warning("⚠️ Eigendecomposition failed, using random coordinates")
+            np.random.seed(42)
+            x = np.random.randn(n_concepts)
+            y = np.random.randn(n_concepts)  
+            z = np.random.randn(n_concepts)
         
         # Extract data for plotting
         names = [c['name'] for c in concepts_data]
         masses = [c['mass'] for c in concepts_data]
-        x, y, z = positions[:, 0], positions[:, 1], positions[:, 2]
+        ids = [c['id'] for c in concepts_data]
         
-        # Create 3D scatter plot
-        fig = go.Figure(data=go.Scatter3d(
+        # Create mapping from neuron_id to position index
+        id_to_index = {neuron_id: i for i, neuron_id in enumerate(ids)}
+        
+        # Debug: Check what connection attributes exist
+        connection_attrs = []
+        if hasattr(huey.network, 'synaptic_strengths'):
+            connection_attrs.append('synaptic_strengths')
+        if hasattr(huey.network, 'inertial_mass'):
+            connection_attrs.append('inertial_mass')
+        if hasattr(huey.network, 'associations'):
+            connection_attrs.append('associations')
+        
+        # Get connection data - try different sources
+        connections = []
+        connection_source = None
+        
+        # Try synaptic_strengths first
+        if hasattr(huey.network, 'synaptic_strengths'):
+            connection_source = 'synaptic_strengths'
+            for (i, j), strength in huey.network.synaptic_strengths.items():
+                if i in id_to_index and j in id_to_index and strength > 0.05:  # Lower threshold
+                    idx_i, idx_j = id_to_index[i], id_to_index[j]
+                    connections.append({
+                        'x': [x[idx_i], x[idx_j]], 
+                        'y': [y[idx_i], y[idx_j]], 
+                        'z': [z[idx_i], z[idx_j]],
+                        'strength': strength,
+                        'from_id': i,
+                        'to_id': j
+                    })
+        
+        # If no synaptic strengths, try inertial_mass connections
+        elif hasattr(huey.network, 'inertial_mass'):
+            connection_source = 'inertial_mass'
+            for (i, j), mass in huey.network.inertial_mass.items():
+                if i in id_to_index and j in id_to_index and mass > 0.1:
+                    idx_i, idx_j = id_to_index[i], id_to_index[j]
+                    connections.append({
+                        'x': [x[idx_i], x[idx_j]], 
+                        'y': [y[idx_i], y[idx_j]], 
+                        'z': [z[idx_i], z[idx_j]],
+                        'strength': min(1.0, mass / 5.0),  # Normalize mass to 0-1
+                        'from_id': i,
+                        'to_id': j
+                    })
+        
+        # Create figure with just the concepts first
+        fig = go.Figure()
+        
+        # Add concept nodes
+        fig.add_trace(go.Scatter3d(
             x=x, y=y, z=z,
             mode='markers+text',
             marker=dict(
@@ -242,25 +377,34 @@ def create_3d_concept_plot(huey, num_concepts, min_mass):
             ),
             text=names,
             textposition="middle right",
-            hovertemplate='<b>%{text}</b><br>Mass: %{marker.color:.3f}<extra></extra>'
+            hovertemplate='<b>%{text}</b><br>Mass: %{marker.color:.3f}<extra></extra>',
+            name="concepts"
         ))
         
+        title_text = f'3D Concept Space - Eigenvector Positioning ({len(concepts_data)} concepts, {len(connections)} connections)'
+        if 'variance_percent' in locals():
+            title_text += f'<br><sub>Coordinates from {connection_source} eigenvectors ({variance_percent:.1f}% variance explained)</sub>'
+        else:
+            title_text += f'<br><sub>Coordinates from {connection_source} eigenvectors</sub>'
+            
         fig.update_layout(
-            title=f'3D Concept Space ({len(concepts_data)} concepts)',
+            title=title_text,
             scene=dict(
-                xaxis_title='Dimension 1',
-                yaxis_title='Dimension 2',
-                zaxis_title='Dimension 3'
+                xaxis_title='1st Eigenvector',
+                yaxis_title='2nd Eigenvector', 
+                zaxis_title='3rd Eigenvector'
             ),
             width=800,
             height=600
         )
         
-        return fig
+        return fig, connections, id_to_index
         
     except Exception as e:
         st.error(f"Error creating 3D plot: {e}")
-        return None
+        import traceback
+        st.error(traceback.format_exc())
+        return None, None, None
 
 def create_mass_comparison_plot(huey, concepts_to_compare):
     """Create mass comparison bar chart"""
@@ -482,16 +626,237 @@ def main():
             with col1:
                 num_concepts_3d = st.number_input("Number of concepts to plot", min_value=10, max_value=200, value=50, step=5)
             with col2:
-                min_mass_3d = st.number_input("Minimum mass threshold", min_value=0.001, max_value=1.0, value=0.01, step=0.001, format="%.3f")
+                min_mass_3d = st.number_input("Minimum mass threshold", min_value=0.0, max_value=1000.0, value=0.0, step=0.1, format="%.1f")
             
-            if st.button("🗺️ Generate 3D Visualization"):
+            # Initialize session state
+            if 'plot_data_3d' not in st.session_state:
+                st.session_state.plot_data_3d = None
+            
+            col_btn1, col_btn2 = st.columns([2, 1])
+            
+            with col_btn1:
+                generate_clicked = st.button("🗺️ Generate 3D Visualization")
+            with col_btn2:
+                if st.button("🗑️ Clear Plot"):
+                    st.session_state.plot_data_3d = None
+                    st.rerun()
+            
+            if generate_clicked:
                 with st.spinner("Creating 3D visualization..."):
-                    fig = create_3d_concept_plot(huey, num_concepts_3d, min_mass_3d)
+                    result = create_3d_concept_plot(huey, num_concepts_3d, min_mass_3d)
                     
-                    if fig:
-                        st.plotly_chart(fig, use_container_width=True)
+                    if result[0]:  # fig is not None
+                        fig, connections, id_to_index = result
+                        st.session_state.plot_data_3d = {
+                            'fig': fig,
+                            'connections': connections,
+                            'id_to_index': id_to_index,
+                            'huey_network': huey.network
+                        }
                     else:
                         st.error(f"Not enough concepts with mass ≥ {min_mass_3d} for visualization")
+            
+            # Display plot and controls if we have plot data
+            if st.session_state.plot_data_3d:
+                plot_data = st.session_state.plot_data_3d
+                fig = plot_data['fig']
+                connections = plot_data['connections']
+                id_to_index = plot_data['id_to_index']
+                huey_network = plot_data['huey_network']
+                
+                # Always display the base plot first
+                st.plotly_chart(fig, use_container_width=True, key="base_plot")
+                
+                # If we have connections, add the interactive feature
+                if connections:
+                    # Add concept selector dropdown
+                    concept_names = [word for nid, word in huey_network.neuron_to_word.items() 
+                                   if nid in id_to_index]
+                    concept_names.sort()
+                    
+                    st.info(f"💡 **Connection Highlighting Available** ({len(connections)} connections found)")
+                    
+                    # Concept selection dropdown
+                    selected_concept = st.selectbox(
+                        "🎯 Select concept to highlight connections:",
+                        options=['None'] + concept_names,
+                        key="concept_selector_3d"
+                    )
+                    
+                    if selected_concept != 'None':
+                        # Find the neuron ID for the selected concept
+                        selected_id = None
+                        for nid, word in huey_network.neuron_to_word.items():
+                            if word == selected_concept and nid in id_to_index:
+                                selected_id = nid
+                                break
+                        
+                        if selected_id:
+                            # Create new figure with glowing connected concepts
+                            fig_highlighted = go.Figure()
+                            
+                            # Build connection info for this concept
+                            connected_concepts = {}
+                            highlighted_count = 0
+                            for conn in connections:
+                                if conn['from_id'] == selected_id:
+                                    connected_concepts[conn['to_id']] = conn['strength']
+                                    highlighted_count += 1
+                                elif conn['to_id'] == selected_id:
+                                    connected_concepts[conn['from_id']] = conn['strength']
+                                    highlighted_count += 1
+                            
+                            # Rebuild the concept data from what we have available
+                            concept_data_list = []
+                            for nid, word in huey_network.neuron_to_word.items():
+                                if nid in id_to_index:
+                                    # Calculate mass
+                                    total_mass = 0.0
+                                    if hasattr(huey_network, 'inertial_mass'):
+                                        for (i, j), mass in huey_network.inertial_mass.items():
+                                            if i == nid or j == nid:
+                                                total_mass += mass
+                                    concept_data_list.append({
+                                        'id': nid,
+                                        'name': word,
+                                        'mass': total_mass,
+                                        'index': id_to_index[nid]
+                                    })
+                            
+                            # Sort by index to match the original plot order
+                            concept_data_list.sort(key=lambda x: x['index'])
+                            
+                            # Get max mass for scaling
+                            max_mass = max(c['mass'] for c in concept_data_list) if concept_data_list else 1
+                            
+                            # Separate selected concept from connected ones for different traces
+                            selected_x, selected_y, selected_z = [], [], []
+                            selected_names, selected_masses = [], []
+                            
+                            connected_x, connected_y, connected_z = [], [], []
+                            connected_names, connected_masses, connected_strengths = [], [], []
+                            
+                            dimmed_x, dimmed_y, dimmed_z = [], [], []
+                            dimmed_names, dimmed_masses = [], []
+                            
+                            for concept_data in concept_data_list:
+                                i = concept_data['index']
+                                concept_id = concept_data['id']
+                                concept_name = concept_data['name']
+                                concept_mass = concept_data['mass']
+                                
+                                # Get coordinates from the original plot data
+                                x_coord = fig.data[0].x[i]
+                                y_coord = fig.data[0].y[i]
+                                z_coord = fig.data[0].z[i]
+                                
+                                if concept_id == selected_id:
+                                    selected_x.append(x_coord)
+                                    selected_y.append(y_coord)
+                                    selected_z.append(z_coord)
+                                    selected_names.append(concept_name)
+                                    selected_masses.append(concept_mass)
+                                elif concept_id in connected_concepts:
+                                    connected_x.append(x_coord)
+                                    connected_y.append(y_coord)
+                                    connected_z.append(z_coord)
+                                    connected_names.append(concept_name)
+                                    connected_masses.append(concept_mass)
+                                    connected_strengths.append(connected_concepts[concept_id])
+                                else:
+                                    dimmed_x.append(x_coord)
+                                    dimmed_y.append(y_coord)
+                                    dimmed_z.append(z_coord)
+                                    dimmed_names.append(concept_name)
+                                    dimmed_masses.append(concept_mass)
+                            
+                            # Add selected concept (yellow glow)
+                            if selected_x:
+                                fig_highlighted.add_trace(go.Scatter3d(
+                                    x=selected_x, y=selected_y, z=selected_z,
+                                    mode='markers+text',
+                                    marker=dict(
+                                        size=[(m/max_mass*30 + 15) for m in selected_masses],
+                                        color='yellow',
+                                        opacity=1.0,
+                                        line=dict(width=4, color='orange')
+                                    ),
+                                    text=selected_names,
+                                    textposition="middle right",
+                                    textfont=dict(size=12, color='black'),
+                                    hovertemplate='<b>%{text}</b><br>Mass: %{customdata:.3f}<extra></extra>',
+                                    customdata=selected_masses,
+                                    name="Selected",
+                                    showlegend=False
+                                ))
+                            
+                            # Add connected concepts with continuous thermal spectrum
+                            if connected_x:
+                                # Calculate sizes based on connection strength
+                                sizes = [(m/max_mass*20 + s*15 + 8) for m, s in zip(connected_masses, connected_strengths)]
+                                line_widths = [max(2, s*6) for s in connected_strengths]
+                                
+                                fig_highlighted.add_trace(go.Scatter3d(
+                                    x=connected_x, y=connected_y, z=connected_z,
+                                    mode='markers+text',
+                                    marker=dict(
+                                        size=sizes,
+                                        color=connected_strengths,  # Continuous mapping
+                                        colorscale=[[0, 'blue'], [0.5, 'orange'], [1, 'red']],  # Cool to hot spectrum
+                                        cmin=0, cmax=1,  # Normalize to 0-1 range
+                                        opacity=0.9,
+                                        colorbar=dict(title="Connection<br>Strength", x=1.02),
+                                        line=dict(width=2, color='black')  # Consistent outline
+                                    ),
+                                    text=connected_names,
+                                    textposition="middle right",
+                                    textfont=dict(size=12, color='black'),
+                                    hovertemplate='<b>%{text}</b><br>Strength: %{marker.color:.3f}<br>Mass: %{customdata:.3f}<extra></extra>',
+                                    customdata=connected_masses,
+                                    name="Connected",
+                                    showlegend=False
+                                ))
+                            
+                            # Add dimmed unconnected concepts
+                            if dimmed_x:
+                                fig_highlighted.add_trace(go.Scatter3d(
+                                    x=dimmed_x, y=dimmed_y, z=dimmed_z,
+                                    mode='markers+text',
+                                    marker=dict(
+                                        size=[(m/max_mass*15 + 4) for m in dimmed_masses],
+                                        color='lightgray',
+                                        opacity=0.3,
+                                        line=dict(width=1, color='gray')
+                                    ),
+                                    text=dimmed_names,
+                                    textposition="middle right",
+                                    textfont=dict(size=10, color='darkgray'),
+                                    hovertemplate='<b>%{text}</b><br>Mass: %{customdata:.3f}<extra></extra>',
+                                    customdata=dimmed_masses,
+                                    name="Unconnected",
+                                    showlegend=False
+                                ))
+                            
+                            # Copy layout
+                            fig_highlighted.update_layout(fig.layout)
+                            fig_highlighted.update_layout(
+                                title=f'🎯 Highlighting {highlighted_count} connections for: {selected_concept}'
+                            )
+                            
+                            # Add continuous spectrum legend
+                            st.info(
+                                "**🌈 Continuous Thermal Spectrum:**\n"
+                                "- 🟡 **Yellow**: Selected concept\n"
+                                "- 🔴 **Red**: Strongest connections - Hot/Active\n" 
+                                "- 🟠 **Orange**: Medium connections - Warm\n"
+                                "- 🔵 **Blue**: Weakest connections - Cool/Inactive\n"
+                                "- 🔘 **Gray**: Unconnected concepts\n"
+                                "- **Color bar**: Shows exact connection strength"
+                            )
+                            
+                            st.plotly_chart(fig_highlighted, use_container_width=True, key="highlighted_plot")
+                else:
+                    st.warning("No connections found in the network data. The plot shows concept positions only.")
         
         with tab3:
             st.subheader("Concept Mass Comparison")
