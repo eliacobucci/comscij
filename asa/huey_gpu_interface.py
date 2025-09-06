@@ -22,12 +22,27 @@ try:
     import jax
     import jax.numpy as jnp
     from jax import jit, vmap
+    import platform
+    
     JAX_AVAILABLE = True
     print("🚀 JAX acceleration available")
     print(f"   ✅ 64-bit precision enabled: {jnp.array(1.0).dtype}")
-except:
+    print(f"   🏗️  Architecture: {platform.machine()}")
+    print(f"   🔧 Available devices: {jax.devices()}")
+    
+    # Check for Apple Silicon JAX Metal support
+    if platform.machine() == 'arm64' and any('metal' in str(d).lower() for d in jax.devices()):
+        print("   🚀 JAX Metal GPU acceleration ENABLED!")
+    elif platform.machine() == 'x86_64':
+        print("   ⚠️  WARNING: Running x86_64 Python - JAX Metal GPU unavailable")
+        print("   💡 Use: arch -arm64 python3 or ./launch_huey_gpu_arm64.command")
+    else:
+        print("   💻 CPU acceleration enabled")
+        
+except Exception as e:
     JAX_AVAILABLE = False
     print("💻 Using high-performance NumPy vectorization")
+    print(f"   JAX error: {e}")
 
 class HueyGPUInterface:
     """
