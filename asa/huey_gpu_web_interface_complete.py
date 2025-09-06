@@ -593,9 +593,26 @@ def process_uploaded_file(uploaded_file, huey, timeout_hours=2.0, exchange_limit
                     st.warning(f"⚠️ STOPPED: Reached exchange limit of {exchange_limit}")
                     break
                 
-                # Process this exchange
+                # Process this exchange with timeout protection
                 try:
-                    huey.network.process_speaker_text(speaker_id, text)
+                    import signal
+                    
+                    def timeout_handler(signum, frame):
+                        raise TimeoutError(f"Exchange processing timeout")
+                    
+                    # Set 60-second timeout per exchange
+                    signal.signal(signal.SIGALRM, timeout_handler)
+                    signal.alarm(60)  # 60 seconds per exchange
+                    
+                    try:
+                        huey.network.process_speaker_text(speaker_id, text)
+                    finally:
+                        signal.alarm(0)  # Cancel timeout
+                        
+                except TimeoutError as e:
+                    st.error(f"⏰ Exchange {i+1} timeout - skipping problematic text")
+                    st.warning(f"   Problematic text preview: {text[:100]}...")
+                    continue  # Skip this exchange and continue
                 except Exception as e:
                     st.error(f"❌ Error processing exchange {i+1}: {str(e)}")
                     return {'error': f'Processing failed at exchange {i+1}: {str(e)}'}
