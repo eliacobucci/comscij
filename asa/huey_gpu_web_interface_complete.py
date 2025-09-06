@@ -593,29 +593,36 @@ def process_uploaded_file(uploaded_file, huey, timeout_hours=2.0, exchange_limit
                     st.warning(f"⚠️ STOPPED: Reached exchange limit of {exchange_limit}")
                     break
                 
-                # Process this exchange with timeout protection
+                # Process this exchange with safe error handling
                 try:
-                    import signal
+                    # Track processing time for this exchange
+                    exchange_start = time.time()
                     
-                    def timeout_handler(signum, frame):
-                        raise TimeoutError(f"Exchange processing timeout")
+                    # Limit text length to prevent memory issues
+                    if len(text) > 10000:  # 10k character limit per exchange
+                        text = text[:10000] + "..."
+                        st.warning(f"⚠️ Exchange {i+1} truncated (too long)")
                     
-                    # Set 60-second timeout per exchange
-                    signal.signal(signal.SIGALRM, timeout_handler)
-                    signal.alarm(60)  # 60 seconds per exchange
+                    # Safe processing with error recovery
+                    huey.network.process_speaker_text(speaker_id, text)
                     
-                    try:
-                        huey.network.process_speaker_text(speaker_id, text)
-                    finally:
-                        signal.alarm(0)  # Cancel timeout
+                    # Check for suspiciously long processing times
+                    exchange_time = time.time() - exchange_start
+                    if exchange_time > 30:  # Flag slow exchanges
+                        st.warning(f"⚠️ Exchange {i+1} took {exchange_time:.1f}s (slow)")
                         
-                except TimeoutError as e:
-                    st.error(f"⏰ Exchange {i+1} timeout - skipping problematic text")
-                    st.warning(f"   Problematic text preview: {text[:100]}...")
-                    continue  # Skip this exchange and continue
                 except Exception as e:
-                    st.error(f"❌ Error processing exchange {i+1}: {str(e)}")
-                    return {'error': f'Processing failed at exchange {i+1}: {str(e)}'}
+                    error_msg = str(e)
+                    st.error(f"❌ Error processing exchange {i+1}: {error_msg}")
+                    
+                    # For certain errors, try to continue processing
+                    if any(skip_error in error_msg.lower() for skip_error in ['memory', 'timeout', 'overflow', 'recursion']):
+                        st.warning(f"🔄 Skipping problematic exchange {i+1} and continuing...")
+                        st.info(f"   Text preview: {text[:100]}...")
+                        continue  # Skip this exchange but keep going
+                    else:
+                        # For other errors, stop processing
+                        return {'error': f'Processing failed at exchange {i+1}: {error_msg}'}
                 
                 # Update display every 10 exchanges to avoid too much UI updating
                 if (i + 1) % 10 == 0:
