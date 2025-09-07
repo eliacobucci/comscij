@@ -109,7 +109,9 @@ class HueyConversationalNetwork(ExperimentalNetwork):
             'self_concept_mass': self_concept_analysis['self_concept_mass']
         })
         
-        print(f"   Self-concept mass: {self_concept_analysis['self_concept_mass']:.3f}")
+        # Only print progress every 10 blocks to reduce noise
+        if speaker_info['blocks_processed'] % 10 == 0 or speaker_info['blocks_processed'] < 5:
+            print(f"   {speaker_name}: {self_concept_analysis['self_concept_mass']:.3f} mass ({speaker_info['blocks_processed']} blocks)")
         
         # Clear current speaker
         self.current_speaker = None
@@ -146,7 +148,7 @@ class HueyConversationalNetwork(ExperimentalNetwork):
         """Process text stream with speaker neuron included in all windows."""
         
         # Get or create speaker neuron
-        speaker_neuron_word = f"speaker_{self.current_speaker.lower()}"
+        speaker_neuron_word = self.current_speaker.lower()
         speaker_neuron_id = self._get_or_create_neuron(speaker_neuron_word)
         
         words = text.split()
@@ -155,14 +157,18 @@ class HueyConversationalNetwork(ExperimentalNetwork):
         for i in range(len(words) - self.window_size + 1):
             window = words[i:i + self.window_size]
             
-            # Add speaker neuron to this window's processing
+            # Create expanded window: speaker at position 0, then full text window
             window_neurons = []
+            
+            # Speaker neuron at position 0 (connects TO all words)
+            window_neurons.append(speaker_neuron_id)
+            
+            # Add the complete text window (maintaining full window_size)
             for word in window:
                 neuron_idx = self._get_or_create_neuron(word)
                 window_neurons.append(neuron_idx)
             
-            # Always include the speaker neuron in this window
-            window_neurons.append(speaker_neuron_id)
+            # Now window_neurons has length = window_size + 1
             
             # Apply activation decay to ALL neurons first (organic forgetting)
             self._apply_activation_decay()
@@ -179,8 +185,8 @@ class HueyConversationalNetwork(ExperimentalNetwork):
         speaker_info = self.speakers[speaker_name]
         self_pronouns = speaker_info['self_pronouns']
         
-        # Get the speaker-specific neuron
-        speaker_neuron_word = f"speaker_{speaker_name.lower()}"
+        # Get the speaker-specific neuron (created as lowercase speaker name)
+        speaker_neuron_word = speaker_name.lower()
         speaker_neuron_id = self.word_to_neuron.get(speaker_neuron_word)
         
         self_concept_mass = 0.0

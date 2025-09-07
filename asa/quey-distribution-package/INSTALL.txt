@@ -1,0 +1,35 @@
+QUEY INSTALLATION INSTRUCTIONS
+==============================
+
+GOOD NEWS: No installation required!
+
+TO USE QUEY:
+1. Double-click "quey.html" 
+2. It will open in your default browser
+3. Start creating questionnaires immediately
+
+ALTERNATIVE METHOD:
+- Open any web browser (Chrome, Safari, Firefox, Edge)
+- Drag "quey.html" into the browser window
+- Quey will load automatically
+
+SYSTEM REQUIREMENTS:
+- Any device with a web browser
+- No internet connection needed
+- Works on Windows, Mac, Linux, tablets, phones
+
+TROUBLESHOOTING:
+- If double-clicking doesn't work, try the drag method
+- Make sure you're opening quey.html (not this text file)
+- Any modern browser will work
+
+SHARING:
+- You can copy quey.html to any computer
+- Email it to colleagues
+- Put it on a USB drive
+- Share via cloud storage
+
+That's it! Enjoy using Quey.
+
+The Galileo Company
+support@galileocompany.com

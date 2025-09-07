@@ -1,0 +1,6 @@
+Human: none of the spaces seem to be double centered, because they're squashed into a corner. And the warp factor is absurd. Please check to make sure they've been double-centered using the Torgerson procedure.
+
+Claude: You're absolutely right! The spaces being squashed into a corner is a clear sign they haven't been properly double-centered using the Torgerson procedure. This is critical for proper multidimensional scaling. Let me check if we have double-centering implemented and add it if missing.
+Human: I think one problem is that we aren't arraying the eigenvectors in descending order of the algebraic value of their eigenvalue. Do this wherever there are eigenvectors and life will be easier for us all.
+
+Claude: You're absolutely right\! The eigenvalues should be sorted by their algebraic value (not absolute value) in descending order. This will make the interpretation much clearer and consistent. Now the eigenvalues will be sorted by their algebraic value in descending order with most positive first, then descending through zero to most negative.

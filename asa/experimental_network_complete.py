@@ -1,3 +1,5 @@
+import numpy as np
+
 class ExperimentalNetwork:
     """
     Experimental self-organizing single pass text neural network.
@@ -16,6 +18,7 @@ class ExperimentalNetwork:
         self.max_neurons = max_neurons
         self.processed_words = 0
         
+        
         # Neural network components
         self.word_to_neuron = {}  # Maps words to neuron indices
         self.neuron_to_word = {}  # Maps neuron indices to words
@@ -23,6 +26,11 @@ class ExperimentalNetwork:
         self.neuron_count = 0     # Total number of neurons
         self.connections = {}     # Synaptic connection matrix (dict for sparse storage)
         self.inertial_mass = {}   # Inertial mass for each connection (organic growth/resistance)
+        
+        # Sparse connectivity parameters (optimized for semantic analysis)
+        self.max_connections_per_neuron = 250  # Increased for richer semantic connections
+        self.connection_probability = 0.35  # Increased from 15% to 35% for conversation analysis
+        self.neuron_connections = {}  # Track outgoing connections per neuron
         
         # Self-concept tracking
         self.system_self_pronouns = {'you', 'your', 'yours', 'yourself'}  # System-directed pronouns
@@ -58,6 +66,11 @@ class ExperimentalNetwork:
         # Connection usage tracking for biologically accurate decay
         self.connection_last_active = {}  # Track when each connection was last active
         self.unused_decay_rate = 0.005    # Gentle decay for completely unused connections
+        
+        print(f"🧠 SPARSE CONNECTIVITY ENABLED:")
+        print(f"   Max connections per neuron: {self.max_connections_per_neuron}")
+        print(f"   Connection probability: {self.connection_probability*100:.1f}%")
+        print(f"   Expected ~{self.connection_probability*100:.0f}% connectivity (optimized for semantic analysis)")
         
     def process_text_stream(self, text):
         """
@@ -159,9 +172,18 @@ class ExperimentalNetwork:
         
         # Create/strengthen unidirectional connections based on sequential order
         # Earlier neurons in window connect to later neurons (temporal causality)
+        # Now using SPARSE CONNECTIVITY for brain-like efficiency
         for pos_i, i in enumerate(window_neurons):
             for pos_j, j in enumerate(window_neurons):
                 if pos_i < pos_j:  # Only create connections from earlier to later positions
+                    # Safety check: ensure neurons exist in activations
+                    if i not in self.activations or j not in self.activations:
+                        continue  # Skip if neurons don't exist
+                    
+                    # SPARSE CONNECTIVITY: Check if we should create/update this connection
+                    if not self._should_create_connection(i, j):
+                        continue  # Skip based on sparsity constraints
+                    
                     # Get activations
                     ai = self.activations[i]
                     aj = self.activations[j]
@@ -186,12 +208,16 @@ class ExperimentalNetwork:
                     mass_change = self._calculate_synaptic_mass_change(activity, current_mass)
                     new_mass = max(0.0, min(current_mass + mass_change, self.M_max))
                     
-                    # Store updated connection and mass
-                    self.connections[conn_key] = new_strength
-                    self.inertial_mass[conn_key] = new_mass
-                    
-                    # Track that this connection was active in current window
-                    self.connection_last_active[conn_key] = self.processed_words
+                    # Store updated connection using sparse connectivity manager
+                    self._add_sparse_connection(i, j, new_strength, new_mass)
+        
+        # Periodically prune weak connections to maintain sparsity
+        if self.processed_words % 100 == 0:  # Every 100 words
+            pruned_count = self._prune_weak_connections(threshold=0.01)
+            if pruned_count > 0:
+                # Only log significant pruning events to reduce noise
+                if pruned_count >= 5 or (pruned_count > 0 and self.processed_words % 100 == 0):
+                    print(f"              PRUNED: {pruned_count} weak connections (maintaining sparsity)")
     
     def _calculate_synaptic_mass_change(self, activity, current_mass):
         """
@@ -364,6 +390,111 @@ class ExperimentalNetwork:
                 del self.connections[conn_key]
             if conn_key in self.inertial_mass:
                 del self.inertial_mass[conn_key]
+        
+        # Remove from sparse connectivity tracking
+        if neuron_idx in self.neuron_connections:
+            del self.neuron_connections[neuron_idx]
+        
+        # Remove references to this neuron from other neurons' connection lists
+        for other_neuron in self.neuron_connections:
+            self.neuron_connections[other_neuron].discard(neuron_idx)
+    
+    def _should_create_connection(self, neuron_i, neuron_j):
+        """
+        Decide whether to create a connection between two neurons using sparse connectivity rules.
+        
+        Args:
+            neuron_i (int): Source neuron index
+            neuron_j (int): Target neuron index
+            
+        Returns:
+            bool: True if connection should be created
+        """
+        import random
+        
+        # Don't create self-connections
+        if neuron_i == neuron_j:
+            return False
+            
+        # Check if connection already exists
+        if (neuron_i, neuron_j) in self.connections:
+            return True  # Already exists, allow update
+            
+        # Initialize connection tracking for new neurons
+        if neuron_i not in self.neuron_connections:
+            self.neuron_connections[neuron_i] = set()
+        if neuron_j not in self.neuron_connections:
+            self.neuron_connections[neuron_j] = set()
+            
+        # Check if either neuron is a speaker neuron (speakers should have unlimited connections)
+        word_i = self.neuron_to_word.get(neuron_i, '')
+        word_j = self.neuron_to_word.get(neuron_j, '')
+        is_speaker_connection = word_i.startswith('speaker_') or word_j.startswith('speaker_')
+        
+        # Check if source neuron has reached connection limit (except for speaker neurons)
+        if not is_speaker_connection and len(self.neuron_connections[neuron_i]) >= self.max_connections_per_neuron:
+            return False
+            
+        # Probabilistic connection formation (brain-like sparsity) - always allow speaker connections
+        if not is_speaker_connection and random.random() > self.connection_probability:
+            return False
+            
+        return True
+    
+    def _add_sparse_connection(self, neuron_i, neuron_j, strength, mass):
+        """
+        Add a connection respecting sparse connectivity constraints.
+        
+        Args:
+            neuron_i (int): Source neuron
+            neuron_j (int): Target neuron  
+            strength (float): Connection strength
+            mass (float): Connection mass
+        """
+        conn_key = (neuron_i, neuron_j)
+        
+        # Add to connection matrices
+        self.connections[conn_key] = strength
+        self.inertial_mass[conn_key] = mass
+        self.connection_last_active[conn_key] = self.processed_words
+        
+        # Track in sparse connectivity structures
+        if neuron_i not in self.neuron_connections:
+            self.neuron_connections[neuron_i] = set()
+        self.neuron_connections[neuron_i].add(neuron_j)
+    
+    def _prune_weak_connections(self, threshold=0.01):
+        """
+        Remove weak connections to maintain sparsity (brain-like pruning).
+        
+        Args:
+            threshold (float): Minimum strength to keep connection
+        
+        Returns:
+            int: Number of connections pruned
+        """
+        connections_to_remove = []
+        
+        for conn_key, strength in self.connections.items():
+            if abs(strength) < threshold:
+                connections_to_remove.append(conn_key)
+        
+        # Remove weak connections
+        for conn_key in connections_to_remove:
+            neuron_i, neuron_j = conn_key
+            
+            # Remove from all tracking structures
+            del self.connections[conn_key]
+            if conn_key in self.inertial_mass:
+                del self.inertial_mass[conn_key]
+            if conn_key in self.connection_last_active:
+                del self.connection_last_active[conn_key]
+                
+            # Update neuron connection tracking
+            if neuron_i in self.neuron_connections:
+                self.neuron_connections[neuron_i].discard(neuron_j)
+        
+        return len(connections_to_remove)
     
     def _decay_all_connections(self, window_neurons):
         """
@@ -1831,6 +1962,7 @@ class ExperimentalNetwork:
         
         return coords
 
+    
 
     def process_conversational_text(self, text):
         """

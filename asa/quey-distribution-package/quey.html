@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quey - Questionnaire Generator</title>
+    <style>
+        body {
+            font-family: 'Times New Roman', 'Georgia', serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c5aa0;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            margin-bottom: 30px;
+        }
+        .input-section {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        input[type="text"], textarea, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 120px;
+            font-family: monospace;
+        }
+        .concept-inputs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .button {
+            background-color: #2c5aa0;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        .button:hover {
+            background-color: #1e3d6f;
+        }
+        .button.secondary {
+            background-color: #6c757d;
+        }
+        .button.secondary:hover {
+            background-color: #545b62;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            background-color: #e7f3ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .stat {
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c5aa0;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+        .questionnaire-preview {
+            background-color: #fff;
+            border: 2px solid #dee2e6;
+            padding: 20px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            font-family: 'Times New Roman', 'Georgia', serif;
+            font-size: 14px;
+            line-height: 1.6;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .question-pair {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            padding: 2px 0;
+        }
+        .question-text {
+            flex-grow: 1;
+        }
+        .answer-box {
+            border: 1px solid #333;
+            width: 60px;
+            height: 20px;
+            margin-left: 10px;
+            display: inline-block;
+        }
+        .block-header {
+            font-weight: bold;
+            margin-top: 20px;
+            margin-bottom: 5px;
+            color: #2c5aa0;
+        }
+        .block-subheader {
+            font-style: italic;
+            margin-bottom: 10px;
+            color: #666;
+        }
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .alert-warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        .alert-info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .instructions-box {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-left: 4px solid #2c5aa0;
+            margin-bottom: 20px;
+        }
+        .tab-buttons {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .tab-button {
+            padding: 10px 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+        .tab-button.active {
+            border-bottom-color: #2c5aa0;
+            color: #2c5aa0;
+            font-weight: bold;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📋 Quey</h1>
+        <p class="subtitle">Create paired comparison questionnaires for multidimensional scaling research</p>
+        
+        <div class="input-section">
+            <h3>📋 Questionnaire Setup</h3>
+            
+            <div class="tab-buttons">
+                <button class="tab-button active" onclick="switchTab('manual')">Type Concepts</button>
+                <button class="tab-button" onclick="switchTab('paste')">Paste List</button>
+            </div>
+            
+            <div id="manual-tab" class="tab-content active">
+                <div class="input-group">
+                    <label>Enter Concepts (one per box):</label>
+                    <div class="concept-inputs" id="conceptInputs">
+                        <input type="text" placeholder="Concept 1" value="physics">
+                        <input type="text" placeholder="Concept 2" value="chemistry">
+                        <input type="text" placeholder="Concept 3" value="biology">
+                    </div>
+                    <button class="button secondary" onclick="addConcept()">➕ Add Concept</button>
+                    <button class="button secondary" onclick="removeConcept()">➖ Remove Last</button>
+                </div>
+            </div>
+            
+            <div id="paste-tab" class="tab-content">
+                <div class="input-group">
+                    <label>Paste Concepts (one per line):</label>
+                    <textarea id="conceptList" placeholder="physics&#10;chemistry&#10;biology&#10;mathematics&#10;psychology">physics
+chemistry
+biology
+mathematics
+psychology</textarea>
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <label>Reference Pair (for "100 units apart" example):</label>
+                <select id="refConcept1" style="width: 48%; display: inline-block; margin-right: 4%;">
+                    <option value="">Choose first concept...</option>
+                </select>
+                <select id="refConcept2" style="width: 48%; display: inline-block;">
+                    <option value="">Choose second concept...</option>
+                </select>
+            </div>
+            
+            <div class="input-group">
+                <label>
+                    <input type="checkbox" id="includeNumbers" checked> Include question numbers
+                </label>
+            </div>
+            
+            <button class="button" onclick="generateQuestionnaire()">🔍 Generate Questionnaire</button>
+        </div>
+        
+        <div id="results" style="display: none;">
+            <div class="stats" id="stats"></div>
+            
+            <div class="instructions-box">
+                <h4>📋 Generated Questionnaire</h4>
+                <div class="questionnaire-preview" id="questionnairePreview"></div>
+            </div>
+            
+            <div class="export-buttons">
+                <button class="button" onclick="downloadText()">📄 Download Text File</button>
+                <button class="button" onclick="downloadCSV()">📊 Download CSV File</button>
+                <button class="button secondary" onclick="copyToClipboard()">📋 Copy to Clipboard</button>
+                <button class="button secondary" onclick="printQuestionnaire()">🖨️ Print</button>
+            </div>
+            
+            <div class="alert alert-info">
+                <strong>Instructions for Use:</strong><br>
+                • <strong>Text File:</strong> Ready for printing or email<br>
+                • <strong>CSV File:</strong> Perfect for online surveys or data entry<br>
+                • <strong>Print:</strong> Direct printing with clean formatting<br>
+                • <strong>Reference Pair:</strong> <span id="referencePairInfo"></span> = 100 units
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let generatedText = '';
+        let concepts = [];
+        let pairs = [];
+
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function addConcept() {
+            const container = document.getElementById('conceptInputs');
+            const newInput = document.createElement('input');
+            newInput.type = 'text';
+            newInput.placeholder = `Concept ${container.children.length + 1}`;
+            container.appendChild(newInput);
+            updateReferenceSelects();
+        }
+
+        function removeConcept() {
+            const container = document.getElementById('conceptInputs');
+            if (container.children.length > 2) {
+                container.removeChild(container.lastChild);
+                updateReferenceSelects();
+            }
+        }
+
+        function getConcepts() {
+            const activeTab = document.querySelector('.tab-content.active');
+            if (activeTab.id === 'manual-tab') {
+                const inputs = document.querySelectorAll('#conceptInputs input');
+                return Array.from(inputs).map(input => input.value.trim()).filter(val => val);
+            } else {
+                const textarea = document.getElementById('conceptList');
+                return textarea.value.split('\n').map(line => line.trim()).filter(line => line);
+            }
+        }
+
+        function updateReferenceSelects() {
+            const concepts = getConcepts();
+            const select1 = document.getElementById('refConcept1');
+            const select2 = document.getElementById('refConcept2');
+            
+            const currentValue1 = select1.value;
+            const currentValue2 = select2.value;
+            
+            // Clear options
+            select1.innerHTML = '<option value="">Choose first concept...</option>';
+            select2.innerHTML = '<option value="">Choose second concept...</option>';
+            
+            // Add concept options
+            concepts.forEach(concept => {
+                const option1 = document.createElement('option');
+                option1.value = concept;
+                option1.textContent = concept;
+                select1.appendChild(option1);
+                
+                const option2 = document.createElement('option');
+                option2.value = concept;
+                option2.textContent = concept;
+                select2.appendChild(option2);
+            });
+            
+            // Restore previous selections if still valid
+            if (concepts.includes(currentValue1)) select1.value = currentValue1;
+            if (concepts.includes(currentValue2)) select2.value = currentValue2;
+        }
+
+        function generateAllPairs(conceptList) {
+            const pairs = [];
+            for (let i = 0; i < conceptList.length; i++) {
+                for (let j = i + 1; j < conceptList.length; j++) {
+                    pairs.push([conceptList[i], conceptList[j]]);
+                }
+            }
+            return pairs;
+        }
+
+        function generateQuestionnaire() {
+            concepts = getConcepts();
+            
+            if (concepts.length < 2) {
+                alert('Please enter at least 2 concepts to generate a questionnaire.');
+                return;
+            }
+            
+            const refConcept1 = document.getElementById('refConcept1').value;
+            const refConcept2 = document.getElementById('refConcept2').value;
+            const includeNumbers = document.getElementById('includeNumbers').checked;
+            
+            if (!refConcept1 || !refConcept2) {
+                alert('Please select both concepts for the reference pair.');
+                return;
+            }
+            
+            if (refConcept1 === refConcept2) {
+                alert('Please select two different concepts for the reference pair.');
+                return;
+            }
+            
+            // Generate pairs
+            pairs = generateAllPairs(concepts);
+            
+            // Create questionnaire text with HTML formatting
+            const timestamp = new Date().toLocaleString();
+            const instructions = `QUEY QUESTIONNAIRE
+Generated: ${timestamp}
+
+INSTRUCTIONS:
+Please estimate how different or "far apart" the following pairs of words are. 
+If they are not different at all, say zero (0). If they are different, say a 
+larger number. You can say any number you want. To help you know what number 
+to write, remember, ${refConcept1.toUpperCase()} and ${refConcept2.toUpperCase()} are 100 units apart.
+
+`;
+            
+            // Create questionnaire with blocks of 7 questions
+            let questionsHTML = '';
+            let questionsText = '';
+            const blockSize = 7;
+            
+            for (let blockStart = 0; blockStart < pairs.length; blockStart += blockSize) {
+                const blockEnd = Math.min(blockStart + blockSize, pairs.length);
+                const blockPairs = pairs.slice(blockStart, blockEnd);
+                
+                // Add block header
+                const blockHeader = `Remember, ${refConcept1.toUpperCase()} and ${refConcept2.toUpperCase()} are 100 units apart.`;
+                const blockSubheader = `How far apart are:`;
+                
+                questionsHTML += `<div class="block-header">${blockHeader}</div>`;
+                questionsHTML += `<div class="block-subheader">${blockSubheader}</div>`;
+                
+                questionsText += `\n${blockHeader}\n${blockSubheader}\n`;
+                
+                // Add questions in this block
+                blockPairs.forEach((pair, index) => {
+                    const questionNumber = blockStart + index + 1;
+                    const questionText = includeNumbers ? 
+                        `${questionNumber.toString().padStart(2, ' ')}. ${pair[0]} — ${pair[1]}` :
+                        `${pair[0]} — ${pair[1]}`;
+                    
+                    questionsHTML += `<div class="question-pair">
+                        <span class="question-text">${questionText}</span>
+                        <span class="answer-box"></span>
+                    </div>`;
+                    
+                    questionsText += `${questionText}  _____\n`;
+                });
+                
+                questionsHTML += '<br>';
+                questionsText += '\n';
+            }
+            
+            const footer = `Total pairs: ${pairs.length}\nConcepts: ${concepts.length}`;
+            
+            generatedText = instructions + questionsText + footer;
+            
+            // Update display with HTML formatting for preview
+            const previewHTML = `<div style="font-family: 'Times New Roman', serif; line-height: 1.6;">
+                <div style="white-space: pre-line; margin-bottom: 20px;">${instructions}</div>
+                ${questionsHTML}
+                <div style="margin-top: 20px; font-size: 12px; color: #666;">${footer}</div>
+            </div>`;
+            
+            document.getElementById('questionnairePreview').innerHTML = previewHTML;
+            
+            // Update stats
+            const estimatedTime = (pairs.length * 0.5).toFixed(1);
+            document.getElementById('stats').innerHTML = `
+                <div class="stat">
+                    <div class="stat-number">${concepts.length}</div>
+                    <div class="stat-label">Concepts</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">${pairs.length}</div>
+                    <div class="stat-label">Question Pairs</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">${estimatedTime}</div>
+                    <div class="stat-label">Est. Time (min)</div>
+                </div>
+            `;
+            
+            // Update reference pair info
+            document.getElementById('referencePairInfo').textContent = `${refConcept1} and ${refConcept2}`;
+            
+            // Show results
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function downloadText() {
+            if (!generatedText) return;
+            
+            const blob = new Blob([generatedText], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `galileo_questionnaire_${new Date().toISOString().slice(0, 16).replace(/[-:]/g, '').replace('T', '_')}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        function downloadCSV() {
+            if (pairs.length === 0) return;
+            
+            let csvContent = 'Question_Number,Concept_1,Concept_2,Response\n';
+            pairs.forEach((pair, index) => {
+                csvContent += `${index + 1},"${pair[0]}","${pair[1]}",""\n`;
+            });
+            
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `galileo_data_${new Date().toISOString().slice(0, 16).replace(/[-:]/g, '').replace('T', '_')}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        function copyToClipboard() {
+            if (!generatedText) return;
+            
+            navigator.clipboard.writeText(generatedText).then(() => {
+                alert('Questionnaire copied to clipboard!');
+            }).catch(err => {
+                // Fallback for older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = generatedText;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                alert('Questionnaire copied to clipboard!');
+            });
+        }
+
+        function printQuestionnaire() {
+            if (!generatedText) return;
+            
+            // Get the current HTML content from preview
+            const previewContent = document.getElementById('questionnairePreview').innerHTML;
+            
+            const printWindow = window.open('', '', 'height=600,width=800');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Quey Questionnaire</title>
+                    <style>
+                        body { 
+                            font-family: 'Times New Roman', 'Georgia', serif; 
+                            margin: 20px; 
+                            line-height: 1.6; 
+                        }
+                        .question-pair {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            margin-bottom: 8px;
+                            padding: 2px 0;
+                        }
+                        .question-text {
+                            flex-grow: 1;
+                        }
+                        .answer-box {
+                            border: 1px solid #333;
+                            width: 60px;
+                            height: 20px;
+                            margin-left: 10px;
+                            display: inline-block;
+                        }
+                        .block-header {
+                            font-weight: bold;
+                            margin-top: 20px;
+                            margin-bottom: 5px;
+                        }
+                        .block-subheader {
+                            font-style: italic;
+                            margin-bottom: 10px;
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${previewContent}
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.focus();
+            printWindow.print();
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateReferenceSelects();
+            
+            // Add event listeners for live updates
+            document.getElementById('conceptList').addEventListener('input', updateReferenceSelects);
+            document.getElementById('conceptInputs').addEventListener('input', updateReferenceSelects);
+        });
+    </script>
+</body>
+</html>

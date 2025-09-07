@@ -1,0 +1,22 @@
+# Huey Alpha Package Manifest
+Created: 2025-08-31 16:23:44
+Version: Alpha 0.1
+Target: Galileo Company Internal Testing
+
+## Contents:
+Core Files: 30 files
+Test Data: 2 files  
+Documentation: 6 files
+Troubleshooting: 2 files
+
+## Installation:
+1. Extract package
+2. Run: python install.py
+3. Follow installation guide
+
+## Testing:
+- Reference HUEY_ALPHA_TESTER_GUIDE.md
+- Use alpha_testing_checklist.md
+- Report weekly to development team
+
+Confidential - Galileo Company Only

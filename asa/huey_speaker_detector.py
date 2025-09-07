@@ -9,6 +9,11 @@ Copyright (c) 2025 Emary Iacobucci and Joseph Woelfel. All rights reserved.
 import re
 from typing import List, Tuple, Dict, Optional
 from collections import defaultdict
+try:
+    import PyPDF2
+    PDF_AVAILABLE = True
+except ImportError:
+    PDF_AVAILABLE = False
 
 class HueySpeakerDetector:
     """
@@ -16,27 +21,32 @@ class HueySpeakerDetector:
     Supports multiple common conversation formats.
     """
     
-    def __init__(self):
-        """Initialize the speaker detector."""
+    def __init__(self, conversation_mode: bool = True):
+        """Initialize the speaker detector.
+        
+        Args:
+            conversation_mode: If False, disables automatic speaker detection for non-conversational texts
+        """
         self.detected_speakers = set()
         self.conversation_data = []
+        self.conversation_mode = conversation_mode
         
         # Common speaker identification patterns
         self.patterns = [
             # "Speaker: text" or "Speaker - text"
-            r'^([A-Za-z][A-Za-z0-9_\s]*?):\s*(.+)$',
-            r'^([A-Za-z][A-Za-z0-9_\s]*?)\s*-\s*(.+)$',
+            r'^([A-Za-z][A-Za-z0-9_\s\-]*?):\s*(.+)$',
+            r'^([A-Za-z][A-Za-z0-9_\s\-]*?)\s*-\s*(.+)$',
             
             # "[Speaker] text" or "(Speaker) text"
-            r'^\[([A-Za-z][A-Za-z0-9_\s]*?)\]\s*(.+)$',
-            r'^\(([A-Za-z][A-Za-z0-9_\s]*?)\)\s*(.+)$',
+            r'^\[([A-Za-z][A-Za-z0-9_\s\-]*?)\]\s*(.+)$',
+            r'^\(([A-Za-z][A-Za-z0-9_\s\-]*?)\)\s*(.+)$',
             
             # "Speaker> text" or "> Speaker: text"
-            r'^([A-Za-z][A-Za-z0-9_\s]*?)>\s*(.+)$',
-            r'^>\s*([A-Za-z][A-Za-z0-9_\s]*?):\s*(.+)$',
+            r'^([A-Za-z][A-Za-z0-9_\s\-]*?)>\s*(.+)$',
+            r'^>\s*([A-Za-z][A-Za-z0-9_\s\-]*?):\s*(.+)$',
             
             # Chat-style formats like "12:34 Speaker: text"
-            r'^\d{1,2}:\d{2}\s+([A-Za-z][A-Za-z0-9_\s]*?):\s*(.+)$',
+            r'^\d{1,2}:\d{2}\s+([A-Za-z][A-Za-z0-9_\s\-]*?):\s*(.+)$',
             
             # Numbered speakers "1. text" with context
             r'^(\d+)\.\s*(.+)$',
@@ -68,15 +78,46 @@ class HueySpeakerDetector:
         print(f"\n📄 ANALYZING FILE: {filename}")
         print("-" * 50)
         
+        # Check if conversation mode is disabled
+        if not self.conversation_mode:
+            print("🚫 CONVERSATION MODE DISABLED")
+            print("   Treating as single-author text, not a conversation")
+            
+            try:
+                if filename.lower().endswith('.pdf'):
+                    content = self._extract_pdf_text(filename)
+                else:
+                    with open(filename, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                
+                return {
+                    'strategy': 'single_author',
+                    'confidence': 1.0,
+                    'speakers': ['Author'],
+                    'conversation': [('Author', content)]
+                }
+            except Exception as e:
+                return {'error': f"Error reading file: {str(e)}"}
+        
+        
         try:
-            with open(filename, 'r', encoding='utf-8') as f:
-                content = f.read()
+            if filename.lower().endswith('.pdf'):
+                content = self._extract_pdf_text(filename)
+            else:
+                with open(filename, 'r', encoding='utf-8') as f:
+                    content = f.read()
         except FileNotFoundError:
             return {'error': f"File not found: {filename}"}
         except Exception as e:
             return {'error': f"Error reading file: {str(e)}"}
         
+        # Cheeky preprocessing: repeat speaker names on continuation lines
+        content = self._add_speaker_to_continuation_lines(content)
+        
         # Handle line breaks between speaker and text - more aggressive approach
+        # First, handle the specific "Speaker: ActualName" format
+        content = re.sub(r'^Speaker:\s*([A-Za-z][A-Za-z0-9_\s\-]*?)\s*\n+\s*([^\n]+)', r'\1: \2', content, flags=re.MULTILINE)
+        
         # Convert "Speaker:\n text" to "Speaker: text"
         content = re.sub(r'([A-Za-z][A-Za-z0-9_\s]{1,20}?):\s*\n+\s*([^\n]+)', r'\1: \2', content, flags=re.MULTILINE)
         content = re.sub(r'([A-Za-z][A-Za-z0-9_\s]{1,20}?)\s*-\s*\n+\s*([^\n]+)', r'\1 - \2', content, flags=re.MULTILINE)
@@ -145,7 +186,7 @@ class HueySpeakerDetector:
                     # Clean speaker name
                     speaker = self._clean_speaker_name(speaker)
                     
-                    if text and len(speaker) <= 20:  # Reasonable speaker name length
+                    if text and len(speaker) <= 20 and self._is_valid_speaker_name(speaker, text):
                         conversation.append((speaker, text))
                         speakers.add(speaker)
                         matches += 1
@@ -292,13 +333,14 @@ class HueySpeakerDetector:
         
         return suggestions
     
-    def process_conversation_file(self, filename: str, force_speakers: List[str] = None) -> Dict:
+    def process_conversation_file(self, filename: str, force_speakers: List[str] = None, conversation_mode: bool = None) -> Dict:
         """
         Complete processing of a conversation file for Huey.
         
         Args:
             filename: Path to conversation file
             force_speakers: Optional list to force specific speaker names
+            conversation_mode: If provided, overrides instance conversation_mode setting
             
         Returns:
             Processed data ready for Huey
@@ -306,8 +348,18 @@ class HueySpeakerDetector:
         print(f"\n🔄 PROCESSING CONVERSATION FILE: {filename}")
         print("=" * 60)
         
+        # Override conversation mode if provided
+        if conversation_mode is not None:
+            original_mode = self.conversation_mode
+            self.conversation_mode = conversation_mode
+            print(f"   Conversation mode: {'enabled' if conversation_mode else 'disabled (single-author mode)'}")
+        
         # Detect speakers automatically
         detection_result = self.detect_speakers_from_file(filename)
+        
+        # Restore original conversation mode if it was overridden
+        if conversation_mode is not None:
+            self.conversation_mode = original_mode
         
         if 'error' in detection_result:
             return detection_result
@@ -353,6 +405,73 @@ class HueySpeakerDetector:
         print(f"   Detection confidence: {detection_result['confidence']:.2f}")
         
         return huey_ready
+    
+    def _add_speaker_to_continuation_lines(self, content):
+        """Add speaker names to continuation lines for better detection."""
+        lines = content.split('\n')
+        processed_lines = []
+        current_speaker = None
+        
+        for line in lines:
+            # Check if this line starts with a speaker pattern
+            if ':' in line:
+                potential_speaker = line.split(':')[0].strip()
+                if potential_speaker.isalpha() and len(potential_speaker) > 1:
+                    current_speaker = potential_speaker
+                    processed_lines.append(line)
+                    continue
+            
+            # If we have a current speaker and this line has content, add speaker prefix
+            if current_speaker and line.strip():
+                processed_lines.append(f"{current_speaker}: {line.strip()}")
+            else:
+                processed_lines.append(line)
+        
+        return '\n'.join(processed_lines)
+    
+    def _extract_pdf_text(self, filename: str) -> str:
+        """Extract text content from a PDF file."""
+        if not PDF_AVAILABLE:
+            raise ImportError("PyPDF2 not available. Install with: pip install PyPDF2")
+        
+        text_content = ""
+        with open(filename, 'rb') as file:
+            pdf_reader = PyPDF2.PdfReader(file)
+            for page in pdf_reader.pages:
+                text_content += page.extract_text() + "\n"
+        
+        return text_content
+    
+    def _is_valid_speaker_name(self, speaker: str, text: str) -> bool:
+        """Check if this is a valid conversational speaker name."""
+        # Filter out metadata and instruction patterns
+        metadata_patterns = [
+            r'these lines do not exist',
+            r'version',
+            r'buffer',
+            r'official',
+            r'experiment',
+            r'inspection',
+            r'proceed',
+            r'instruction',
+            r'note:',
+            r'warning:',
+            r'error:',
+            r'debug:',
+            r'status:',
+            r'result:'
+        ]
+        
+        text_lower = text.lower()
+        for pattern in metadata_patterns:
+            if re.search(pattern, text_lower):
+                return False
+        
+        # Valid speaker names are typically proper nouns or common names
+        if speaker.lower() in ['key', 'note', 'warning', 'error', 'debug', 'status', 'result']:
+            return False
+            
+        return True
 
 def demo_speaker_detection():
     """Demonstrate speaker detection with sample text."""

@@ -354,9 +354,18 @@ if 'query_cache' not in st.session_state:
 if 'last_cache_clear' not in st.session_state:
     st.session_state.last_cache_clear = time.time()
 
-def initialize_huey_gpu(max_neurons, window_size, learning_rate, use_gpu_acceleration=True):
-    """Initialize GPU-accelerated Huey platform with given parameters"""
+def initialize_huey_gpu(max_neurons, window_size, learning_rate, use_gpu_acceleration=True, exchange_count=None):
+    """Initialize GPU-accelerated Huey platform with intelligent acceleration selection"""
     session_name = f"gpu_session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    
+    # Intelligent acceleration selection if exchange count is provided
+    if exchange_count is not None:
+        recommendation = recommend_acceleration_method(exchange_count)
+        auto_gpu_selection = 'JAX Metal GPU' in recommendation['method']
+        
+        if auto_gpu_selection != use_gpu_acceleration:
+            st.info(f"🤖 **Auto-selecting acceleration:** {recommendation['icon']} {recommendation['method']}")
+            use_gpu_acceleration = auto_gpu_selection
     
     # Create GPU-accelerated network
     gpu_network = HueyGPUConversationalNetwork(
@@ -411,6 +420,41 @@ def load_previous_session(filename, huey):
     except Exception as e:
         st.error(f"Error loading session: {e}")
         return False
+
+def recommend_acceleration_method(exchange_count: int) -> Dict[str, str]:
+    """
+    Recommend acceleration method based on benchmarked performance data.
+    
+    Based on actual JAX Metal vs NumPy benchmarks:
+    - Crossover point: 25 exchanges (JAX becomes 1.42x faster)
+    - Large files (≥25): JAX provides 3-16x speedups
+    - Small files (<25): NumPy is faster or equivalent
+    """
+    
+    CROSSOVER_POINT = 25  # Empirically determined from benchmark
+    
+    if exchange_count < CROSSOVER_POINT:
+        return {
+            'method': 'NumPy (CPU)',
+            'reason': f'NumPy is faster for small files (<{CROSSOVER_POINT} exchanges)',
+            'performance': 'Optimal for small files',
+            'icon': '💻'
+        }
+    else:
+        # Estimate speedup based on benchmark data
+        if exchange_count < 200:
+            speedup = "1.4-3.3x faster"
+        elif exchange_count < 500:
+            speedup = "3-15x faster"  
+        else:
+            speedup = "15-16x faster"
+            
+        return {
+            'method': 'JAX Metal GPU',
+            'reason': f'JAX GPU acceleration provides {speedup} performance',
+            'performance': f'Expected {speedup} vs NumPy',
+            'icon': '🚀'
+        }
 
 def process_uploaded_file(uploaded_file, huey, timeout_hours=2.0, exchange_limit=10000, conversation_mode=True):
     """Process uploaded conversation file (TXT or PDF)"""
@@ -510,6 +554,52 @@ def process_uploaded_file(uploaded_file, huey, timeout_hours=2.0, exchange_limit
             # Normalize result structure to include detection_confidence at top level
             result['detection_confidence'] = detection_confidence
             result['detection_strategy'] = result.get('detection_info', {}).get('strategy', 'unknown')
+        
+        # INTELLIGENT GPU ACCELERATION RECOMMENDATION
+        total_exchanges = len(result['conversation_data'])
+        recommendation = recommend_acceleration_method(total_exchanges)
+        
+        st.markdown("---")
+        st.subheader("🧠 Intelligent Acceleration Recommendation")
+        
+        col1, col2 = st.columns([3, 2])
+        with col1:
+            st.info(f"""
+            **📊 File Analysis:**
+            - **Exchanges to process:** {total_exchanges:,}
+            - **Recommended method:** {recommendation['icon']} {recommendation['method']}
+            - **Reason:** {recommendation['reason']}
+            - **Performance:** {recommendation['performance']}
+            """)
+        
+        with col2:
+            if recommendation['method'] == 'JAX Metal GPU':
+                st.success("🚀 **JAX GPU Recommended**")
+                st.write("Your file is large enough to benefit from GPU acceleration!")
+            else:
+                st.info("💻 **NumPy CPU Recommended**")
+                st.write("NumPy will be faster for this file size.")
+        
+        # Auto-optimize acceleration method if current setup is suboptimal
+        current_gpu_enabled = getattr(huey.network, 'use_gpu_acceleration', False) if hasattr(huey, 'network') else False
+        recommended_gpu = 'JAX Metal GPU' in recommendation['method']
+        
+        if current_gpu_enabled != recommended_gpu:
+            st.warning(f"🔄 **Auto-optimizing acceleration method for this file size...**")
+            
+            # Re-initialize with optimal acceleration method
+            huey_optimal = initialize_huey_gpu(
+                huey.network.max_neurons,
+                huey.network.window_size, 
+                huey.network.learning_rate,
+                recommended_gpu,
+                total_exchanges
+            )
+            
+            # Replace current huey instance with optimized version
+            huey = huey_optimal
+        
+        st.markdown("---")
         
         # Register speakers and process conversation with monitoring
         huey.register_speakers(result['speakers_info'])

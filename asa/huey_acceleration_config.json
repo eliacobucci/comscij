@@ -1,0 +1,20 @@
+{
+  "intelligent_acceleration": true,
+  "crossover_point": 25,
+  "acceleration_thresholds": {
+    "small_file": {
+      "max_exchanges": 24,
+      "method": "numpy",
+      "reason": "NumPy faster for small files"
+    },
+    "large_file": {
+      "min_exchanges": 25,
+      "method": "jax",
+      "reason": "JAX GPU acceleration beneficial for large files"
+    }
+  },
+  "benchmark_metadata": {
+    "timestamp": "2025-09-06T19:58:45.384656",
+    "jax_available": true
+  }
+}

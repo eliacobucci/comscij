@@ -1,0 +1,303 @@
+
+
+                STAR TREK: THE NEXT GENERATION 
+
+                        "The Naked Now" 
+                          #40271-103 
+
+                          Teleplay by 
+                          D.C. Fontana                               
+
+                           Story by                                
+                         D.C. Fontana                               
+                             and                                   
+                       Gene Roddenberry                            
+
+             Based on a story by John D.F. Black                   
+                         (May 12, 1967)                             
+
+	Copyright 1987 Paramount Pictures Corporation. All Rights
+	Reserved.
+
+	This script is not for publication or reproduction. No one
+	is authorized to dispose of same. If lost or destroyed,
+	please notify the Script Department.
+
+
+                    REVISED FINAL DRAFT
+                    
+                      June 26, 1987
+
+
+                STAR TREK: THE NEXT GENERATION                  
+                           "The Naked Now"    
+                         
+                             CAST                               
+
+                PICARD             SARAH MACDOUGAL
+                RIKER              JIM SHIMODA
+                DATA               CREWMAN (2)
+                TROI               CREWWOMAN
+                BEVERLY            SECURITY GUARD
+                TASHA              TRANSPORTER CHIEF
+                WORF               CONN
+                GEORDI
+                WESLEY
+
+
+              STAR TREK: THE NEXT GENERATION                  
+                      "The Naked Now"  
+                           
+                             SETS                               
+
+            INTERIORS               EXTERIORS
+            U.S.S. ENTERPRISE       (all opticals)
+             Main Bridge
+             Transporter Room
+             Crusher's Office
+             Sickbay
+             Various Corridors
+             Engineering
+             Engineer's Office
+             Tasha's Quarters
+             Troi's Quarters
+
+            S.S. TSIOLKOVSKY
+             Main Corridor
+             Second Corridor
+             Bridge
+             Personnel Quarters
+             Bathroom
+             Lab
+
+
+
+              STAR TREK: "The Naked Now" - REV. 7/1/87                
+
+                  STAR TREK: THE NEXT GENERATION                     
+                        "The Naked Now"  
+                           
+                            TEASER                              
+
+	FADE IN:
+
+1    EXT. SPACE - ENTERPRISE (OPTICAL)
+
+	racing through space at warp speed.
+
+					PICARD (V.O.)
+			Captain's log, Stardate 41209.2.
+			We are running at Warp 7 to
+			rendezvous with the science vessel
+			S. S. Tsiolkovsky...
+
+2    FULL ON WHITE DWARF (OPTICAL)
+
+	with the S.S. Tsiolkovsky in orbit. Then the Enterprise
+	appears and moves in to join the research vessel.
+
+					PICARD (V.O.)
+				(continuing)
+			... which has been routinely
+			monitoring the collapse of a red
+			supergiant star into a white
+			dwarf. What has brought us here
+			is a series of strange messages
+			indicating something has gone
+			wrong aboard the research vessel.
+
+3    INT. MAIN BRIDGE (OPTICAL)
+
+	All regulars on duty -- Data at Ops, Geordi at Conn, Tasha
+	and Worf upstage intent on main viewer which shows the
+	Enterprise moving in parallel with the research vessel.
+	First, a STATIC GARBLE, then a WOMAN'S VOICE over the
+	audio channel, low and insinuating. INDISTINCT VOICES,
+	LAUGHTER, IN B.G. indicate the SOUNDS OF A NOISY PARTY.
+
+					WOMAN'S COM VOICE
+			Well, hello Enterprise.
+			Welcome... I hope you have a lot
+			of pretty boys on board... because
+			I'm willing... and waiting...
+
+	They wait for more, then Picard nods toward Data.
+
+
+          STAR TREK: "The Naked Now" - REV. 6/30/87          2.
+
+3    CONTINUED:
+
+					DATA
+				(touches com panel)
+			S.S. Tsiolkovsky, repeat your
+			message.
+
+					WOMAN'S COM VOICE
+				(laughter, then)
+			In fact... we're going to have a
+			real blowout here... Thought that
+			would interest you. Waiting!
+
+	She LAUGHS HYSTERICALLY. There is MORE LAUGHTER FROM
+	THE OTHERS, some cries of "DO IT! GO AHEAD!" in b.g.
+	of the transmission, an EXPLOSIVE SOUND -- and then
+	silence. After a beat:
+
+					DATA
+			Captain... what we just heard is,
+			well...impossible.
+
+					PICARD
+			Report.
+
+					DATA
+				(quietly)
+			I believe that last sound we heard
+			was an emergency hatch being
+			blown.
+
+	The subspace channel is still open -- all we HEAR is
+	the HISS OF EMPTY AIR.
+
+					PICARD
+			Are you certain... yes, of course
+			you are.
+
+	Riker comes to his feet fast, gets a nod from Picard,
+	motions for Data, Geordi and Tasha to follow him to the
+	turbolift.
+
+					WORF
+			Sensor scan now reveals no life
+			signs aboard, Captain.
+
+4    INT. TRANSPORTER ROOM - ANGLE ON AWAY TEAM (OPTICAL)
+
+	The away team consists of RIKER, GEORDI, DATA, TASHA,
+	and a SECURITY GUARD. Data and Geordi have tricorders;
+	Tasha has the large phaser.
+
+					RIKER
+			Put us on their bridge, Chief.
+
+          STAR TREK: "The Naked Now" - REV. 6/30/87          3.
+
+4    CONTINUED:
+
+					TRANSPORTER CHIEF
+			Life support systems are not
+			functioning in that area, sir.
+
+	Riker nods to the TRANSPORTER CHIEF at the console.
+
+					RIKER
+			Then put us in the main corridor.
+			Energize.
+
+	The Transporter Chief works his console controls deftly.
+	As the TRANSPORTER EFFECT AND SOUNDS BEGIN AND BUILD:
+
+5    INT. TSIOLKOVSKY MAIN CORRIDOR - ON AWAY TEAM (OPTICAL)
+
+	The TRANSPORTER EFFECT COMES IN, FADES DOWN, leaving
+	the away team materialized. The ship is very quiet --
+	a low HUM of working equipment, but without the murmur
+	of living beings.
+
+					RIKER
+			Cover the ship as planned. Move
+			out.
+
+	Data and Geordi put tricorders on "record" and all move
+	out.
+
+6    INT. SECOND CORRIDOR - ON RIKER AND DATA (OPTICAL)
+
+	This corridor shows signs of phaser char marks on the
+	walls. There is litter on the deck -- food, a wine
+	bottle, discarded clothes. Data records the scene with
+	his tricorder, as:
+
+					DATA
+			Indications of what humans would
+			call... a "wild party?"
+
+	Riker has moved quickly to a door at the end of the
+	corridor. It is shut, but there is a small viewscreen
+	set in the wall beside it.
+
+					RIKER
+			Their bridge. If this thing
+			works, be sure to record ---
+
+	He activates the viewscreen, takes a look, and GROANS.
+
+          STAR TREK: "The Naked Now" - REV. 6/26/87          4.
+
+7    CLOSE SHOT - SMALL VIEWSCREEN (OPTICAL)
+
+	Narrow view of a small bridge (SET FRAGMENT), mostly
+	consoles, maybe a command chair. And beyond these, the
+	emergency hatch set in the bulkhead -- the hatch is
+	gone, and the cold glitter of a starfield winks beyond
+	it. (SET DRESSING NOTE: There should be no loose
+	objects visible, only items that are firmly anchored
+	to deck or bulkhead. Anything loose would have been
+	swept into space when the air rushed out into the
+	vacuum.)
+
+8    WIDER SHOT - RIKER AND DATA
+
+	Riker steps aside, gesturing to Data to record the scene
+	on the viewer as:
+
+					RIKER
+			You were right. Somebody blew
+			the hatch and they were all sucked
+			out into space..
+
+					DATA
+			Correction, sir, blown out.
+
+					RIKER
+			Thank you, Data.
+
+					DATA
+			A common mistake, sir...
+
+					RIKER
+				(emphasis)
+			I know! Thank you, Data.
+
+					TASHA'S COM VOICE
+			Commander Riker, it's Lieutenant
+			Yar, location Engineering. Ten
+			people here, sir, all frozen.
+			No vital signs.
+
+					RIKER
+				(touches communicator)
+			Frozen how?
+
+					TASHA'S COM VOICE
+			Looks to me like someone was
+			"playing" with the environmental
+			controls, sir. Just let all the
+			heat bleed away into space.
+
+					RIKER
+				(to Data)
+			That's ridiculous!
+
+					TASHA'S COM VOICE
+			That's what I say, sir.
+
+          STAR TREK: "The Naked Now" - REV. 6/26/87          5.
+
+9    INT. PERSONNEL QUARTERS - ANGLE ON ENTRY DOOR
+
+	as it opens heavily and causes a slight AIR HISSING.
+	Geordi ENTERS from the corridor, reacts to the AIR
+	HISSING, hits a wall control on the inside. His
+	expression changes to one of dismay as he looks around.

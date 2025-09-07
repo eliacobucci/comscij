@@ -1,0 +1,34 @@
+===============================================
+   QUEY - QUESTIONNAIRE GENERATOR
+   Quick Start Guide
+===============================================
+
+WHAT IS QUEY?
+Professional tool for creating paired comparison 
+questionnaires for multidimensional scaling research.
+
+HOW TO RUN:
+1. Double-click "quey.html"
+2. OR drag the file into any web browser
+3. Start creating questionnaires!
+
+NO INSTALLATION NEEDED!
+Works in any browser, completely offline.
+
+BASIC STEPS:
+1. Enter your concepts (type or paste list)
+2. Choose reference pair (for "100 units apart")
+3. Click "Generate Questionnaire"
+4. Export as Text, CSV, or Print
+
+PERFECT FOR:
+- Research studies
+- Academic projects  
+- Market research
+- Educational assessment
+
+SUPPORT:
+support@galileocompany.com
+
+© 2025 The Galileo Company
+===============================================

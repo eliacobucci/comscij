@@ -1,0 +1,29 @@
+# Core web framework
+streamlit>=1.28.0
+
+# Data manipulation and analysis  
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Visualization
+plotly>=5.15.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Interactive dashboards
+dash>=2.14.0
+dash-bootstrap-components>=1.5.0
+
+# Scientific computing
+scipy>=1.10.0
+scikit-learn>=1.3.0
+
+# Graph/network analysis
+networkx>=3.1.0
+
+# Natural language processing  
+nltk>=3.8.0
+
+# Utilities
+requests>=2.31.0
+PyPDF2>=3.0.0
