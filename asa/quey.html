@@ -246,6 +246,16 @@ psychology</textarea>
                 </label>
             </div>
             
+            <div class="input-group">
+                <label>
+                    <input type="checkbox" id="asymmetricMatrix"> Generate asymmetric matrix (all A→B and B→A pairs)
+                </label>
+                <small style="color: #666; font-style: italic;">
+                    Default: Upper triangle only (A→B where A comes before B)<br>
+                    Asymmetric: Both directions (physics→chemistry AND chemistry→physics)
+                </small>
+            </div>
+            
             <button class="button" onclick="generateQuestionnaire()">🔍 Generate Questionnaire</button>
         </div>
         
@@ -351,11 +361,13 @@ psychology</textarea>
             if (concepts.includes(currentValue2)) select2.value = currentValue2;
         }
 
-        function generateAllPairs(conceptList) {
+        function generateAllPairs(conceptList, asymmetric = false) {
             const pairs = [];
             for (let i = 0; i < conceptList.length; i++) {
-                for (let j = i + 1; j < conceptList.length; j++) {
-                    pairs.push([conceptList[i], conceptList[j]]);
+                for (let j = (asymmetric ? 0 : i + 1); j < conceptList.length; j++) {
+                    if (i !== j) {  // Avoid self-comparisons
+                        pairs.push([conceptList[i], conceptList[j]]);
+                    }
                 }
             }
             return pairs;
@@ -372,6 +384,7 @@ psychology</textarea>
             const refConcept1 = document.getElementById('refConcept1').value;
             const refConcept2 = document.getElementById('refConcept2').value;
             const includeNumbers = document.getElementById('includeNumbers').checked;
+            const asymmetricMatrix = document.getElementById('asymmetricMatrix').checked;
             
             if (!refConcept1 || !refConcept2) {
                 alert('Please select both concepts for the reference pair.');
@@ -384,7 +397,7 @@ psychology</textarea>
             }
             
             // Generate pairs
-            pairs = generateAllPairs(concepts);
+            pairs = generateAllPairs(concepts, asymmetricMatrix);
             
             // Create questionnaire text with HTML formatting
             const timestamp = new Date().toLocaleString();
@@ -451,6 +464,11 @@ to write, remember, ${refConcept1.toUpperCase()} and ${refConcept2.toUpperCase()
             
             // Update stats
             const estimatedTime = (pairs.length * 0.5).toFixed(1);
+            const matrixType = asymmetricMatrix ? "Full Matrix" : "Upper Triangle";
+            const expectedPairs = asymmetricMatrix ? 
+                concepts.length * (concepts.length - 1) : 
+                (concepts.length * (concepts.length - 1)) / 2;
+            
             document.getElementById('stats').innerHTML = `
                 <div class="stat">
                     <div class="stat-number">${concepts.length}</div>
@@ -459,6 +477,10 @@ to write, remember, ${refConcept1.toUpperCase()} and ${refConcept2.toUpperCase()
                 <div class="stat">
                     <div class="stat-number">${pairs.length}</div>
                     <div class="stat-label">Question Pairs</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">${matrixType}</div>
+                    <div class="stat-label">Matrix Type</div>
                 </div>
                 <div class="stat">
                     <div class="stat-number">${estimatedTime}</div>
@@ -477,11 +499,14 @@ to write, remember, ${refConcept1.toUpperCase()} and ${refConcept2.toUpperCase()
         function downloadText() {
             if (!generatedText) return;
             
+            const asymmetric = document.getElementById('asymmetricMatrix').checked;
+            const matrixSuffix = asymmetric ? '_asymmetric' : '_symmetric';
+            
             const blob = new Blob([generatedText], { type: 'text/plain' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `galileo_questionnaire_${new Date().toISOString().slice(0, 16).replace(/[-:]/g, '').replace('T', '_')}.txt`;
+            a.download = `galileo_questionnaire${matrixSuffix}_${new Date().toISOString().slice(0, 16).replace(/[-:]/g, '').replace('T', '_')}.txt`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -500,7 +525,9 @@ to write, remember, ${refConcept1.toUpperCase()} and ${refConcept2.toUpperCase()
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `galileo_data_${new Date().toISOString().slice(0, 16).replace(/[-:]/g, '').replace('T', '_')}.csv`;
+            const asymmetric = document.getElementById('asymmetricMatrix').checked;
+            const matrixSuffix = asymmetric ? '_asymmetric' : '_symmetric';
+            a.download = `galileo_data${matrixSuffix}_${new Date().toISOString().slice(0, 16).replace(/[-:]/g, '').replace('T', '_')}.csv`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
