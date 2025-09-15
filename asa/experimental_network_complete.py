@@ -1,4 +1,5 @@
 import numpy as np
+import re
 
 class ExperimentalNetwork:
     """
@@ -79,7 +80,8 @@ class ExperimentalNetwork:
         Args:
             text (str): Input text stream
         """
-        words = text.split()
+        # Split and clean punctuation to unify concepts (e.g., 'electrodynamics,' → 'electrodynamics')
+        words = [re.sub(r'[^\w]', '', word).lower() for word in text.split() if re.sub(r'[^\w]', '', word)]
         
         # print(f"Processing text stream with {len(words)} words using window size {self.window_size}")
         # print("=" * 60)

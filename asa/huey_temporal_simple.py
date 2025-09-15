@@ -16,7 +16,7 @@ import re
 from huey_plusplus_conversational_experiment import HueyConversationalNetwork
 from huey_gpu_interface import HueyGPUInterface
 
-class HueyGPUConversationalNetwork(HueyConversationalNetwork):
+class HueyTemporalSimple(HueyConversationalNetwork):
     """
     GPU-accelerated Huey conversational network.
     
@@ -26,23 +26,33 @@ class HueyGPUConversationalNetwork(HueyConversationalNetwork):
     
     def __init__(self, max_neurons: int = 500, window_size: int = 10, 
                  learning_rate: float = 0.15, use_gpu_acceleration: bool = True, 
-                 conversation_mode: bool = True):
-        """Initialize GPU-accelerated Huey network.
+                 use_temporal_weights: bool = True, tau: float = 3.0,
+                 max_connections_per_neuron: int = 500):
+        """Initialize simple temporal Huey network.
         
         Args:
-            conversation_mode: If False, treats all text as single-author (no speaker detection)
+            use_temporal_weights: If True, use exponential decay for connection weights
+            tau: Decay constant for temporal weighting
+            max_connections_per_neuron: Maximum connections each neuron can form
         """
         
         # Initialize parent class without Fortran acceleration (GPU replaces it)
         super().__init__(max_neurons, window_size, learning_rate, use_fortran_acceleration=False)
+        
+        # Override the hardcoded connection limit from parent class
+        self.max_connections_per_neuron = max_connections_per_neuron
+        
+        # Temporal parameters
+        self.use_temporal_weights = use_temporal_weights
+        self.tau = tau
         
         # Explicitly store parameters that might get lost
         self.learning_rate = learning_rate
         self.max_neurons = max_neurons
         self.window_size = window_size
         
-        # Store conversation mode setting
-        self.conversation_mode = conversation_mode
+        # Store conversation mode setting  
+        self.conversation_mode = True
         
         # Initialize GPU interface
         self.gpu_interface = HueyGPUInterface(max_neurons, use_gpu_acceleration)
@@ -62,8 +72,99 @@ class HueyGPUConversationalNetwork(HueyConversationalNetwork):
         # Override performance logging
         self._log_performance = True
         
+        method = "TEMPORAL DECAY" if use_temporal_weights else "WINDOWED"
+        print(f"🧪 HUEY SIMPLE {method} LEARNING")
+        if use_temporal_weights:
+            print(f"   Temporal decay: tau={tau}")
         print(f"🚀 HUEY GPU ACCELERATION ENABLED")
         print(f"🎯 Targeting O(n²) activation bottleneck for 20-50x speedups")
+    
+    def _get_connection_weight(self, word_i_pos: int, word_j_pos: int, base_weight: float = 1.0) -> float:
+        """Calculate connection weight with optional temporal decay.
+        
+        Args:
+            word_i_pos: Position of first word in sequence
+            word_j_pos: Position of second word in sequence  
+            base_weight: Base connection strength
+            
+        Returns:
+            Weighted connection strength
+        """
+        if not self.use_temporal_weights:
+            return base_weight
+            
+        # Calculate lag distance
+        lag = abs(word_j_pos - word_i_pos)
+        if lag == 0:
+            return base_weight
+            
+        # Apply exponential decay based on distance
+        import math
+        decay_factor = math.exp(-lag / self.tau)
+        temporal_weight = base_weight * decay_factor
+        
+        return temporal_weight
+    
+    def _should_create_connection(self, neuron_i, neuron_j):
+        """Determine if a connection should be created based on sparsity constraints."""
+        # Always allow connections in temporal learning - sparse connectivity 
+        # is handled by the temporal decay, not by blocking connections
+        return True
+    
+    def _hebbian_learning_python(self, window_neurons):
+        """Override parent Hebbian learning to integrate temporal weights."""
+        # Apply decay only to unused connections (biologically accurate)
+        self._decay_unused_masses()
+        self._decay_all_connections(window_neurons)
+        
+        # Create/strengthen connections with temporal weighting
+        for pos_i, i in enumerate(window_neurons):
+            for pos_j, j in enumerate(window_neurons):
+                if pos_i < pos_j:  # Only create connections from earlier to later positions
+                    # Safety check: ensure neurons exist in activations
+                    if i not in self.activations or j not in self.activations:
+                        continue  # Skip if neurons don't exist
+                    
+                    # SPARSE CONNECTIVITY: Check if we should create/update this connection
+                    if not self._should_create_connection(i, j):
+                        continue  # Skip based on sparsity constraints
+                    
+                    # Get activations
+                    ai = self.activations[i]
+                    aj = self.activations[j]
+                    
+                    # Connection key for sparse storage
+                    conn_key = (i, j)
+                    
+                    # Current connection strength and mass
+                    current_strength = self.connections.get(conn_key, 0.0)
+                    current_mass = self.inertial_mass.get(conn_key, 0.0)
+                    
+                    # Calculate inertial resistance (higher mass = harder to change)
+                    inertial_resistance = 1.0 / (1.0 + current_mass * 0.1)
+                    
+                    # TEMPORAL MODIFICATION: Apply temporal weighting to Hebbian update
+                    temporal_weight = self._get_connection_weight(pos_i, pos_j, 1.0)
+                    
+                    # Hebbian update with inertial resistance AND temporal decay
+                    delta_w = self.hebbian_constant * ai * aj * inertial_resistance * temporal_weight
+                    new_strength = current_strength + delta_w
+                    
+                    # Calculate synaptic mass using biologically accurate logistic model
+                    activity = ai * aj  # Combined pre/post synaptic activity
+                    mass_change = self._calculate_synaptic_mass_change(activity, current_mass)
+                    new_mass = max(0.0, min(current_mass + mass_change, self.M_max))
+                    
+                    # Store updated connection using sparse connectivity manager
+                    self._add_sparse_connection(i, j, new_strength, new_mass)
+        
+        # Periodically prune weak connections to maintain sparsity
+        if self.processed_words % 100 == 0:  # Every 100 words
+            pruned_count = self._prune_weak_connections(threshold=0.01)
+            if pruned_count > 0:
+                # Only log significant pruning events to reduce noise
+                if pruned_count >= 5 or (pruned_count > 0 and self.processed_words % 100 == 0):
+                    print(f"              PRUNED: {pruned_count} weak connections (maintaining sparsity)")
     
     def _calculate_all_activations(self, window_neurons):
         """
@@ -234,38 +335,45 @@ class HueyGPUConversationalNetwork(HueyConversationalNetwork):
             self.neuron_to_word[neuron_id] = word
     
     def process_speaker_text(self, speaker_name: str, text: str):
-        """Process text with GPU acceleration and safe error handling."""
-        try:
-            # Store current mappings to detect new additions
-            initial_concept_count = len(self.concept_neurons)
-            initial_word_count = len(getattr(self, 'word_to_neuron', {}))
-            
-            # Process with parent method  
-            super().process_speaker_text(speaker_name, text)
-            
-            # CRITICAL FIX: Immediately sync all parent mappings into concept_neurons
-            if hasattr(self, 'word_to_neuron') and self.word_to_neuron:
-                new_words = len(self.word_to_neuron) - initial_word_count
-                if new_words > 0:
-                    print(f"🔄 Syncing {new_words} new words to concept_neurons...")
-                    self.concept_neurons.update(self.word_to_neuron)
-            
-            # Always sync network mappings after processing  
+        """Process text with temporal learning integration."""
+        if self.use_temporal_weights:
+            # Use temporal processing directly for temporal mode
+            print(f"🧪 Using temporal processing for: {len(text.split())} words")
+            self._process_text_temporal_fallback(speaker_name, text)
             self._sync_network_mappings()
-            
-            # Performance counter
-            if not hasattr(self, '_sync_counter'):
-                self._sync_counter = 0
-            self._sync_counter += 1
-            
-        except BrokenPipeError as e:
-            print(f"🔄 Broken pipe error in text processing - using fallback CPU method")
-            self._process_text_fallback(speaker_name, text)
-            self._sync_network_mappings()  # Sync after fallback
-        except Exception as e:
-            print(f"🔄 Processing error: {e} - using fallback method") 
-            self._process_text_fallback(speaker_name, text)
-            self._sync_network_mappings()  # Sync after fallback
+        else:
+            # Use standard processing for non-temporal mode
+            try:
+                # Store current mappings to detect new additions
+                initial_concept_count = len(self.concept_neurons)
+                initial_word_count = len(getattr(self, 'word_to_neuron', {}))
+                
+                # Process with parent method  
+                super().process_speaker_text(speaker_name, text)
+                
+                # CRITICAL FIX: Immediately sync all parent mappings into concept_neurons
+                if hasattr(self, 'word_to_neuron') and self.word_to_neuron:
+                    new_words = len(self.word_to_neuron) - initial_word_count
+                    if new_words > 0:
+                        print(f"🔄 Syncing {new_words} new words to concept_neurons...")
+                        self.concept_neurons.update(self.word_to_neuron)
+                
+                # Always sync network mappings after processing  
+                self._sync_network_mappings()
+                
+                # Performance counter
+                if not hasattr(self, '_sync_counter'):
+                    self._sync_counter = 0
+                self._sync_counter += 1
+                
+            except BrokenPipeError as e:
+                print(f"🔄 Broken pipe error in text processing - using fallback CPU method")
+                self._process_text_fallback(speaker_name, text)
+                self._sync_network_mappings()  # Sync after fallback
+            except Exception as e:
+                print(f"🔄 Processing error: {e} - using standard fallback method") 
+                self._process_text_fallback(speaker_name, text)
+                self._sync_network_mappings()  # Sync after fallback
     
     def _process_text_fallback(self, speaker_name: str, text: str):
         """Safe fallback text processing without subprocess dependencies."""
@@ -275,6 +383,8 @@ class HueyGPUConversationalNetwork(HueyConversationalNetwork):
         # Simple word-by-word processing without complex pipelines
         words = text.lower().split()
         
+        # Create neurons for words and track them
+        window_neurons = []
         for word in words:
             # Skip kill words
             if hasattr(self, 'kill_words') and word in self.kill_words:
@@ -285,12 +395,133 @@ class HueyGPUConversationalNetwork(HueyConversationalNetwork):
                 if len(self.concept_neurons) < self.max_neurons:
                     neuron_id = len(self.concept_neurons)
                     self.concept_neurons[word] = neuron_id
+                    self.word_to_neuron[word] = neuron_id
+                    self.neuron_to_word[neuron_id] = word
                     self.activations[neuron_id] = 1.0
+                    window_neurons.append(neuron_id)
             else:
                 neuron_id = self.concept_neurons[word]  
                 self.activations[neuron_id] = 1.0
+                window_neurons.append(neuron_id)
+        
+        # CRITICAL: Run the learning process on these neurons
+        if len(window_neurons) > 1:
+            print(f"   Running Hebbian learning on {len(window_neurons)} neurons...")
+            self._hebbian_learning_python(window_neurons)
                 
-        print(f"   Fallback processing: {len(words)} words, {len(self.concept_neurons)} total concepts")
+        print(f"   Fallback processing: {len(words)} words, {len(self.concept_neurons)} concepts, {len(self.connections)} connections")
+    
+    def _tokenize_multilingual(self, text: str):
+        """Smart tokenization for different language types."""
+        import re
+        
+        # Check if text contains Asian characters (Chinese, Japanese, Korean, Hindi/Devanagari)
+        asian_chars = re.findall(r'[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af\u0900-\u097f]', text)
+        
+        if asian_chars:
+            print(f"     🈳 Detected Asian characters: {len(asian_chars)} chars")
+            
+            # Important multi-character units to preserve (pronouns and common words)
+            multi_char_units = [
+                # Chinese pronouns
+                '我', '你', '他', '她', '我们', '你们', '他们',
+                '我的', '你的', '他的', '她的', '我们的', '你们的', '他们的',
+                '您', '您的',  # formal you
+                
+                # Japanese pronouns  
+                'あなた', 'あなたの', 'わたし', 'わたくし', 'わたしの',
+                'きみ', 'きみの', 'ぼく', 'ぼくの', 'おれ',
+                
+                # Common words worth preserving
+                '这是', '那是', '可以', '不是', '没有', '有', '很', '非常',
+                'です', 'ます', 'である', 'できる'
+            ]
+            
+            # Replace multi-character units with temporary tokens
+            temp_text = text
+            replacements = {}
+            
+            for i, unit in enumerate(multi_char_units):
+                if unit in temp_text:
+                    temp_token = f"__UNIT_{i}__"
+                    replacements[temp_token] = unit
+                    temp_text = temp_text.replace(unit, f" {temp_token} ")
+            
+            # Split and process
+            tokens = []
+            for part in temp_text.split():
+                if part in replacements:
+                    # Restore multi-character unit
+                    tokens.append(replacements[part])
+                elif part.startswith('__UNIT_') and part.endswith('__'):
+                    # Restore multi-character unit
+                    tokens.append(replacements.get(part, part))
+                else:
+                    # Split into individual characters, skip punctuation
+                    for char in part:
+                        if char not in '，。！？；：、　\n\r\t -1*':
+                            tokens.append(char)
+            
+            # Filter out empty tokens and convert to lowercase where appropriate
+            meaningful_tokens = []
+            for token in tokens:
+                if len(token) >= 1 and token.strip():
+                    # Keep Asian characters as-is, lowercase others
+                    if re.search(r'[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]', token):
+                        meaningful_tokens.append(token)
+                    else:
+                        meaningful_tokens.append(token.lower())
+            
+            print(f"     🈳 Asian character tokenization: {len(meaningful_tokens)} tokens")
+            return meaningful_tokens
+        else:
+            # Western language processing: space-based splitting
+            print(f"     🌍 Western language tokenization")
+            return text.lower().split()
+    
+    def _process_text_temporal_fallback(self, speaker_name: str, text: str):
+        """Temporal processing fallback that properly integrates with learning."""
+        
+        # Set current speaker
+        self.current_speaker = speaker_name
+        
+        # Smart tokenization for different language types
+        words = self._tokenize_multilingual(text)
+        print(f"   🧪 Temporal fallback processing: {len(words)} words")
+        
+        window_neurons = []
+        
+        for word in words:
+            # Skip kill words
+            if hasattr(self, 'kill_words') and word in self.kill_words:
+                print(f"     Skipping kill word: {word}")
+                continue
+                
+            # Create or reuse neuron for this word
+            if word not in self.concept_neurons:
+                if len(self.concept_neurons) < self.max_neurons:
+                    neuron_id = len(self.concept_neurons)
+                    self.concept_neurons[word] = neuron_id
+                    self.word_to_neuron[word] = neuron_id
+                    self.neuron_to_word[neuron_id] = word
+                    self.activations[neuron_id] = 1.0
+                    window_neurons.append(neuron_id)
+                    print(f"     Created neuron {neuron_id} for word: {word}")
+            else:
+                neuron_id = self.concept_neurons[word]  
+                self.activations[neuron_id] = 1.0
+                window_neurons.append(neuron_id)
+                print(f"     Reactivated neuron {neuron_id} for word: {word}")
+        
+        # CRITICAL: Run temporal Hebbian learning if we have enough neurons
+        if len(window_neurons) > 1:
+            print(f"   🧠 Running temporal Hebbian learning on {len(window_neurons)} neurons...")
+            print(f"     Window: {[self.neuron_to_word.get(n, f'neuron_{n}') for n in window_neurons]}")
+            self._hebbian_learning_python(window_neurons)
+        else:
+            print(f"   ⚠️  Only {len(window_neurons)} neurons - skipping learning")
+                
+        print(f"   ✅ Temporal fallback complete: {len(self.concept_neurons)} concepts, {len(self.connections)} connections")
     
     def _sync_network_mappings(self):
         """Synchronize all network mappings for web interface compatibility."""

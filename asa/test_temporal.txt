@@ -1,0 +1,6 @@
+Speaker A: Hello there, how are you doing today?
+Speaker B: I'm doing well, thank you for asking. How about you?
+Speaker A: I'm great! The weather is beautiful today.
+Speaker B: Yes, it's perfect for a walk in the park.
+Speaker A: Would you like to go for a walk together?
+Speaker B: That sounds like a wonderful idea!
