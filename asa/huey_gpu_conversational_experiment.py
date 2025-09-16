@@ -36,11 +36,6 @@ class HueyGPUConversationalNetwork(HueyConversationalNetwork):
         # Initialize parent class without Fortran acceleration (GPU replaces it)
         super().__init__(max_neurons, window_size, learning_rate, use_fortran_acceleration=False)
         
-        # Explicitly store parameters that might get lost
-        self.learning_rate = learning_rate
-        self.max_neurons = max_neurons
-        self.window_size = window_size
-        
         # Store conversation mode setting
         self.conversation_mode = conversation_mode
         

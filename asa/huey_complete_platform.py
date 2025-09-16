@@ -398,17 +398,9 @@ class HueyCompletePlatform:
     def _generate_comprehensive_analysis(self) -> Dict[str, Any]:
         """Generate comprehensive analysis of current network state."""
         
-        # Get actual numeric values for web interface
-        total_concepts = len(self.network.neuron_to_word) if hasattr(self.network, 'neuron_to_word') else 0
-        total_connections = len(self.network.connections) if hasattr(self.network, 'connections') else 0
-        
         analysis = {
             'timestamp': datetime.now().isoformat(),
-            'network_statistics': {
-                'total_concepts': total_concepts,
-                'total_connections': total_connections,
-                'formatted_report': self.query_engine.query('network_statistics')
-            },
+            'network_statistics': self.query_engine.query('network_statistics'),
             'speaker_analyses': {},
             'concept_emergence': self.query_engine.query('concept_emergence'),
             'top_concepts': []

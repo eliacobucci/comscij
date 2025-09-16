@@ -146,8 +146,8 @@ class HueyTemporalSimple(HueyConversationalNetwork):
                     # TEMPORAL MODIFICATION: Apply temporal weighting to Hebbian update
                     temporal_weight = self._get_connection_weight(pos_i, pos_j, 1.0)
                     
-                    # Hebbian update with inertial resistance AND temporal decay
-                    delta_w = self.hebbian_constant * ai * aj * inertial_resistance * temporal_weight
+                    # Hebbian update with inertial resistance AND temporal decay  
+                    delta_w = self.learning_rate * ai * aj * inertial_resistance * temporal_weight
                     new_strength = current_strength + delta_w
                     
                     # Calculate synaptic mass using biologically accurate logistic model
@@ -336,6 +336,9 @@ class HueyTemporalSimple(HueyConversationalNetwork):
     
     def process_speaker_text(self, speaker_name: str, text: str):
         """Process text with temporal learning integration."""
+        print(f"🔍 DEBUG: process_speaker_text called with use_temporal_weights={self.use_temporal_weights}")
+        print(f"🔍 DEBUG: text preview: {repr(text[:50])}")
+        
         if self.use_temporal_weights:
             # Use temporal processing directly for temporal mode
             print(f"🧪 Using temporal processing for: {len(text.split())} words")
@@ -411,9 +414,95 @@ class HueyTemporalSimple(HueyConversationalNetwork):
                 
         print(f"   Fallback processing: {len(words)} words, {len(self.concept_neurons)} concepts, {len(self.connections)} connections")
     
+    def _detect_language(self, text: str) -> str:
+        """Detect language from text using Unicode ranges (ChatGPT-5 Enhanced)."""
+        if not text:
+            return 'en'
+        
+        # Count characters in different Unicode ranges
+        cjk_count = sum(1 for char in text if '\u4e00' <= char <= '\u9fff')  # CJK Unified Ideographs
+        hiragana_count = sum(1 for char in text if '\u3040' <= char <= '\u309f')  # Hiragana
+        katakana_count = sum(1 for char in text if '\u30a0' <= char <= '\u30ff')  # Katakana
+        hangul_count = sum(1 for char in text if '\uac00' <= char <= '\ud7af')  # Hangul
+        latin_count = sum(1 for char in text if 'a' <= char.lower() <= 'z')
+        
+        total_chars = len([c for c in text if c.isalnum()])
+        if total_chars == 0:
+            return 'en'
+        
+        # Determine language based on character distribution
+        if hangul_count / total_chars > 0.3:
+            return 'ko'
+        elif (hiragana_count + katakana_count) / total_chars > 0.2:
+            return 'ja'
+        elif cjk_count / total_chars > 0.3:
+            return 'zh'
+        elif latin_count / total_chars > 0.5:
+            return 'en'
+        else:
+            return 'other'
+
+    def _load_language_kill_words(self, language: str) -> set:
+        """Load language-specific kill words (ChatGPT-5 Enhanced)."""
+        kill_words = set()
+        
+        # Language-specific kill file mapping
+        kill_file_map = {
+            'en': 'huey_kill.en.txt',
+            'zh': 'huey_kill.zh.txt', 
+            'ja': 'huey_kill.ja.txt',
+            'ko': 'huey_kill.ko.txt'
+        }
+        
+        # Load universal kill words first (punctuation, digits)
+        try:
+            with open('huey_kill.universal.txt', 'r', encoding='utf-8') as f:
+                universal_words = set(line.strip() for line in f if line.strip())
+                kill_words.update(universal_words)
+        except FileNotFoundError:
+            pass
+        
+        # Load language-specific kill words
+        kill_file = kill_file_map.get(language, 'huey_kill.en.txt')
+        try:
+            with open(kill_file, 'r', encoding='utf-8') as f:
+                lang_words = set(line.strip() for line in f if line.strip())
+                kill_words.update(lang_words)
+            print(f"     🗑️ Loaded {len(lang_words)} {language.upper()} kill words from {kill_file}")
+        except FileNotFoundError:
+            print(f"     ⚠️ Kill file {kill_file} not found, using fallback")
+            # Fallback to default KILL.txt
+            try:
+                with open('KILL.txt', 'r', encoding='utf-8') as f:
+                    fallback_words = set(line.strip().lower() for line in f if line.strip())
+                    kill_words.update(fallback_words)
+            except FileNotFoundError:
+                pass
+        
+        return kill_words
+
     def _tokenize_multilingual(self, text: str):
-        """Smart tokenization for different language types."""
+        """Smart tokenization for different language types (ChatGPT-5 Enhanced)."""
         import re
+        import unicodedata
+        
+        print(f"     🔤 TOKENIZE_MULTILINGUAL START")
+        print(f"     📝 Input text: '{text}'")
+        print(f"     📊 Text length: {len(text)} characters")
+        print(f"     🔢 Text bytes: {text.encode('utf-8')}")
+        
+        # Step 1: Detect language
+        detected_lang = self._detect_language(text)
+        print(f"     🌏 Language detected: {detected_lang.upper()}")
+        
+        # Step 2: Load appropriate kill words
+        lang_kill_words = self._load_language_kill_words(detected_lang)
+        print(f"     🚫 Loaded {len(lang_kill_words)} kill words for {detected_lang}")
+        
+        # Step 3: Unicode normalization (ChatGPT-5 recommendation)
+        text = unicodedata.normalize('NFC', text)
+        if text.startswith('\ufeff'):
+            text = text[1:]
         
         # Check if text contains Asian characters (Chinese, Japanese, Korean, Hindi/Devanagari)
         asian_chars = re.findall(r'[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af\u0900-\u097f]', text)
@@ -462,40 +551,81 @@ class HueyTemporalSimple(HueyConversationalNetwork):
                         if char not in '，。！？；：、　\n\r\t -1*':
                             tokens.append(char)
             
-            # Filter out empty tokens and convert to lowercase where appropriate
+            # Filter out kill words and empty tokens (ChatGPT-5 Enhanced)
             meaningful_tokens = []
+            print(f"     🔍 Pre-filter tokens: {tokens[:20]}...")  # Debug: show raw tokens
+            print(f"     🚫 Kill words loaded: {len(lang_kill_words)} words: {list(lang_kill_words)[:10]}...")
+            
             for token in tokens:
                 if len(token) >= 1 and token.strip():
+                    # Skip language-specific kill words
+                    if token in lang_kill_words:
+                        print(f"       ❌ Skipping kill word: '{token}'")
+                        continue
+                    
                     # Keep Asian characters as-is, lowercase others
                     if re.search(r'[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]', token):
                         meaningful_tokens.append(token)
+                        print(f"       ✅ Kept Asian token: '{token}'")
                     else:
                         meaningful_tokens.append(token.lower())
+                        print(f"       ✅ Kept Western token: '{token.lower()}'")
+                else:
+                    print(f"       🗑️ Discarded empty/whitespace token: '{token}'")
             
-            print(f"     🈳 Asian character tokenization: {len(meaningful_tokens)} tokens")
+            print(f"     🈳 Asian character tokenization: {len(meaningful_tokens)} tokens from {len(tokens)} total")
+            print(f"     📝 Final meaningful tokens: {meaningful_tokens}")
             return meaningful_tokens
         else:
-            # Western language processing: space-based splitting
+            # Western language processing: space-based splitting with kill word filtering
             print(f"     🌍 Western language tokenization")
-            return text.lower().split()
+            words = text.lower().split()
+            # Filter out language-specific kill words
+            filtered_words = [word for word in words if word not in lang_kill_words]
+            print(f"     🌍 Western tokenization: {len(filtered_words)} tokens from {len(words)} total")
+            return filtered_words
     
     def _process_text_temporal_fallback(self, speaker_name: str, text: str):
         """Temporal processing fallback that properly integrates with learning."""
+        import time
+        
+        # Create debug log file
+        debug_file = "/Users/josephwoelfel/asa/debug_processing.log"
+        
+        def debug_log(message):
+            print(message)
+            with open(debug_file, "a", encoding="utf-8") as f:
+                f.write(f"{message}\n")
+            time.sleep(0.2)  # Slow down output for visibility
+        
+        debug_log(f"🌏 Temporal processing with language detection...")
+        debug_log(f"   Speaker: {speaker_name}")
+        debug_log(f"   Input text: '{text.strip()}'")
         
         # Set current speaker
         self.current_speaker = speaker_name
         
+        # Detect language first
+        detected_language = self._detect_language(text)
+        debug_log(f"   Language detected: {detected_language}")
+        
         # Smart tokenization for different language types
         words = self._tokenize_multilingual(text)
-        print(f"   🧪 Temporal fallback processing: {len(words)} words")
+        debug_log(f"   🧪 Temporal fallback processing: {len(words)} words")
+        if len(words) > 0:
+            debug_log(f"   📝 Sample tokens: {words[:10]}")
+            debug_log(f"   📝 All tokens: {words}")
+        else:
+            debug_log(f"   ❌ NO TOKENS PRODUCED!")
+            debug_log(f"       Text analysis:")
+            debug_log(f"       - Text length: {len(text)}")
+            debug_log(f"       - Text characters: {[c for c in text if c.strip()]}")
+            debug_log(f"       - Text encoding: {text.encode('utf-8')}")
         
         window_neurons = []
         
         for word in words:
-            # Skip kill words
-            if hasattr(self, 'kill_words') and word in self.kill_words:
-                print(f"     Skipping kill word: {word}")
-                continue
+            # Kill words already filtered in _tokenize_multilingual - no need to check again
                 
             # Create or reuse neuron for this word
             if word not in self.concept_neurons:

@@ -23,9 +23,131 @@ from typing import List, Dict, Tuple
 import os
 import io
 import json
+import unicodedata
 import time
 from datetime import datetime
 from functools import lru_cache
+
+# ============================================================================
+# 🌏 ASIAN LANGUAGE SUPPORT (ChatGPT-5 Enhanced)
+# ============================================================================
+
+def detect_language(text: str) -> str:
+    """
+    Detect language from text using Unicode ranges.
+    Returns: 'zh', 'ja', 'ko', 'en', or 'other'
+    """
+    if not text:
+        return 'en'
+    
+    # Count characters in different Unicode ranges
+    cjk_count = sum(1 for char in text if '\u4e00' <= char <= '\u9fff')  # CJK Unified Ideographs
+    hiragana_count = sum(1 for char in text if '\u3040' <= char <= '\u309f')  # Hiragana
+    katakana_count = sum(1 for char in text if '\u30a0' <= char <= '\u30ff')  # Katakana
+    hangul_count = sum(1 for char in text if '\uac00' <= char <= '\ud7af')  # Hangul
+    latin_count = sum(1 for char in text if 'a' <= char.lower() <= 'z')
+    
+    total_chars = len([c for c in text if c.isalnum()])
+    if total_chars == 0:
+        return 'en'
+    
+    # Determine language based on character distribution
+    if hangul_count / total_chars > 0.3:
+        return 'ko'
+    elif (hiragana_count + katakana_count) / total_chars > 0.2:
+        return 'ja'
+    elif cjk_count / total_chars > 0.3:
+        return 'zh'
+    elif latin_count / total_chars > 0.5:
+        return 'en'
+    else:
+        return 'other'
+
+def load_kill_words(language: str) -> set:
+    """
+    Load language-specific kill words from files.
+    """
+    kill_words = set()
+    
+    try:
+        # Load universal kill words first (punctuation, digits)
+        with open('huey_kill.universal.txt', 'r', encoding='utf-8') as f:
+            universal_words = set(line.strip() for line in f if line.strip())
+            kill_words.update(universal_words)
+    except FileNotFoundError:
+        pass
+    
+    # Language-specific kill file mapping
+    kill_file_map = {
+        'en': 'huey_kill.en.txt',
+        'zh': 'huey_kill.zh.txt',
+        'ja': 'huey_kill.ja.txt',
+        'ko': 'huey_kill.ko.txt',
+        'es': 'huey_kill.es.txt',
+        'fr': 'huey_kill.fr.txt',
+        'de': 'huey_kill.de.txt',
+        'it': 'huey_kill.it.txt',
+        'is': 'huey_kill.is.txt',
+        'ta': 'huey_kill.ta.txt'
+    }
+    
+    kill_file = kill_file_map.get(language, 'huey_kill.en.txt')  # Default to English
+    
+    try:
+        with open(kill_file, 'r', encoding='utf-8') as f:
+            lang_words = set(line.strip() for line in f if line.strip())
+            kill_words.update(lang_words)
+        print(f"🗑️ Loaded {len(lang_words)} {language.upper()} kill words from {kill_file}")
+    except FileNotFoundError:
+        print(f"⚠️ Kill file {kill_file} not found, using minimal defaults")
+        # Fallback minimal kill words
+        if language in ['zh', 'ja', 'ko']:
+            kill_words.update(['的', '了', '在', '是'])  # Basic Chinese function words
+    
+    return kill_words
+
+def preprocess_asian_text(text: str, language: str) -> str:
+    """
+    Preprocess text according to ChatGPT-5's recommendations.
+    """
+    # Step 1: Unicode normalization (NFC - Canonical Decomposition + Canonical Composition)
+    text = unicodedata.normalize('NFC', text)
+    
+    # Step 2: Remove BOM if present
+    if text.startswith('\ufeff'):
+        text = text[1:]
+    
+    # Step 3: Language-specific preprocessing
+    if language in ['zh', 'ja', 'ko']:
+        # For CJK languages, preserve all characters including spaces for proper segmentation
+        # Do NOT lowercase CJK (it's a no-op but can hide bugs)
+        pass
+    else:
+        # For Latin-based languages, standard preprocessing
+        text = text.lower()
+    
+    return text
+
+def tokenize_by_language(text: str, language: str, kill_words: set) -> List[str]:
+    """
+    Tokenize text based on language type following ChatGPT-5's advice.
+    """
+    if language in ['zh', 'ja', 'ko']:
+        # Character-level tokenization for CJK languages
+        tokens = []
+        for char in text:
+            if char.strip() and char not in kill_words:
+                # Only include meaningful characters (exclude whitespace, punctuation from universal kill)
+                if char.isalnum() or ('\u4e00' <= char <= '\u9fff') or ('\u3040' <= char <= '\u30ff') or ('\uac00' <= char <= '\ud7af'):
+                    tokens.append(char)
+        return tokens
+    else:
+        # Word-level tokenization for Western languages
+        # Use Unicode-aware regex
+        words = re.findall(r'\b\w+\b', text, re.UNICODE)
+        return [word for word in words if word.lower() not in kill_words and len(word) > 1]
+
+# ============================================================================
 
 # Import Huey components
 try:
@@ -184,10 +306,11 @@ def segment_text_linguistically(text_content: str) -> List[str]:
 
 def _is_valid_segment(segment: str) -> bool:
     """Check if a segment meets quality criteria for neural processing."""
-    # Must contain letters (not just punctuation/numbers)
-    has_letters = bool(re.search(r'[a-zA-Z]', segment))
-    # Must have reasonable length
-    reasonable_length = 10 <= len(segment) <= 1000
+    # Must contain letters (including Asian characters)
+    has_letters = bool(re.search(r'[a-zA-Z\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]', segment))
+    # Must have reasonable length (shorter for character-based languages)
+    min_length = 3 if re.search(r'[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]', segment) else 10
+    reasonable_length = min_length <= len(segment) <= 1000
     return has_letters and reasonable_length
 
 def _split_long_sentence(sentence: str, max_length: int = 500) -> List[str]:
@@ -471,6 +594,7 @@ def recommend_acceleration_method(exchange_count: int) -> Dict[str, str]:
 
 def process_uploaded_file(uploaded_file, huey, timeout_hours=2.0, exchange_limit=10000, conversation_mode=True):
     """Process uploaded conversation file (TXT or PDF)"""
+    st.info(f"🔍 DEBUG: process_uploaded_file received conversation_mode={conversation_mode}")
     try:
         file_extension = uploaded_file.name.split('.')[-1].lower()
         
@@ -510,9 +634,22 @@ def process_uploaded_file(uploaded_file, huey, timeout_hours=2.0, exchange_limit
                 tmp_file.write(content)
                 tmp_file_path = tmp_file.name
 
-        # Process with speaker detector using conversation mode setting
-        detector = HueySpeakerDetector(conversation_mode=conversation_mode)
-        result = detector.process_conversation_file(tmp_file_path)
+        # Skip speaker detection for plain text mode
+        if conversation_mode:
+            # Process with speaker detector using conversation mode setting
+            detector = HueySpeakerDetector(conversation_mode=conversation_mode)
+            result = detector.process_conversation_file(tmp_file_path)
+        else:
+            # Plain text mode - create simple single-author result
+            with open(tmp_file_path, 'r', encoding='utf-8') as f:
+                content = f.read().strip()
+            
+            result = {
+                'speakers_info': [('Author', 'Author', 'author')],
+                'conversation_data': [('Author', content)],
+                'detection_confidence': 1.0,
+                'detection_strategy': 'plain_text_mode'
+            }
         
         # Check if speaker detection failed or has low confidence
         use_plain_text_mode = False
@@ -597,7 +734,10 @@ def process_uploaded_file(uploaded_file, huey, timeout_hours=2.0, exchange_limit
         current_gpu_enabled = getattr(huey.network, 'use_gpu_acceleration', False) if hasattr(huey, 'network') else False
         recommended_gpu = 'JAX Metal GPU' in recommendation['method']
         
-        if current_gpu_enabled != recommended_gpu:
+        # Don't auto-optimize if we have a temporal network - it would break the temporal learning
+        is_temporal_network = hasattr(huey.network, 'process_file_with_mode')
+        
+        if current_gpu_enabled != recommended_gpu and not is_temporal_network:
             st.warning(f"🔄 **Auto-optimizing acceleration method for this file size...**")
             
             # Re-initialize with optimal acceleration method
@@ -611,1079 +751,82 @@ def process_uploaded_file(uploaded_file, huey, timeout_hours=2.0, exchange_limit
             
             # Replace current huey instance with optimized version
             huey = huey_optimal
+        elif is_temporal_network:
+            st.info("🕐 **Temporal Network Protected** - Skipping auto-optimization to preserve temporal learning")
         
         st.markdown("---")
         
-        # Register speakers and process conversation with monitoring
-        huey.register_speakers(result['speakers_info'])
+        # ALWAYS USE TEMPORAL PROCESSING - No standard network routing
+        st.success("🕐 **Using Temporal Processing** - The only way we process files")
         
-        # Add progress monitoring
-        import time
-        from datetime import datetime
+        # 🌏 LANGUAGE DETECTION AND PREPROCESSING (ChatGPT-5 Enhanced)
+        # Detect language from the content
+        combined_text = " ".join([text for _, text in result['conversation_data']])
+        detected_language = detect_language(combined_text)
         
-        total_exchanges = len(result['conversation_data'])
-        start_time = time.time()
-        st.write(f"🎯 **PROCESSING MONITOR**")
-        st.write(f"   📊 Total exchanges to process: {total_exchanges}")
-        st.write(f"   🕐 Started at: {datetime.now().strftime('%H:%M:%S')}")
-        st.write(f"   ⚡ Processing with progress tracking...")
+        st.info(f"🌏 **Language detected:** {detected_language.upper()} - Using {'character-level' if detected_language in ['zh', 'ja', 'ko'] else 'word-level'} tokenization")
         
-        # Create progress tracking containers
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-        time_estimate = st.empty()
+        # Load language-specific kill words
+        kill_words = load_kill_words(detected_language)
         
-        # Process with configurable timeout and stall detection  
-        MAX_PROCESSING_TIME = timeout_hours * 3600
-        STALL_CHECK_INTERVAL = 300   # Check every 5 minutes
+        # Preprocess and enhance text for each conversation entry
+        enhanced_conversation_data = []
+        for speaker_id, text in result['conversation_data']:
+            # Apply ChatGPT-5's preprocessing recommendations
+            preprocessed_text = preprocess_asian_text(text, detected_language)
+            enhanced_conversation_data.append((speaker_id, preprocessed_text))
         
-        # Limit exchanges if specified
-        if exchange_limit > 0:
-            result['conversation_data'] = result['conversation_data'][:exchange_limit]
-            st.warning(f"⚠️ Limited processing to first {exchange_limit} exchanges")
+        # Create temporary file with enhanced conversation
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8') as tmp_file:
+            for speaker_id, text in enhanced_conversation_data:
+                tmp_file.write(f"{text}\n")
+            tmp_file_path = tmp_file.name
         
         try:
-            # Process conversation with monitoring using manual loop instead of bulk processing
-            total_exchanges = len(result['conversation_data'])
+            # Process entire file at once with temporal learning
+            temporal_result = huey.network.process_file_with_mode(tmp_file_path, conversation_mode=conversation_mode)
             
-            # Process each exchange individually with progress updates
-            for i, (speaker_id, text) in enumerate(result['conversation_data']):
-                # Update progress
-                progress = (i + 1) / total_exchanges
-                progress_bar.progress(progress)
-                
-                # Update status with enhanced milestone reporting
-                elapsed_time = time.time() - start_time
-                exchanges_per_sec = (i + 1) / max(elapsed_time, 1)
-                remaining_exchanges = total_exchanges - (i + 1)
-                est_remaining_time = remaining_exchanges / max(exchanges_per_sec, 0.1)
-                
-                # Enhanced milestone notifications
-                progress_pct = int(progress * 100)
-                if (i + 1) % max(1, total_exchanges // 20) == 0:  # Every 5% or major milestones
-                    if progress_pct in [10, 25, 50, 75, 90]:
-                        time_estimate.success(f"🎯 **{progress_pct}% Milestone** - Excellent progress!")
-                
-                # Simple progress display without warp factor
-                warp_display = ""
-                
-                status_text.text(f"Processing exchange {i+1:,}/{total_exchanges:,} ({progress_pct}%) | "
-                               f"Rate: {exchanges_per_sec:.1f}/sec | "
-                               f"{warp_display} | "
-                               f"ETA: {est_remaining_time/60:.1f}min")
-                
-                time_estimate.text(f"⏱️ Elapsed: {elapsed_time/60:.1f}min | "
-                                 f"Estimated remaining: {est_remaining_time/60:.1f}min")
-                
-                # Check timeout
-                if elapsed_time > MAX_PROCESSING_TIME:
-                    st.warning(f"⚠️ TIMEOUT: Processing exceeded {timeout_hours:.1f} hours at exchange {i+1}")
-                    st.info(f"💾 Saving progress: {i+1} exchanges processed successfully")
-                    # Generate analysis from partial results and return success with partial data
-                    analysis_results = huey._generate_comprehensive_analysis()
-                    return {
-                        'success': True,
-                        'partial_results': True,
-                        'exchanges_processed': i+1,
-                        'total_exchanges': total_exchanges,
-                        'timeout_reason': f'Exceeded {timeout_hours:.1f} hour limit',
-                        'analysis': analysis_results,
-                        'huey': huey
-                    }
-                
-                # Check exchange limit
-                if i >= exchange_limit:
-                    st.warning(f"⚠️ STOPPED: Reached exchange limit of {exchange_limit}")
-                    break
-                
-                # Process this exchange with safe error handling
-                try:
-                    # Track processing time for this exchange
-                    exchange_start = time.time()
-                    
-                    # Limit text length to prevent memory issues
-                    if len(text) > 10000:  # 10k character limit per exchange
-                        text = text[:10000] + "..."
-                        st.warning(f"⚠️ Exchange {i+1} truncated (too long)")
-                    
-                    # Safe processing with error recovery
-                    huey.network.process_speaker_text(speaker_id, text)
-                    
-                    # Check for suspiciously long processing times
-                    exchange_time = time.time() - exchange_start
-                    if exchange_time > 30:  # Flag slow exchanges
-                        st.warning(f"⚠️ Exchange {i+1} took {exchange_time:.1f}s (slow)")
-                        
-                except Exception as e:
-                    error_msg = str(e)
-                    st.error(f"❌ Error processing exchange {i+1}: {error_msg}")
-                    
-                    # For certain errors, try to continue processing
-                    if any(skip_error in error_msg.lower() for skip_error in ['memory', 'timeout', 'overflow', 'recursion']):
-                        st.warning(f"🔄 Skipping problematic exchange {i+1} and continuing...")
-                        st.info(f"   Text preview: {text[:100]}...")
-                        continue  # Skip this exchange but keep going
-                    else:
-                        # For other errors, stop processing
-                        return {'error': f'Processing failed at exchange {i+1}: {error_msg}'}
-                
-                # Update display every 10 exchanges to avoid too much UI updating
-                if (i + 1) % 10 == 0:
-                    time.sleep(0.01)  # Brief pause to allow UI updates
+            # Get results (fix: concepts are in huey.network, the temporal network)
+            concept_count = len(getattr(huey.network, 'concept_neurons', {}))
+            connection_count = len(getattr(huey.network, 'connections', {}))
             
-            # Generate final analysis
-            analysis_results = huey._generate_comprehensive_analysis()
+            st.success(f"✅ **Temporal Processing Complete**: {concept_count} concepts, {connection_count} connections")
             
-            # Check if we exceeded timeout during processing
-            elapsed_time = time.time() - start_time
-            if elapsed_time > MAX_PROCESSING_TIME:
-                st.error(f"⚠️ TIMEOUT: Processing exceeded {timeout_hours:.1f} hours.")
-                return {'error': f'Processing timeout after {timeout_hours:.1f} hours'}
+            # Generate analysis from temporal results
+            analysis_results = {}
+            
+            return {
+                'success': True,
+                'speakers_info': result['speakers_info'],
+                'conversation_data': result['conversation_data'],
+                'analysis_results': analysis_results,
+                'huey': huey,
+                'processing_method': 'temporal_only'
+            }
             
         except Exception as e:
-            elapsed_time = time.time() - start_time
+            st.error(f"❌ Temporal processing failed: {e}")
             import traceback
-            error_details = traceback.format_exc()
-            st.error(f"❌ Processing failed after {elapsed_time/60:.1f} minutes: {str(e)}")
-            st.code(error_details, language="python")  # Show full error for debugging
-            return {'error': f'Processing failed: {str(e)}'}
+            st.code(traceback.format_exc())
+            return {'error': f'Temporal processing failed: {e}'}
+        finally:
+            os.unlink(tmp_file_path)
         
-        # Update final status
-        elapsed_time = time.time() - start_time
-        progress_bar.progress(1.0)
-        status_text.success(f"✅ Processing complete! Processed {total_exchanges} exchanges in {elapsed_time/60:.1f} minutes")
-        time_estimate.info(f"⏱️ Average rate: {total_exchanges/(elapsed_time/60):.1f} exchanges/minute")
-        
+        # Return successful temporal processing results
         return {
             'success': True,
             'speakers_info': result['speakers_info'],
             'conversation_data': result['conversation_data'],
-            'analysis_results': analysis_results
+            'huey': huey
         }
         
     except Exception as e:
         return {'error': str(e)}
-
-def analyze_concept_flow(network, concept, threshold=0.1):
-    """
-    Analyze directional flow patterns for a specific concept using left/right eigenvectors.
-    
-    Args:
-        network: Huey network instance
-        concept: The concept to analyze
-        threshold: Minimum connection strength threshold
-        
-    Returns:
-        Dictionary with outgoing/incoming flows and asymmetry metrics
-    """
-    try:
-        # STRICT VALIDATION - NO FAKE DATA
-        if not hasattr(network, 'word_to_neuron') or not network.word_to_neuron:
-            raise ValueError("Network has no word_to_neuron mapping")
-            
-        if not hasattr(network, 'neuron_to_word') or not network.neuron_to_word:
-            raise ValueError("Network has no neuron_to_word mapping")
-            
-        # Check for connection data
-        connection_data = None
-        if hasattr(network, 'synaptic_strengths') and network.synaptic_strengths:
-            connection_data = network.synaptic_strengths
-        elif hasattr(network, 'connections') and network.connections:
-            connection_data = network.connections
-        elif hasattr(network, 'inertial_mass') and network.inertial_mass:
-            connection_data = network.inertial_mass
-        else:
-            raise ValueError("Network has no connection data (synaptic_strengths, connections, or inertial_mass)")
-            
-        if concept not in network.word_to_neuron:
-            raise ValueError(f"Concept '{concept}' not found in network")
-            
-        concept_id = network.word_to_neuron[concept]
-        
-        # Build asymmetric connection matrix
-        num_neurons = len(network.neuron_to_word)
-        outgoing_matrix = np.zeros((num_neurons, num_neurons))
-        incoming_matrix = np.zeros((num_neurons, num_neurons))
-        
-        # Create index mapping
-        neuron_ids = list(network.neuron_to_word.keys())
-        id_to_index = {nid: i for i, nid in enumerate(neuron_ids)}
-        
-        if concept_id not in id_to_index:
-            return None
-            
-        concept_idx = id_to_index[concept_id]
-        
-        # Fill matrices with directional connections
-        for (i, j), strength in connection_data.items():
-            if strength >= threshold and i in id_to_index and j in id_to_index:
-                idx_i, idx_j = id_to_index[i], id_to_index[j]
-                outgoing_matrix[idx_i][idx_j] = strength  # i → j
-                incoming_matrix[idx_j][idx_i] = strength  # j ← i
-        
-        # Analyze outgoing influences (right eigenvector)
-        outgoing_influences = []
-        for j in range(num_neurons):
-            if j != concept_idx:
-                strength = outgoing_matrix[concept_idx][j]
-                if strength >= threshold:
-                    target_id = neuron_ids[j]
-                    target_word = network.neuron_to_word[target_id]
-                    outgoing_influences.append((target_word, strength))
-        
-        # Analyze incoming influences (left eigenvector)
-        incoming_influences = []
-        for i in range(num_neurons):
-            if i != concept_idx:
-                strength = incoming_matrix[concept_idx][i]
-                if strength >= threshold:
-                    source_id = neuron_ids[i]
-                    source_word = network.neuron_to_word[source_id]
-                    incoming_influences.append((source_word, strength))
-        
-        # Sort by strength
-        outgoing_influences.sort(key=lambda x: x[1], reverse=True)
-        incoming_influences.sort(key=lambda x: x[1], reverse=True)
-        
-        # Calculate asymmetry score
-        total_outgoing = sum(strength for _, strength in outgoing_influences)
-        total_incoming = sum(strength for _, strength in incoming_influences)
-        total_flow = total_outgoing + total_incoming
-        
-        asymmetry_score = 0
-        if total_flow > 0:
-            asymmetry_score = abs(total_outgoing - total_incoming) / total_flow
-        
-        # Validate that we found some connections
-        if not outgoing_influences and not incoming_influences:
-            raise ValueError(f"No connections found for concept '{concept}' above threshold {threshold}")
-        
-        return {
-            'concept': concept,
-            'outgoing': outgoing_influences,
-            'incoming': incoming_influences,
-            'asymmetry_score': asymmetry_score,
-            'total_outgoing': total_outgoing,
-            'total_incoming': total_incoming
-        }
-        
-    except Exception as e:
-        # Return error instead of None to make problems visible
-        return {'error': str(e)}
-
-def analyze_network_asymmetry(network, threshold=0.1):
-    """
-    Analyze network-wide asymmetry patterns and flow efficiency.
-    
-    Args:
-        network: Huey network instance
-        threshold: Minimum connection strength threshold
-        
-    Returns:
-        Dictionary with network asymmetry metrics
-    """
-    try:
-        # Build directional connection matrix
-        neuron_ids = list(network.neuron_to_word.keys())
-        num_neurons = len(neuron_ids)
-        id_to_index = {nid: i for i, nid in enumerate(neuron_ids)}
-        
-        forward_matrix = np.zeros((num_neurons, num_neurons))
-        backward_matrix = np.zeros((num_neurons, num_neurons))
-        
-        # Fill matrices
-        strong_connections = 0
-        total_connections = 0
-        asymmetric_connections = 0
-        
-        for (i, j), strength in network.connections.items():
-            if i in id_to_index and j in id_to_index:
-                idx_i, idx_j = id_to_index[i], id_to_index[j]
-                forward_matrix[idx_i][idx_j] = strength
-                backward_matrix[idx_j][idx_i] = strength
-                
-                if strength >= threshold:
-                    strong_connections += 1
-                    # Check for asymmetry
-                    reverse_key = (j, i)
-                    reverse_strength = network.connections.get(reverse_key, 0)
-                    if abs(strength - reverse_strength) > 0.1:
-                        asymmetric_connections += 1
-                
-                total_connections += 1
-        
-        # Calculate overall asymmetry
-        asymmetry_matrix = np.abs(forward_matrix - backward_matrix)
-        total_strength = np.sum(forward_matrix + backward_matrix)
-        overall_asymmetry = np.sum(asymmetry_matrix) / max(total_strength, 1e-6)
-        
-        # Calculate flow efficiency (how well information flows)
-        # Based on spectral properties of the adjacency matrix
-        try:
-            eigenvalues = np.linalg.eigvals(forward_matrix)
-            real_eigenvals = np.real(eigenvalues)
-            flow_efficiency = np.max(real_eigenvals) / max(np.mean(real_eigenvals), 1e-6)
-            flow_efficiency = min(flow_efficiency, 10.0)  # Cap at reasonable value
-        except:
-            flow_efficiency = 0.0
-        
-        # Find most asymmetric concepts
-        concept_asymmetries = []
-        for i, neuron_id in enumerate(neuron_ids):
-            if neuron_id in network.neuron_to_word:
-                word = network.neuron_to_word[neuron_id]
-                
-                # Calculate outgoing vs incoming asymmetry
-                outgoing_strength = np.sum(forward_matrix[i, :])
-                incoming_strength = np.sum(backward_matrix[i, :])
-                total_strength = outgoing_strength + incoming_strength
-                
-                if total_strength > threshold:
-                    asymmetry = abs(outgoing_strength - incoming_strength) / total_strength
-                    flow_type = "outgoing" if outgoing_strength > incoming_strength else "incoming"
-                    if asymmetry > 0.1:  # Only include significantly asymmetric concepts
-                        concept_asymmetries.append((word, asymmetry, flow_type))
-        
-        # Sort by asymmetry score
-        concept_asymmetries.sort(key=lambda x: x[1], reverse=True)
-        
-        return {
-            'overall_asymmetry': overall_asymmetry,
-            'strong_asymmetric_connections': asymmetric_connections,
-            'flow_efficiency': flow_efficiency,
-            'total_connections': total_connections,
-            'strong_connections': strong_connections,
-            'top_asymmetric_concepts': concept_asymmetries[:20]
-        }
-        
-    except Exception as e:
-        print(f"Error in analyze_network_asymmetry: {e}")
-        return None
-
-def create_neuron_connection_plot(network, concept_name, neuron_id, max_connections=20, main_plot_coordinates=None):
-    """Create connection plot using the SAME coordinate space as main 3D plot with highlighting.
-    
-    SCIENTIFIC INTEGRITY: Uses the same coordinate system as main plot to preserve geometric relationships.
-    No recalculation of coordinates - just highlights connections within the true network space.
-    """
-    import plotly.graph_objects as go
-    import numpy as np
-    
-    st.write(f"🔍 DEBUG: Creating plot for '{concept_name}' with neuron_id: {neuron_id}")
-    st.write(f"🔍 DEBUG: max_connections parameter = {max_connections} (type: {type(max_connections)})")
-    st.write(f"🔍 DEBUG: main_plot_coordinates = {main_plot_coordinates is not None}")
-    if main_plot_coordinates:
-        st.write(f"🔍 DEBUG: coordinate keys: {list(main_plot_coordinates.keys())[:10]}")
-        st.write(f"🔍 DEBUG: neuron_id {neuron_id} in coords: {neuron_id in main_plot_coordinates}")
-    st.write(f"🔍 DEBUG: Network has connections: {hasattr(network, 'connections')}")
-    st.write(f"🔍 DEBUG: Network has inertial_mass: {hasattr(network, 'inertial_mass')}")
-    if hasattr(network, 'connections'):
-        st.write(f"🔍 DEBUG: Total connections entries: {len(network.connections)}")
-    if hasattr(network, 'inertial_mass'):
-        st.write(f"🔍 DEBUG: Total inertial_mass entries: {len(network.inertial_mass)}")
-    
-    # Find all connections for this neuron, then select top N by strength
-    all_connections = {}
-    
-    # Use actual connection strengths
-    if hasattr(network, 'connections'):
-        st.write("🔍 DEBUG: Using connections attribute")
-        for (i, j), strength in network.connections.items():
-            if i == neuron_id and j in network.neuron_to_word:
-                all_connections[j] = strength
-            elif j == neuron_id and i in network.neuron_to_word:
-                all_connections[i] = strength
-    elif hasattr(network, 'inertial_mass'):
-        st.write("🔍 DEBUG: Falling back to inertial_mass (no connections attribute)")
-        for (i, j), mass in network.inertial_mass.items():
-            if i == neuron_id and j in network.neuron_to_word:
-                all_connections[j] = mass
-            elif j == neuron_id and i in network.neuron_to_word:
-                all_connections[i] = mass
-    
-    # Sort connections by strength and take top N
-    if all_connections:
-        sorted_connections = sorted(all_connections.items(), key=lambda x: x[1], reverse=True)
-        
-        # Default: show connections above 25% of max strength
-        max_strength = sorted_connections[0][1] if sorted_connections else 0
-        default_threshold = max_strength * 0.25
-        connections_above_25pct = [conn for conn in sorted_connections if conn[1] >= default_threshold]
-        
-        st.write(f"🔍 DEBUG: Found {len(all_connections)} total connections")
-        st.write(f"🔍 DEBUG: {len(connections_above_25pct)} connections above 25% threshold ({default_threshold:.6f})")
-        
-        # Take top N connections (user's choice)
-        selected_connections = sorted_connections[:max_connections]
-        connected_neurons = dict(selected_connections)
-        
-        st.write(f"🔍 DEBUG: Showing top {len(connected_neurons)} connections (max_connections={max_connections})")
-        
-        # Show sample of selected connections
-        if connected_neurons:
-            sample_connections = list(connected_neurons.items())[:3]
-            st.write(f"🔍 DEBUG: Top 3 selected: {[(network.neuron_to_word[nid], strength) for nid, strength in sample_connections]}")
-    else:
-        connected_neurons = {}
-    
-    # Debug: Show mass distribution of connections
-    if connected_neurons:
-        masses = list(connected_neurons.values())
-        st.write(f"🔍 DEBUG: Connection mass range: {min(masses):.3f} to {max(masses):.3f}")
-        st.write(f"🔍 DEBUG: Sample masses: {sorted(masses, reverse=True)[:5]}")
-        above_threshold = [m for m in masses if m >= 0.5]
-        st.write(f"🔍 DEBUG: {len(above_threshold)}/{len(masses)} connections above 0.5 threshold")
-    
-    if not connected_neurons:
-        st.warning(f"No connections found for '{concept_name}' (neuron_id: {neuron_id})")
-        st.write(f"Debug: Network has {len(network.inertial_mass) if hasattr(network, 'inertial_mass') else 0} total connections")
-        
-        # Show first few connections to see what neuron IDs exist
-        if hasattr(network, 'inertial_mass') and network.inertial_mass:
-            st.write("Sample connections:")
-            for i, ((id1, id2), mass) in enumerate(list(network.inertial_mass.items())[:5]):
-                word1 = network.neuron_to_word.get(id1, f"unknown_{id1}")
-                word2 = network.neuron_to_word.get(id2, f"unknown_{id2}")
-                st.write(f"  {id1}({word1}) <-> {id2}({word2}): {mass:.3f}")
-        return None
-    
-    # Include the selected neuron itself (always show the center neuron)
-    if hasattr(network, 'connections'):
-        self_strength = sum(strength for (i,j), strength in network.connections.items() 
-                           if i == neuron_id or j == neuron_id)
-        connected_neurons[neuron_id] = self_strength
-    else:
-        # Fallback to inertial_mass for self
-        connected_neurons[neuron_id] = sum(mass for (i,j), mass in network.inertial_mass.items() 
-                                          if i == neuron_id or j == neuron_id)
-    
-    # SCIENTIFIC INTEGRITY: Use coordinates from main 3D plot to preserve geometric relationships
-    # No recalculation - use the EXACT same concept space as main plot with highlighting only
-    if main_plot_coordinates is None:
-        st.error("⚠️ No main plot coordinates provided - cannot preserve coordinate system integrity")
-        return None
-    
-    # Use ALL concepts from the main plot (same space) - not just connected ones
-    concepts_data = []
-    positions = []
-    
-    for concept_id, coords in main_plot_coordinates.items():
-        if concept_id in network.neuron_to_word:
-            word = network.neuron_to_word[concept_id]
-            # Calculate mass for this concept
-            concept_mass = sum(mass for (i, j), mass in network.inertial_mass.items() 
-                             if i == concept_id or j == concept_id)
-            
-            concepts_data.append({'name': word, 'mass': concept_mass, 'id': concept_id})
-            positions.append(coords)
-    
-    if len(concepts_data) < 2:
-        st.error("Not enough concepts found in main coordinate system")
-        return None
-    
-    # Convert to numpy array 
-    positions = np.array(positions)
-    
-    # Find the selected concept index in our filtered list
-    center_idx = None
-    for i, concept in enumerate(concepts_data):
-        if concept['id'] == neuron_id:
-            center_idx = i
-            break
-    
-    if center_idx is None:
-        st.error(f"Selected concept '{concept_name}' not found in coordinate system")
-        return None
-    
-    # DEBUG: Show coordinates from main plot (should NOT be [0,0,0] for selected concept)
-    center_coords = positions[center_idx]
-    st.write(f"🔍 DEBUG COORDINATES: '{concept_name}' natural position = [{center_coords[0]:.3f}, {center_coords[1]:.3f}, {center_coords[2]:.3f}]")
-    
-    # Check if suspiciously close to origin (would indicate hidden centering)
-    distance_from_origin = np.sqrt(np.sum(center_coords**2))
-    if distance_from_origin < 0.01:
-        st.warning(f"⚠️  SUSPICIOUS: '{concept_name}' is suspiciously close to origin (distance: {distance_from_origin:.6f}) - possible hidden centering!")
-    
-    # Create plot
-    fig = go.Figure()
-    
-    # Add all connected concepts
-    x, y, z = positions[:, 0], positions[:, 1], positions[:, 2]
-    masses = [c['mass'] for c in concepts_data]
-    names = [c['name'] for c in concepts_data]
-    max_mass = max(masses)
-    
-    colors = ['red' if c['name'] == concept_name else 'lightblue' for c in concepts_data]
-    
-    fig.add_trace(go.Scatter3d(
-        x=x, y=y, z=z,
-        mode='markers+text',
-        marker=dict(
-            size=[max(15, m/max_mass*40 + 20) for m in masses],  # Larger, more visible markers
-            color=colors,
-            opacity=0.9,
-            line=dict(width=2, color='black')  # Black outlines for visibility
-        ),
-        text=names,
-        textposition="top center",  # Position text above markers
-        textfont=dict(size=14, color='black'),  # Larger, black text
-        name="Concepts"
-    ))
-    
-    # Add connection lines with variable grey thickness and hue based on strength
-    for i, (other_nid, mass) in enumerate(connected_neurons.items()):
-        if other_nid != neuron_id:  # Don't draw line to self
-            # Find the index safely - skip if not in main plot
-            other_idx = None
-            for j, c in enumerate(concepts_data):
-                if c['id'] == other_nid:
-                    other_idx = j
-                    break
-            
-            if other_idx is None:
-                continue  # Skip connections to concepts not in the main plot
-            
-            # Calculate line properties based on connection strength (using same normalization as filtering)
-            raw_strength = mass / connection_max_strength if 'connection_max_strength' in locals() and connection_max_strength > 0 else mass / max_mass
-            
-            # Use reasonable line width scaling (max 15 pixels for strongest connection)
-            line_width = max(2, raw_strength * 15)  # 2-15 pixels based on normalized strength
-            
-            # Alpha based on raw strength: 0.4 to 0.9 (visible but allows variation)
-            alpha = 0.4 + (raw_strength * 0.5)
-            
-            # Debug the actual values (only show first 3 to avoid spam)
-            if i < 3:
-                st.write(f"🔍 DEBUG CONNECTION {i+1}: mass={mass:.6f}, max_mass={max_mass:.6f}, raw_strength={raw_strength:.6f}, line_width={line_width:.1f}, alpha={alpha:.3f}")
-            
-            # Color scale: blue (weak) to red (strong) for better visibility
-            if raw_strength < 0.5:
-                # Weak connections: blue to purple
-                red_val = int(50 + raw_strength * 100)
-                green_val = int(50 + raw_strength * 50) 
-                blue_val = int(200 - raw_strength * 50)
-            else:
-                # Strong connections: purple to red
-                red_val = int(150 + (raw_strength - 0.5) * 105)
-                green_val = int(100 - (raw_strength - 0.5) * 100)
-                blue_val = int(150 - (raw_strength - 0.5) * 150)
-            
-            line_color = f'rgba({red_val}, {green_val}, {blue_val}, {alpha})'
-            
-            fig.add_trace(go.Scatter3d(
-                x=[positions[center_idx, 0], positions[other_idx, 0]],
-                y=[positions[center_idx, 1], positions[other_idx, 1]], 
-                z=[positions[center_idx, 2], positions[other_idx, 2]],
-                mode='lines',
-                line=dict(color=line_color, width=line_width),
-                hovertemplate=f'Connection strength: {raw_strength:.3f}<extra></extra>',
-                showlegend=False
-            ))
-    
-    fig.update_layout(
-        title=f"🎯 All Connections for '{concept_name}' ({len(connected_neurons)-1} connections)<br><sub>📊 Natural eigenvector positioning (no artificial centering)</sub>",
-        scene=dict(
-            xaxis_title="Dimension 1",
-            yaxis_title="Dimension 2", 
-            zaxis_title="Dimension 3"
-        )
-    )
-    
-    return fig
-
-def create_3d_concept_plot(huey, num_concepts, min_mass, connection_direction="both", eigenvector_type="right"):
-    """
-    Create 3D concept visualization using directional eigenvector coordinates
-    
-    Args:
-        huey: Huey network instance
-        num_concepts: Number of top concepts to visualize
-        min_mass: Minimum mass threshold for concepts
-        connection_direction: "outgoing", "incoming", "both" (default)
-        eigenvector_type: "right", "left", "both" (default: "right")
-    """
-    st.write(f"🔥 FUNCTION CALLED: connection_direction='{connection_direction}', eigenvector_type='{eigenvector_type}'")
-    try:
-        # System artifacts to filter out
-        system_artifacts = {
-            'speaker_speaker_a', 'speaker_speaker_b', 'speaker_speaker_c', 
-            'speaker_speaker_d', 'speaker_speaker_e', 'speaker_speaker_f',
-            're', 'e', 'g', '4', 'lines'
-        }
-        
-        # Debug information
-        st.write(f"🔍 **Debug Info:**")
-        st.write(f"- Network has **{len(huey.network.neuron_to_word)}** neurons")
-        st.write(f"- Network has **{len(huey.network.inertial_mass if hasattr(huey.network, 'inertial_mass') else {})}** mass connections")
-        
-        if hasattr(huey.network, 'inertial_mass') and huey.network.inertial_mass:
-            sample_masses = list(huey.network.inertial_mass.items())[:3]
-            st.write(f"- Sample mass entries: {sample_masses}")
-        else:
-            st.write(f"- **No inertial_mass found!**")
-        
-        if huey.network.neuron_to_word:
-            sample_neurons = list(huey.network.neuron_to_word.items())[:5]
-            st.write(f"- Sample neurons: {sample_neurons}")
-        else:
-            st.write(f"- **No neuron_to_word mapping found!**")
-
-        # Get all concepts and their masses, filtering out system artifacts
-        all_concepts = []
-        
-        # Try to use Huey's speaker analysis first (for speaker masses)
-        speaker_masses_found = False
-        plain_text_mode = False
-        
-        if hasattr(huey.network, 'speakers') and huey.network.speakers:
-            st.write(f"- Found **{len(huey.network.speakers)}** speakers: {list(huey.network.speakers.keys())}")
-            
-            # Check if this is plain text mode (single "text" speaker)
-            if len(huey.network.speakers) == 1 and 'text' in [s.lower() for s in huey.network.speakers]:
-                plain_text_mode = True
-                st.write("- **Plain Text Mode** detected - analyzing word concepts directly")
-            else:
-                # Normal conversational mode
-                for speaker in huey.network.speakers:
-                    if hasattr(huey.network, 'analyze_speaker_self_concept'):
-                        analysis = huey.network.analyze_speaker_self_concept(speaker)
-                        mass = analysis.get('self_concept_mass', 0.0)
-                        if mass > 0:
-                            # Use actual speaker neuron ID from network
-                            speaker_neuron_word = speaker.lower()
-                            actual_speaker_id = huey.network.word_to_neuron.get(speaker_neuron_word)
-                            if actual_speaker_id is not None:
-                                all_concepts.append({
-                                    'name': f"Speaker_{speaker}",
-                                    'mass': mass,
-                                    'id': actual_speaker_id  # Use actual neuron ID
-                                })
-                                speaker_masses_found = True
-                            else:
-                                print(f"Warning: Speaker neuron '{speaker_neuron_word}' not found in network")
-        
-        # Get regular concept masses from individual neurons
-        for neuron_id, word in huey.network.neuron_to_word.items():
-            # Skip system artifacts (but be more lenient in plain text mode)
-            if not plain_text_mode and word.lower() in system_artifacts:
-                continue
-            
-            # In plain text mode, skip only the most basic artifacts
-            if plain_text_mode and word.lower() in {'speaker_text', 're', 'e', 'g', '4', 'lines'}:
-                continue
-                
-            # Calculate concept mass from inertial_mass connections
-            total_mass = 0.0
-            if hasattr(huey.network, 'inertial_mass'):
-                for (i, j), mass in huey.network.inertial_mass.items():
-                    if i == neuron_id or j == neuron_id:
-                        total_mass += mass
-            
-            # Debug ALL neurons to see what's happening
-            if word.lower() in ['joe', 'deepseek', 'emary'] or 'joe' in word.lower():
-                st.write(f"🔍 DEBUG NEURON: '{word}' (exact) mass={total_mass:.3f}, min_mass={min_mass}, included={total_mass >= min_mass}")
-            
-            # Only include concepts with significant mass
-            if total_mass >= min_mass:
-                all_concepts.append({
-                    'name': word,
-                    'mass': total_mass,
-                    'id': neuron_id
-                })
-        
-        st.write(f"- Found **{len(all_concepts)}** concepts with mass ≥ {min_mass}")
-        if speaker_masses_found:
-            st.write(f"- ✅ **Speaker masses successfully extracted**")
-        
-        # Sort by mass and take top concepts
-        all_concepts.sort(key=lambda x: x['mass'], reverse=True)
-        concepts_data = all_concepts[:num_concepts]
-        
-        if len(concepts_data) < 3:
-            st.error(f"Only found {len(concepts_data)} concepts total")
-            return None, None, None
-            
-        # Build association matrix for selected concepts
-        n_concepts = len(concepts_data)
-        association_matrix = np.zeros((n_concepts, n_concepts))
-        concept_ids = [c['id'] for c in concepts_data]
-        id_to_index = {concept_id: i for i, concept_id in enumerate(concept_ids)}
-        
-        # Fill association matrix with DIRECTIONAL connection strengths
-        connection_source = None
-        if hasattr(huey.network, 'synaptic_strengths') and huey.network.synaptic_strengths:
-            connection_source = 'synaptic_strengths'
-            for (i, j), strength in huey.network.synaptic_strengths.items():
-                if i in id_to_index and j in id_to_index:
-                    idx_i, idx_j = id_to_index[i], id_to_index[j]
-                    
-                    # Directional connections: i → j (temporal/causal flow)
-                    if connection_direction in ["outgoing", "both"]:
-                        association_matrix[idx_i][idx_j] = strength
-                    if connection_direction in ["incoming", "both"]:
-                        association_matrix[idx_j][idx_i] = strength
-                        
-        elif hasattr(huey.network, 'inertial_mass'):
-            connection_source = 'inertial_mass'
-            max_mass = max(huey.network.inertial_mass.values()) if huey.network.inertial_mass else 1.0
-            for (i, j), mass in huey.network.inertial_mass.items():
-                if i in id_to_index and j in id_to_index:
-                    idx_i, idx_j = id_to_index[i], id_to_index[j]
-                    strength = mass / max_mass  # Normalize by actual max
-                    
-                    # Directional connections: i → j (temporal/causal flow from Hebbian learning)
-                    if connection_direction in ["outgoing", "both"]:
-                        association_matrix[idx_i][idx_j] = strength
-                    if connection_direction in ["incoming", "both"]:
-                        association_matrix[idx_j][idx_i] = strength
-        
-        # Initialize connection_metadata before try block
-        connection_metadata = []
-        
-        # ROBUST EIGENVECTOR ANALYSIS (using same approach as working connection plot)
-        try:
-            n = len(concepts_data)
-            concept_ids = [c['id'] for c in concepts_data]
-            
-            # Use the association matrix already built above with proper directional logic
-            # (The matrix was already built in lines 1276-1303 based on connection_direction parameter)
-            
-            # Convert to distance matrix and apply Torgerson double-centering (same as working connection plot)
-            max_sim = np.max(association_matrix) if np.max(association_matrix) > 0 else 1.0
-            distance_matrix = max_sim - association_matrix
-            
-            # Double centering for Torgerson transformation
-            H = np.eye(n) - np.ones((n, n)) / n
-            B = -0.5 * H @ (distance_matrix**2) @ H
-            
-            eigenvalues, eigenvectors = np.linalg.eigh(B)
-            idx = np.argsort(eigenvalues)[::-1]
-            
-            # Take top 3 dimensions with proper pseudo-Riemannian scaling
-            selected_eigenvals = eigenvalues[idx[:3]]
-            selected_eigenvecs = eigenvectors[:, idx[:3]]
-            
-            # Proper coordinate calculation preserving pseudo-Riemannian structure
-            positions = np.zeros((n, 3))
-            for i in range(3):
-                eigenval = selected_eigenvals[i]
-                eigenvec = selected_eigenvecs[:, i]
-                if eigenval > 1e-8:
-                    # Positive eigenvalue: standard scaling
-                    positions[:, i] = eigenvec * np.sqrt(eigenval)
-                elif eigenval < -1e-8:
-                    # Negative eigenvalue: preserve negative metric signature
-                    positions[:, i] = eigenvec * np.sqrt(-eigenval)
-                else:
-                    # Near-zero eigenvalue: minimal scaling
-                    positions[:, i] = eigenvec * 1e-4
-            
-            positions *= 3  # Scale up for better visual separation
-            
-            # Double-centering already centers on centroid - no additional centering needed
-            
-            eigenvector_analysis = "robust_symmetric_approach"
-            
-            # Calculate warp factor: sum of positive eigenvalues / sum of all eigenvalues
-            print(f"🔥 REACHED WARP FACTOR CALCULATION SECTION")
-            positive_eigenvals = eigenvalues[eigenvalues > 1e-10]
-            negative_eigenvals = eigenvalues[eigenvalues < -1e-10]
-            
-            print(f"WARP DEBUG ({eigenvector_analysis}): {len(positive_eigenvals)} pos, {len(negative_eigenvals)} neg")
-            print(f"WARP DEBUG eigenvalue sample: {eigenvalues[:5]}")
-            
-            if len(positive_eigenvals) > 0:
-                sum_positive = np.sum(positive_eigenvals)
-                sum_negative = np.sum(negative_eigenvals)  # This will be negative
-                sum_all = sum_positive + sum_negative
-                
-                print(f"WARP DEBUG sums: pos={sum_positive:.6f}, neg={sum_negative:.6f}, all={sum_all:.6f}")
-                print(f"WARP DEBUG all eigenvals: {eigenvalues}")
-                print(f"WARP DEBUG eigenval range: min={np.min(eigenvalues):.6f}, max={np.max(eigenvalues):.6f}")
-                
-                if abs(sum_all) > 1e-8:
-                    warp_factor = sum_positive / sum_all  # Use algebraic sum directly (no abs)
-                    print(f"WARP DEBUG calculated: {warp_factor:.6f}")
-                else:
-                    # When positive and negative eigenvalues cancel out exactly, 
-                    # the space is perfectly balanced - warp factor approaches infinity
-                    warp_factor = float('inf')
-                    print(f"WARP DEBUG perfectly balanced space: infinite warp factor")
-                
-                # Handle infinity and negative warp factors in display
-                if warp_factor == float('inf'):
-                    st.info(f"🚀 **Warp Factor: ∞** (perfectly balanced) | "
-                           f"Positive: {len(positive_eigenvals)} | "
-                           f"Negative: {len(negative_eigenvals)} eigenvalues")
-                elif warp_factor < 0:
-                    st.warning(f"🚀 **Warp Factor: {warp_factor:.3f}** (negative space) | "
-                              f"Positive: {len(positive_eigenvals)} | "
-                              f"Negative: {len(negative_eigenvals)} eigenvalues")
-                else:
-                    st.info(f"🚀 **Warp Factor: {warp_factor:.3f}** | "
-                           f"Positive: {len(positive_eigenvals)} | "
-                           f"Negative: {len(negative_eigenvals)} eigenvalues")
-            else:
-                warp_factor = 1.0
-                print(f"WARP DEBUG: No positive eigenvalues, defaulting to 1.0")
-                st.info("🚀 **Warp Factor: 1.000** (no eigenvalues found)")
-            
-            # Extract coordinates from robust positioning (same as working connection plot)
-            x, y, z = positions[:, 0], positions[:, 1], positions[:, 2]
-            
-            # Calculate percentage of variance explained by first 3 components
-            total_variance = np.sum(np.abs(eigenvalues))
-            variance_3d = np.sum(np.abs(eigenvalues[:3]))
-            variance_percent = (variance_3d / total_variance * 100) if total_variance > 0 else 0
-            
-            st.success(f"✅ Using robust eigenvector coordinates")
-            st.write(f"Top 3 eigenvalues: {eigenvalues[:3]}")
-            st.write(f"Variance explained by 3D plot: {variance_percent:.1f}%")
-            
-            # Now build connections list with actual coordinates
-            connections = []
-            for conn in connection_metadata:
-                idx_i, idx_j = id_to_index[conn['from_id']], id_to_index[conn['to_id']]
-                connections.append({
-                    'x': [x[idx_i], x[idx_j]], 
-                    'y': [y[idx_i], y[idx_j]], 
-                    'z': [z[idx_i], z[idx_j]],
-                    'strength': conn['strength'],
-                    'from_id': conn['from_id'],
-                    'to_id': conn['to_id']
-                })
-            
-        except np.linalg.LinAlgError as e:
-            st.error("❌ **Eigendecomposition Failed - Cannot Generate 3D Visualization**")
-            st.error(f"Mathematical error: {str(e)}")
-            st.warning("⚠️ **No Valid 3D Coordinates Available**")
-            st.info("💡 Possible reasons:")
-            st.info("• Association matrix is singular or poorly conditioned")
-            st.info("• Network has insufficient connection data for eigenvector analysis")
-            st.info("• File processing may have failed - check other tabs for errors")
-            st.info("• Network connections are too sparse or weak")
-            st.stop()  # Stop execution - do not create fake visualization
-        
-        # Extract data for plotting
-        names = [c['name'] for c in concepts_data]
-        masses = [c['mass'] for c in concepts_data]
-        ids = [c['id'] for c in concepts_data]
-        
-        # Create mapping from neuron_id to position index
-        id_to_index = {neuron_id: i for i, neuron_id in enumerate(ids)}
-        
-        # Debug: Check what connection attributes exist
-        connection_attrs = []
-        if hasattr(huey.network, 'synaptic_strengths'):
-            connection_attrs.append('synaptic_strengths')
-        if hasattr(huey.network, 'inertial_mass'):
-            connection_attrs.append('inertial_mass')
-        if hasattr(huey.network, 'associations'):
-            connection_attrs.append('associations')
-        
-        # Store connection metadata for later use (coordinates will be added after positioning)
-        connection_metadata = []
-        connection_source = None
-        
-        # Debug: Check what connection data exists
-        st.write(f"🔍 DEBUG: Network has synaptic_strengths: {hasattr(huey.network, 'synaptic_strengths')}")
-        st.write(f"🔍 DEBUG: Network has inertial_mass: {hasattr(huey.network, 'inertial_mass')}")
-        
-        if hasattr(huey.network, 'inertial_mass'):
-            st.write(f"🔍 DEBUG: Total inertial_mass entries: {len(huey.network.inertial_mass)}")
-            st.write(f"🔍 DEBUG: Sample inertial_mass: {list(huey.network.inertial_mass.items())[:3]}")
-        
-        # Try synaptic_strengths first - RESPECTING DIRECTIONAL ANALYSIS
-        if hasattr(huey.network, 'synaptic_strengths'):
-            connection_source = 'synaptic_strengths'
-            total_synaptic = len(huey.network.synaptic_strengths)
-            matching_synaptic = 0
-            for (i, j), strength in huey.network.synaptic_strengths.items():
-                if i in id_to_index and j in id_to_index:
-                    matching_synaptic += 1
-                    if strength > 0.01:
-                        # DIRECTIONAL LOGIC: only add connections based on user selection
-                        add_connection = False
-                        if connection_direction == "outgoing":
-                            add_connection = True  # i → j direction only
-                        elif connection_direction == "incoming":  
-                            # For incoming analysis, we want j → i, so swap the direction
-                            i, j = j, i  # Reverse the direction for left eigenvector analysis
-                            add_connection = True
-                        else:  # connection_direction == "both"
-                            add_connection = True  # Include all directions
-                            
-                        if add_connection:
-                            connection_metadata.append({
-                                'from_id': i,
-                                'to_id': j,
-                                'strength': strength
-                            })
-            st.write(f"🔍 DEBUG: {matching_synaptic}/{total_synaptic} synaptic connections match selected concepts")
-        
-        # If no synaptic strengths, try inertial_mass connections - RESPECTING DIRECTIONAL ANALYSIS  
-        elif hasattr(huey.network, 'inertial_mass'):
-            connection_source = 'inertial_mass'
-            total_mass = len(huey.network.inertial_mass)
-            matching_mass = 0
-            significant_mass = 0
-            for (i, j), mass in huey.network.inertial_mass.items():
-                if i in id_to_index and j in id_to_index:
-                    matching_mass += 1
-                    if mass > 0.01:
-                        # DIRECTIONAL LOGIC: only add connections based on user selection
-                        add_connection = False
-                        if connection_direction == "outgoing":
-                            add_connection = True  # i → j direction only
-                        elif connection_direction == "incoming":
-                            # For incoming analysis, we want j → i, so swap the direction  
-                            i, j = j, i  # Reverse the direction for left eigenvector analysis
-                            add_connection = True
-                        else:  # connection_direction == "both"
-                            add_connection = True  # Include all directions
-                            
-                        if add_connection:
-                            significant_mass += 1
-                            connection_metadata.append({
-                                'from_id': i,
-                                'to_id': j,
-                                'strength': min(1.0, mass / 5.0)
-                            })
-            st.write(f"🔍 DEBUG: {matching_mass}/{total_mass} inertial_mass connections match selected concepts")
-            st.write(f"🔍 DEBUG: {significant_mass} connections above 0.01 threshold")
-        
-        st.write(f"🔍 DEBUG: Found {len(connection_metadata)} valid connections for '{connection_direction}' analysis")
-        
-        # Create figure with just the concepts first
-        fig = go.Figure()
-        
-        # Add concept nodes
-        fig.add_trace(go.Scatter3d(
-            x=x, y=y, z=z,
-            mode='markers+text',
-            marker=dict(
-                size=[m/max(masses)*20 + 5 for m in masses],
-                color=masses,
-                colorscale='Viridis',
-                colorbar=dict(title="Concept Mass"),
-                opacity=0.8
-            ),
-            text=names,
-            textposition="middle right",
-            hovertemplate='<b>%{text}</b><br>Mass: %{marker.color:.3f}<extra></extra>',
-            name="concepts"
-        ))
-        # Create descriptive title based on analysis type
-        direction_desc = {
-            "outgoing": "Outgoing (Influence) Flow",
-            "incoming": "Incoming (Influenced) Flow", 
-            "both": "Bidirectional Flow"
-        }
-        
-        eigenvector_desc = {
-            "right": "Right Eigenvectors (How concepts influence others)",
-            "left": "Left Eigenvectors (How concepts are influenced)",
-            "both": "Symmetric Analysis (Traditional MDS)"
-        }
-        
-        if connection_direction == "both":
-            title_text = f'3D Concept Space - Traditional Symmetric Analysis ({len(concepts_data)} concepts, {len(connections)} connections)'
-        else:
-            title_text = f'3D Concept Space - Directional Analysis: {direction_desc[connection_direction]} ({len(concepts_data)} concepts, {len(connections)} connections)'
-        
-        # Add subtitle with correct description
-        if connection_direction == "both":
-            subtitle_desc = "Symmetric Analysis (Traditional MDS)"
-        else:
-            subtitle_desc = eigenvector_desc[eigenvector_type]
-            
-        if 'variance_percent' in locals():
-            title_text += f'<br><sub>{subtitle_desc} from {connection_source} ({variance_percent:.1f}% variance explained)</sub>'
-        else:
-            title_text += f'<br><sub>{subtitle_desc} from {connection_source}</sub>'
-            
-        fig.update_layout(
-            title=title_text,
-            scene=dict(
-                xaxis_title='1st Eigenvector',
-                yaxis_title='2nd Eigenvector', 
-                zaxis_title='3rd Eigenvector'
-            ),
-            width=800,
-            height=600
-        )
-        
-        # Return complete data for connection plot integration and exports
-        concept_ids = [concepts_data[i]['id'] for i in range(len(concepts_data))]
-        
-        # Calculate metric signature for export
-        positive_count = np.sum(selected_eigenvals > 1e-8)
-        negative_count = np.sum(selected_eigenvals < -1e-8)
-        zero_count = 3 - positive_count - negative_count
-        metric_signature = (positive_count, negative_count, zero_count)
-        
-        return fig, connections, id_to_index, positions, concept_ids, selected_eigenvals, metric_signature, warp_factor
-        
-    except Exception as e:
-        st.error(f"Error creating 3D plot: {e}")
-        import traceback
-        st.error(traceback.format_exc())
-        return None, None, None
-
-def create_mass_comparison_plot(huey, concepts_to_compare):
-    """Create mass comparison bar chart"""
-    try:
-        concept_masses = []
-        
-        for concept in concepts_to_compare:
-            found = False
-            for neuron_id, word in huey.network.neuron_to_word.items():
-                if word.lower() == concept.lower():
-                    # Calculate concept mass from inertial_mass
-                    total_mass = 0.0
-                    if hasattr(huey.network, 'inertial_mass'):
-                        for (i, j), mass in huey.network.inertial_mass.items():
-                            if i == neuron_id or j == neuron_id:
-                                total_mass += mass
-                    
-                    concept_masses.append({
-                        'concept': concept,
-                        'mass': total_mass,
-                        'found': True
-                    })
-                    found = True
-                    break
-            
-            if not found:
-                concept_masses.append({
-                    'concept': concept,
-                    'mass': 0.0,
-                    'found': False
-                })
-        
-        # Filter found concepts
-        found_concepts = [c for c in concept_masses if c['found']]
-        
-        if not found_concepts:
-            return None, concept_masses
-        
-        # Create bar chart
-        df = pd.DataFrame(found_concepts)
-        fig = px.bar(df, x='concept', y='mass', 
-                    title='Concept Mass Comparison',
-                    labels={'mass': 'Mass', 'concept': 'Concept'})
-        fig.update_layout(xaxis_tickangle=-45)
-        
-        return fig, concept_masses
-        
-    except Exception as e:
-        st.error(f"Error creating mass comparison: {e}")
-        return None, []
 
 # Main app
 def main():
-    # Header
-    st.markdown('<h1 class="main-header">🚀 Huey GPU: Revolutionary High-Performance Self-Concept Analysis</h1>', 
+    # Header  
+    st.markdown('<h1 class="main-header">🚀 Huey GPU: Revolutionary High-Performance Self-Concept Analysis</h1>',
                 unsafe_allow_html=True)
     
     # Galileo Company branding - subtle but noticeable
@@ -1727,44 +870,30 @@ def main():
                                   help="Use temporal learning instead of sliding windows")
         
         if use_temporal:
-            temporal_method = st.selectbox("Method", ["lagged", "context"], 
-                                         help="Lagged: sequence-aware with decay, Context: working memory")
             col1, col2 = st.columns(2)
             with col1:
-                max_lag = st.number_input("Max Lag", min_value=3, max_value=15, value=8, step=1,
-                                        help="Maximum temporal distance for connections")
-                tau = st.number_input("Time Decay (τ)", min_value=1.0, max_value=10.0, value=3.0, step=0.5,
+                tau = st.number_input("Time Decay (τ)", min_value=1.0, max_value=10.0, value=6.0, step=0.5,
                                     help="Exponential decay rate over time")
             with col2:
-                eta_fwd = st.number_input("Forward Rate", min_value=1e-4, max_value=1e-1, value=1e-2, format="%.4f",
-                                        help="Forward learning rate")
-                eta_fb = st.number_input("Feedback Rate", min_value=1e-5, max_value=1e-2, value=2e-3, format="%.4f",
-                                       help="Reverse learning rate")
-        
-        # Network connectivity option
-        st.subheader("🔗 Network Connectivity")
-        max_connections_per_neuron = st.number_input("Max Connections per Neuron", 
-                                                   min_value=100, max_value=2000, value=500, step=50,
-                                                   help="Maximum connections each neuron can form (250 was previous limit)")
-        
-        # GPU acceleration option
-        st.subheader("🚀 GPU Acceleration")
-        use_gpu = st.checkbox("Enable GPU Acceleration", value=True, 
-                             help="Revolutionary GPU acceleration for O(n²) activation bottleneck")
+                temporal_learning_rate = st.number_input("Temporal Learning Rate", min_value=0.1, max_value=2.0, value=1.0, step=0.1,
+                                       help="Learning rate for temporal connections")
         
         # Initialize button
-        if st.button("🚀 Initialize Huey GPU", type="primary"):
-            with st.spinner("Initializing GPU-accelerated Huey platform..."):
+        if st.button("🚀 Initialize Huey", type="primary"):
+            with st.spinner("Initializing Huey platform..."):
                 if use_temporal:
-                    # Use our temporal learning class
-                    gpu_network = HueyTemporalSimple(
+                    # Use temporal learning class
+                    from huey_temporal_simple import HueyTemporalSimple
+                    from huey_complete_platform import HueyCompletePlatform
+                    from datetime import datetime
+                    
+                    temporal_network = HueyTemporalSimple(
                         max_neurons=max_neurons,
-                        window_size=window_size,
-                        learning_rate=learning_rate,
-                        use_gpu_acceleration=use_gpu,
-                        use_temporal_weights=True,
+                        use_temporal_weights=True,  
                         tau=tau,
-                        max_connections_per_neuron=max_connections_per_neuron
+                        learning_rate=temporal_learning_rate,
+                        use_gpu_acceleration=True,
+                        max_connections_per_neuron=250
                     )
                     huey = HueyCompletePlatform(
                         session_name=f"temporal_session_{int(datetime.now().timestamp())}",
@@ -1772,11 +901,11 @@ def main():
                         window_size=window_size,
                         learning_rate=learning_rate
                     )
-                    huey.network = gpu_network
-                    st.success(f"✅ Huey🚀 GPU initialized with temporal decay learning (τ={tau})!")
+                    huey.network = temporal_network
+                    st.success(f"✅ Huey🚀 initialized with temporal learning (τ={tau})!")
                 else:
-                    huey = initialize_huey_gpu(max_neurons, window_size, learning_rate, use_gpu)
-                    st.success("✅ Huey🚀 GPU initialized with sliding windows!")
+                    st.error("❌ Standard network routing has been eliminated. Please use temporal learning.")
+                    return
                     
                 st.session_state.huey = huey
                 st.session_state.conversation_processed = False
@@ -1790,1315 +919,547 @@ def main():
     # File upload section
     st.markdown('<h2 class="section-header">📁 Load Data</h2>', unsafe_allow_html=True)
     
-    # Tab for choosing between new conversation or previous session
-    upload_tab, session_tab = st.tabs(["📄 New Conversation", "💾 Previous Session"])
+    # Conversation mode toggle
+    conversation_mode = st.checkbox(
+        "🗨️ Conversation Mode", 
+        value=False,
+        help="Enable for multi-speaker conversations. Disable for single-author texts (Wikipedia, articles, etc.)"
+    )
     
-    with upload_tab:
-        st.subheader("Upload New Conversation File")
-        # Safety Configuration Panel
-        st.info("🛡️ **Processing Safety Controls** - Prevents runaway processes")
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            max_neurons = st.number_input(
-                "Max Neurons", 
-                min_value=100, max_value=500, value=250, step=50,
-                help="Reduce for large files to prevent memory issues"
-            )
-        with col2:
-            timeout_hours = st.number_input(
-                "Timeout (hours)", 
-                min_value=0.5, max_value=12.0, value=2.0, step=0.5,
-                help="Auto-stop if processing takes too long"
-            )
-        with col3:
-            exchange_limit = st.number_input(
-                "Exchange Limit", 
-                min_value=1000, max_value=50000, value=10000, step=1000,
-                help="Maximum exchanges to process (0 = no limit)"
-            )
-        
-        # Update Huey network with new neuron limit
-        if st.session_state.huey.network.max_neurons != max_neurons:
-            st.session_state.huey.network.max_neurons = max_neurons
-            st.success(f"✅ Updated neuron limit to {max_neurons}")
-        
-        # Conversation mode toggle
-        conversation_mode = st.checkbox(
-            "🗨️ Conversation Mode", 
-            value=True,
-            help="Enable for multi-speaker conversations. Disable for single-author texts (Wikipedia, articles, etc.)"
-        )
-        
-        uploaded_file = st.file_uploader(
-            "Choose a conversation file",
-            type=['txt', 'pdf'],
-            help="Upload a .txt or .pdf file. Enable conversation mode for dialogues, disable for single-author texts."
-        )
-        
-        if uploaded_file is not None and not st.session_state.conversation_processed:
-            if st.button("🔍 Process Conversation", type="primary"):
-                with st.spinner("Processing conversation file..."):
-                    # Pass safety parameters to processing function
-                    st.session_state.processing_params = {
-                        'max_neurons': max_neurons,
-                        'timeout_hours': timeout_hours, 
-                        'exchange_limit': exchange_limit
-                    }
-                    result = process_uploaded_file(uploaded_file, st.session_state.huey, 
-                                                 timeout_hours, exchange_limit, conversation_mode)
-                    
-                    if 'error' in result:
-                        st.error(f"❌ Error processing file: {result['error']}")
-                    else:
-                        st.session_state.analysis_results = result
-                        st.session_state.conversation_processed = True
-                        st.success("✅ Conversation processed successfully!")
-                        st.rerun()
+    uploaded_file = st.file_uploader(
+        "Choose a text file",
+        type=['txt'],
+        help="Upload a .txt file. Enable conversation mode for dialogues, disable for single-author texts."
+    )
     
-    with session_tab:
-        st.subheader("Load Previous Analysis Session")
-        
-        # Find existing session files
-        import glob
-        session_files = glob.glob("*_complete_data.json")
-        
-        if session_files:
-            selected_file = st.selectbox(
-                "Choose a previous session:",
-                options=session_files,
-                help="Select a previously exported session file to reload"
-            )
+    if uploaded_file is not None and not st.session_state.conversation_processed:
+        if st.button("🔍 Process File", type="primary"):
+            with st.spinner("Processing file with temporal learning..."):
+                result = process_uploaded_file(uploaded_file, st.session_state.huey, 
+                                             2.0, 10000, conversation_mode)
             
-            if st.button("📂 Load Session Data", type="primary"):
-                if load_previous_session(selected_file, st.session_state.huey):
-                    st.session_state.conversation_processed = True
-                    st.success(f"✅ Loaded session: {selected_file}")
-                    st.rerun()
-                else:
-                    st.error("❌ Failed to load session data")
-        else:
-            st.info("No previous session files found. Export a session first to see it here.")
+            if 'error' in result:
+                st.error(f"❌ Error processing file: {result['error']}")
+            else:
+                st.session_state.analysis_results = result
+                st.session_state.conversation_processed = True
+                st.success("✅ File processed successfully with temporal learning!")
+                st.rerun()
 
-    # Analysis section (only show if conversation is processed)
+    # Analysis section
     if st.session_state.conversation_processed and st.session_state.analysis_results:
         results = st.session_state.analysis_results
         huey = st.session_state.huey
         
-        # Generate network statistics
-        stats = {}
-        if hasattr(huey, 'network') and huey.network:
-            # Neuron statistics
-            total_neurons = len(huey.network.neuron_to_word) if hasattr(huey.network, 'neuron_to_word') else 0
-            total_mass = 0.0
-            active_neurons = 0
-            
-            if hasattr(huey.network, 'inertial_mass'):
-                masses = []
-                for (i, j), mass in huey.network.inertial_mass.items():
-                    masses.append(abs(mass))
-                if masses:
-                    total_mass = sum(masses)
-                    active_neurons = len(set([i for i, j in huey.network.inertial_mass.keys()] + 
-                                           [j for i, j in huey.network.inertial_mass.keys()]))
-            
-            stats['neuron_stats'] = {
-                'total_neurons': total_neurons,
-                'active_neurons': active_neurons,
-                'total_mass': total_mass,
-                'average_mass': total_mass / max(1, active_neurons)
-            }
-            
-            # Connection statistics
-            total_connections = len(huey.network.inertial_mass) if hasattr(huey.network, 'inertial_mass') else 0
-            strengths = []
-            if hasattr(huey.network, 'inertial_mass'):
-                strengths = [abs(mass) for mass in huey.network.inertial_mass.values()]
-            
-            strong_connections = len([s for s in strengths if s > 0.1]) if strengths else 0
-            avg_strength = sum(strengths) / max(1, len(strengths)) if strengths else 0.0
-            max_strength = max(strengths) if strengths else 0.0
-            
-            stats['connection_stats'] = {
-                'total_connections': total_connections,
-                'strong_connections': strong_connections,
-                'average_strength': avg_strength,
-                'max_strength': max_strength
-            }
+        st.markdown('<h2 class="section-header">🧠 Analysis Results</h2>', unsafe_allow_html=True)
         
-        # Analysis Navigation
-        st.markdown('<h2 class="section-header">🧠 Neural Network Analysis Dashboard</h2>', unsafe_allow_html=True)
-        st.markdown("**Explore your conversational data through multiple analytical perspectives**")
-        
-        # Tabbed interface for different analyses
-        tab0, tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
-            "📋 Overview",
-            "🔍 Concepts", 
-            "🗺️ 3D Plot", 
-            "⚖️ Mass", 
-            "🧮 Eigenvals",
-            "📊 Stats",
-            "🧭 Flow",
-            "🕐 W/S",
-            "🌊 Cascade"
-        ])
-        
-        with tab0:
-            st.subheader("📋 Analysis Overview")
-            st.markdown("""
-            Welcome to the Huey Neural Network Analysis Dashboard. Your conversation has been processed and is ready for analysis.
-            
-            **Choose an analysis perspective:**
-            
-            - **🔍 Concepts** - Explore associations between specific concepts
-            - **🗺️ 3D Plot** - Visualize concept relationships in 3D space  
-            - **⚖️ Mass** - Examine concept importance and connection strengths
-            - **🧮 Eigenvals** - Advanced mathematical analysis of network structure
-            - **📊 Stats** - Detailed network statistics and metrics
-            - **🧭 Flow** - Analyze directional concept flows and relationships
-            - **🕐 W/S** - Weight and strength analysis tools
-            - **🌊 Cascade** - Neural activation cascade visualization
-            
-            Select any tab above to begin your analysis.
-            """)
-        
-        with tab1:
-            st.subheader("Explore Concept Associations")
-            
-            # Get available concepts for selection
-            available_concepts = get_available_concepts(huey, min_mass=0.1, max_concepts=100)
-            
-            # Show concept statistics
-            if len(available_concepts) > 1 and available_concepts[0] != "No concepts available":
-                st.info(f"📊 Found **{len(available_concepts)}** concepts with significant mass (≥0.1). Concepts are sorted by strength.")
-            
-            col1, col2, col3 = st.columns([3, 1, 1])
-            with col1:
-                # Multi-selection mode toggle
-                multi_mode = st.checkbox("🔗 Multi-concept analysis", value=True, 
-                                       help="Select multiple concepts to explore their relationships and shared associations (recommended)")
-                
-                if len(available_concepts) > 1 and available_concepts[0] != "No concepts available":
-                    if multi_mode:
-                        # Use multiselect for multiple concepts
-                        selected_concepts = st.multiselect(
-                            "🎯 Select concepts to explore (multiple recommended):",
-                            options=available_concepts,
-                            default=[available_concepts[0], available_concepts[1]] if len(available_concepts) > 1 else [available_concepts[0]] if len(available_concepts) > 0 else [],
-                            help=f"Choose multiple concepts to find shared associations and intersections. Available: {len(available_concepts)} concepts (sorted by mass)"
-                        )
-                        concept_name = selected_concepts  # Will be a list
-                    else:
-                        # Use selectbox for single concept (original behavior)
-                        concept_name = st.selectbox(
-                            "Select concept to explore:",
-                            options=available_concepts,
-                            index=0,
-                            help=f"Choose from {len(available_concepts)} available concepts (sorted by mass)"
-                        )
-                else:
-                    # Fallback to text input if no concepts available
-                    concept_name = st.text_input(
-                        "Enter concept to explore:", 
-                        value="i",
-                        help="No processed concepts found. Try processing a file first, or enter a concept manually."
-                    )
-                    
-            with col2:
-                top_n = st.number_input("Number of associations:", min_value=5, max_value=50, value=15, step=1)
-                
-            with col3:
-                # Add refresh button to update concept list
-                if st.button("🔄 Refresh", help="Refresh concept list"):
-                    st.rerun()
-            
-            # Explain multi-concept benefits
-            if multi_mode and isinstance(concept_name, list) and len(concept_name) > 1:
-                st.info(f"""
-                🔗 **Multi-Concept Analysis Selected** ({len(concept_name)} concepts)
-                
-                This will show you:
-                • **Shared associations** - concepts linked to multiple selected concepts
-                • **Intersection patterns** - what these concepts have in common
-                • **Individual breakdowns** - each concept's unique associations
-                
-                Perfect for exploring questions like: *"What concepts are linked to both '{concept_name[0]}' AND '{concept_name[1]}'?"*
-                """)
-            
-            if st.button("🔍 Analyze Associations"):
-                # Debug: Check what we received
-                print(f"DEBUG: concept_name = {concept_name}")
-                print(f"DEBUG: type(concept_name) = {type(concept_name)}")
-                print(f"DEBUG: len(concept_name) = {len(concept_name) if hasattr(concept_name, '__len__') else 'N/A'}")
-                
-                # Handle both single and multiple concept selection
-                if isinstance(concept_name, list) and len(concept_name) > 0:
-                    # Multi-concept analysis
-                    st.subheader(f"🔗 Multi-Concept Analysis: {', '.join(concept_name)}")
-                    
-                    all_associations = {}
-                    concept_results = {}
-                    
-                    # Get associations for each concept
-                    for concept in concept_name:
-                        result = huey.query_concepts("strongest_associations", concept=concept, top_n=top_n)
-                        concept_results[concept] = result
-                        
-                        if 'associations' in result:
-                            for assoc in result['associations']:
-                                assoc_concept = assoc['concept']
-                                strength = assoc['strength']
-                                
-                                if assoc_concept not in all_associations:
-                                    all_associations[assoc_concept] = {'concepts': [], 'total_strength': 0, 'avg_strength': 0}
-                                
-                                all_associations[assoc_concept]['concepts'].append({
-                                    'source': concept,
-                                    'strength': strength
-                                })
-                                all_associations[assoc_concept]['total_strength'] += strength
-                    
-                    # Calculate average strengths and find shared associations
-                    shared_associations = []
-                    unique_to_concepts = {concept: [] for concept in concept_name}
-                    
-                    for assoc_concept, data in all_associations.items():
-                        data['avg_strength'] = data['total_strength'] / len(data['concepts'])
-                        data['concept_count'] = len(data['concepts'])
-                        
-                        if len(data['concepts']) > 1:
-                            # This concept is associated with multiple selected concepts
-                            shared_associations.append({
-                                'concept': assoc_concept,
-                                'shared_with': [c['source'] for c in data['concepts']],
-                                'avg_strength': data['avg_strength'],
-                                'total_strength': data['total_strength'],
-                                'concept_count': data['concept_count']
-                            })
-                        else:
-                            # This concept is unique to one of the selected concepts
-                            source_concept = data['concepts'][0]['source']
-                            unique_to_concepts[source_concept].append({
-                                'concept': assoc_concept,
-                                'strength': data['concepts'][0]['strength']
-                            })
-                    
-                    # Display shared associations
-                    if shared_associations:
-                        st.subheader("🤝 Shared Associations")
-                        st.info(f"Found {len(shared_associations)} concepts associated with multiple selected concepts")
-                        
-                        shared_df = pd.DataFrame(shared_associations)
-                        shared_df = shared_df.sort_values('avg_strength', ascending=False)
-                        shared_df['rank'] = range(1, len(shared_df) + 1)
-                        shared_df['shared_with'] = shared_df['shared_with'].apply(lambda x: ', '.join(x))
-                        
-                        display_df = shared_df[['rank', 'concept', 'avg_strength', 'concept_count', 'shared_with']].copy()
-                        display_df.columns = ['Rank', 'Concept', 'Avg Strength', 'Shared Count', 'Shared With']
-                        st.dataframe(display_df, use_container_width=True)
-                    
-                    # Display individual concept results
-                    st.subheader("🎯 Individual Concept Results")
-                    
-                    tabs = st.tabs([f"📍 {concept}" for concept in concept_name])
-                    for i, concept in enumerate(concept_name):
-                        with tabs[i]:
-                            result = concept_results[concept]
-                            if 'associations' in result and result['associations']:
-                                st.success(f"Found {len(result['associations'])} associations for '{concept}'")
-                                
-                                # Check if associations is empty
-                                if len(result['associations']) == 0:
-                                    st.warning(f"No associations found for '{concept}' (empty list)")
-                                else:
-                                    df = pd.DataFrame(result['associations'])
-                                    # Debug: Check what columns we actually have
-                                    print(f"DataFrame columns: {list(df.columns)}")
-                                    print(f"DataFrame shape: {df.shape}")
-                                    if not df.empty:
-                                        print(f"First row: {df.iloc[0].to_dict()}")
-                                    
-                                    df['rank'] = range(1, len(df) + 1)
-                                    
-                                    # Only select columns that exist
-                                    available_cols = ['rank']
-                                    if 'concept' in df.columns:
-                                        available_cols.append('concept')
-                                    if 'strength' in df.columns:
-                                        available_cols.append('strength')
-                                    
-                                    df = df[available_cols]
-                                    st.dataframe(df, use_container_width=True)
-                            else:
-                                st.error(f"No associations found for '{concept}'")
-                
-                elif isinstance(concept_name, str) and concept_name:
-                    # Single concept analysis (original behavior)
-                    result = huey.query_concepts("strongest_associations", concept=concept_name, top_n=top_n)
-                    
-                    if 'associations' in result:
-                        st.success(f"Found {len(result['associations'])} associations for '{concept_name}'")
-                        
-                        # Create dataframe for display
-                        df = pd.DataFrame(result['associations'])
-                        df['rank'] = range(1, len(df) + 1)
-                        df = df[['rank', 'concept', 'strength']]
-                        
-                        # Display as table
-                        st.dataframe(df, use_container_width=True)
-                    else:
-                        st.error(f"No associations found for '{concept_name}'")
-                else:
-                    st.warning("Please select at least one concept to analyze.")
-        
-        with tab2:
-            st.subheader("3D Concept Space Visualization")
-            
-            # ⚠️ CRITICAL WARNING FOR USERS ⚠️
-            st.error("""
-            🚨 **DIMENSIONAL REDUCTION WARNING** 🚨
-            
-            This 3D visualization is **EYE CANDY ONLY** and represents a massive information loss!
-            
-            • **Real Analysis**: ~250+ dimensions (where the math happens)
-            • **This Plot**: Only 3 dimensions (~15-30% of total variance)
-            • **Information Lost**: ~70-85% of the actual network structure
-            
-            **The real heavy lifting is done with high-dimensional orthogonal coordinates in the math.**
-            Use this plot for intuition only - never for quantitative conclusions!
-            
-            **For quantitative conclusions, always use the full eigenvalue/eigenvector solution, not this reduced plot.**
-            """)
-            
-            # Enhanced directional analysis controls
-            st.markdown("#### Directional Analysis Settings")
-            
-            directional_analysis = st.selectbox(
-                "🧭 Analysis Type",
-                [
-                    "both (symmetric analysis)",
-                    "outgoing → (right eigenvectors)", 
-                    "incoming ← (left eigenvectors)"
-                ],
-                index=0,
-                help="""
-                • **Both**: Traditional symmetric analysis (undirected relationships)
-                • **Outgoing**: How concepts influence others (right eigenvectors, A·v = λv)
-                • **Incoming**: How concepts are influenced (left eigenvectors, u·A = λu)
-                """
-            )
-            
-            # Convert selection to parameters
-            if "outgoing" in directional_analysis:
-                connection_direction = "outgoing"
-                eigenvector_type = "right"
-            elif "incoming" in directional_analysis:
-                connection_direction = "incoming" 
-                eigenvector_type = "left"
-            else:
-                connection_direction = "both"
-                eigenvector_type = "both"
-            
-            # Standard visualization controls
-            st.markdown("#### Visualization Parameters")
-            col1, col2 = st.columns(2)
-            with col1:
-                num_concepts_3d = st.number_input("Number of concepts to plot", min_value=10, max_value=200, value=50, step=5)
-            with col2:
-                min_mass_3d = st.number_input("Minimum mass threshold", min_value=0.0, max_value=1000.0, value=0.0, step=0.1, format="%.1f")
-            
-            # Initialize session state
-            if 'plot_data_3d' not in st.session_state:
-                st.session_state.plot_data_3d = None
-            
-            col_btn1, col_btn2 = st.columns([2, 1])
-            
-            with col_btn1:
-                generate_clicked = st.button("🗺️ Generate 3D Visualization")
-            with col_btn2:
-                if st.button("🗑️ Clear Plot"):
-                    st.session_state.plot_data_3d = None
-                    if hasattr(st.session_state, 'main_plot_coordinates'):
-                        delattr(st.session_state, 'main_plot_coordinates')
-                    st.rerun()
-            
-            if generate_clicked:
-                with st.spinner("Creating 3D visualization..."):
-                    result = create_3d_concept_plot(huey, num_concepts_3d, min_mass_3d, connection_direction, eigenvector_type)
-                    
-                    if result and result[0] is not None:  # fig is not None
-                        if len(result) >= 8:
-                            fig, connections, id_to_index, positions, concept_ids, eigenvalues, metric_signature, warp_factor = result
-                        else:
-                            # Fallback for older return format
-                            fig, connections, id_to_index = result[:3]
-                            positions = result[3] if len(result) > 3 else None
-                            concept_ids = result[4] if len(result) > 4 else None
-                            eigenvalues = None
-                            metric_signature = None
-                            warp_factor = None
-                        
-                        # Extract coordinates for connection plot use (preserving geometric integrity)
-                        coordinate_dict = {}
-                        if positions is not None and concept_ids is not None:
-                            for i, concept_id in enumerate(concept_ids):
-                                coordinate_dict[concept_id] = positions[i].tolist()  # Store as list
-                            st.write(f"🔍 DEBUG: Created coordinate_dict with {len(coordinate_dict)} entries")
-                            st.write(f"🔍 DEBUG: Sample coordinate keys: {list(coordinate_dict.keys())[:5]}")
-                        else:
-                            st.write(f"🔍 DEBUG: No coordinates to store - positions={positions is not None}, concept_ids={concept_ids is not None}")
-                        
-                        st.session_state.plot_data_3d = {
-                            'fig': fig,
-                            'connections': connections,
-                            'id_to_index': id_to_index,
-                            'coordinates': coordinate_dict,  # Store for connection plot
-                            'eigenvalues': eigenvalues,
-                            'metric_signature': metric_signature,
-                            'warp_factor': warp_factor,
-                            'concepts': concept_ids,
-                            'huey_network': huey.network
-                        }
-                        
-                        # Store coordinates for activation cascade animation (concept_name -> (x, y, z))
-                        st.session_state.main_plot_coordinates = coordinate_dict
-                    else:
-                        st.error(f"Not enough concepts with mass ≥ {min_mass_3d} for visualization")
-            
-            # Display plot and controls if we have plot data
-            if st.session_state.plot_data_3d:
-                plot_data = st.session_state.plot_data_3d
-                fig = plot_data['fig']
-                connections = plot_data['connections']
-                id_to_index = plot_data['id_to_index']
-                huey_network = plot_data['huey_network']
-                
-                # Always display the base plot first
-                st.plotly_chart(fig, use_container_width=True, key="base_plot")
-                
-                # Publication controls for main 3D plot
-                st.subheader("📊 Publication Controls")
-                pub_col1, pub_col2, pub_col3, pub_col4 = st.columns([2, 2, 2, 2])
-                
-                with pub_col1:
-                    if st.button("💾 Save as HTML", key="save_html"):
-                        timestamp = time.strftime("%Y%m%d_%H%M%S")
-                        filename = f"huey_3d_plot_{timestamp}.html"
-                        fig.write_html(filename)
-                        st.success(f"Plot saved as {filename}")
-                
-                with pub_col2:
-                    if st.button("🖼️ Save as PNG", key="save_png"):
-                        timestamp = time.strftime("%Y%m%d_%H%M%S")
-                        filename = f"huey_3d_plot_{timestamp}.png"
-                        fig.write_image(filename, width=1200, height=900, scale=2)
-                        st.success(f"High-res plot saved as {filename}")
-                
-                with pub_col3:
-                    if st.button("📄 Save as PDF", key="save_pdf"):
-                        timestamp = time.strftime("%Y%m%d_%H%M%S")
-                        filename = f"huey_3d_plot_{timestamp}.pdf"
-                        fig.write_image(filename, format="pdf", width=1200, height=900)
-                        st.success(f"Publication-ready plot saved as {filename}")
-                
-                with pub_col4:
-                    if st.button("📋 Export Data", key="export_data"):
-                        timestamp = time.strftime("%Y%m%d_%H%M%S")
-                        filename = f"huey_3d_data_{timestamp}.json"
-                        export_data = {
-                            'timestamp': timestamp,
-                            'concepts': plot_data['concepts'],
-                            'coordinates': plot_data['coordinates'].tolist() if hasattr(plot_data['coordinates'], 'tolist') else plot_data['coordinates'],
-                            'eigenvalues': plot_data['eigenvalues'].tolist() if hasattr(plot_data['eigenvalues'], 'tolist') else plot_data['eigenvalues'],
-                            'metric_signature': plot_data['metric_signature'],
-                            'warp_factor': plot_data.get('warp_factor', 'unknown'),
-                            'parameters': {
-                                'num_concepts': num_concepts,
-                                'min_mass': min_mass,
-                                'connection_direction': connection_direction,
-                                'eigenvector_type': eigenvector_type
-                            }
-                        }
-                        with open(filename, 'w') as f:
-                            import json
-                            json.dump(export_data, f, indent=2)
-                        st.success(f"Plot data exported as {filename}")
-                
-                # Debug: Check if we have the necessary data
-                st.write(f"🔍 DEBUG: connections={len(connections) if connections else 0}")
-                st.write(f"🔍 DEBUG: plot_data_3d keys={list(st.session_state.plot_data_3d.keys()) if st.session_state.plot_data_3d else 'None'}")
-                
-                # Always add the interactive feature (concept selector works even with no connections between top concepts)
-                if True:  # Force selector to always appear
-                    # Add concept selector dropdown - include ALL neurons, not just top concepts
-                    concept_names = [word for nid, word in huey_network.neuron_to_word.items()]
-                    concept_names.sort()
-                    
-                    st.info(f"💡 **Connection Highlighting Available** ({len(connections)} connections found)")
-                    
-                    # Connection display controls
-                    col1, col2, col3 = st.columns([2, 1, 1])
-                    with col1:
-                        selected_concept = st.selectbox(
-                            "🎯 Select concept to highlight connections:",
-                            options=['None'] + concept_names,
-                            key="concept_selector_3d_plus"
-                        )
-                    with col2:
-                        show_connection_lines = st.checkbox(
-                            "Show connection lines",
-                            value=True,
-                            help="Display lines between connected concepts with thickness proportional to strength"
-                        )
-                    with col3:
-                        # Calculate default based on 25% threshold for the selected concept
-                        default_connections = 20  # Fallback default
-                        if selected_concept != 'None':
-                            try:
-                                # Quick calculation of connections above 25% for this concept
-                                selected_id = None
-                                for nid, word in huey_network.neuron_to_word.items():
-                                    if word == selected_concept:
-                                        selected_id = nid
-                                        break
-                                
-                                if selected_id is not None and hasattr(huey_network, 'connections'):
-                                    temp_connections = []
-                                    for (i, j), strength in huey_network.connections.items():
-                                        if i == selected_id or j == selected_id:
-                                            temp_connections.append(strength)
-                                    if temp_connections:
-                                        max_str = max(temp_connections)
-                                        threshold_25 = max_str * 0.25
-                                        above_25 = len([s for s in temp_connections if s >= threshold_25])
-                                        default_connections = max(5, above_25)
-                            except:
-                                pass  # Keep fallback default
-                        
-                        max_connections = st.number_input(
-                            "Max connections to show",
-                            min_value=5,
-                            max_value=500,
-                            value=default_connections,
-                            step=5,
-                            help=f"Number of strongest connections to display (default: {default_connections} connections >25% of max strength)"
-                        )
-                    
-                    st.write(f"🔍 DEBUG: Selected concept = '{selected_concept}'")
-                    
-                    if selected_concept != 'None':
-                        # Find the neuron ID for the selected concept (any neuron, not just top concepts)
-                        selected_id = None
-                        st.write(f"🔍 DEBUG: Looking for neuron with word '{selected_concept}'")
-                        
-                        for nid, word in huey_network.neuron_to_word.items():
-                            if word == selected_concept:
-                                selected_id = nid
-                                st.write(f"🔍 DEBUG: Found neuron_id {selected_id} for '{word}'")
-                                break
-                        
-                        if selected_id is None:
-                            st.write(f"🔍 DEBUG: No neuron found for '{selected_concept}'")
-                            # Show available neurons containing the search term
-                            matching = [word for word in huey_network.neuron_to_word.values() if selected_concept.lower() in word.lower()]
-                            st.write(f"🔍 DEBUG: Similar neurons: {matching[:10]}")
-                        else:
-                            st.write(f"🔍 DEBUG: About to call create_neuron_connection_plot with id {selected_id}")
-                        
-                        if selected_id is not None:
-                            try:
-                                st.write(f"🔍 DEBUG: Calling create_neuron_connection_plot...")
-                                # Create independent plot showing connections for this neuron
-                                # Get coordinates from the main 3D plot if available
-                                main_coords = None
-                                if 'plot_data_3d' in st.session_state and st.session_state.plot_data_3d:
-                                    # Extract coordinate dictionary from the existing main plot
-                                    main_coords = st.session_state.plot_data_3d.get('coordinates', None)
-                                    st.write(f"🔍 DEBUG: Retrieved main_coords = {main_coords is not None}")
-                                    if main_coords:
-                                        st.write(f"🔍 DEBUG: main_coords has {len(main_coords)} entries")
-                                        st.write(f"🔍 DEBUG: main_coords keys: {list(main_coords.keys())[:5]}")
-                                else:
-                                    st.write(f"🔍 DEBUG: No plot_data_3d in session state")
-                                
-                                fig_highlighted = create_neuron_connection_plot(huey_network, selected_concept, selected_id, max_connections, main_coords)
-                                st.write(f"🔍 DEBUG: Function returned: {fig_highlighted is not None}")
-                                
-                                if fig_highlighted:
-                                    # Use dynamic key that includes max_connections to force refresh
-                                    # Force fresh plot generation with timestamp (no cached coordinates)
-                                    import time
-                                    plot_key = f"neuron_connections_plot_{selected_concept}_{max_connections}_{int(time.time())}"
-                                    st.plotly_chart(fig_highlighted, use_container_width=True, key=plot_key)
-                                else:
-                                    st.warning(f"Could not create connection plot for '{selected_concept}'")
-                            except Exception as e:
-                                st.error(f"Error creating connection plot: {e}")
-                                import traceback
-                                st.code(traceback.format_exc())
-                else:
-                    st.warning("No connections found in the network data. The plot shows concept positions only.")
-        
-        with tab3:
-            st.subheader("Concept Mass Comparison")
-            
-            # Input for concepts to compare
-            concepts_input = st.text_area(
-                "Enter concepts to compare (one per line):",
-                value="i\nme\nmyself\nspeaker_trump\nspeaker_times"
-            )
-            
-            if st.button("⚖️ Compare Masses"):
-                concepts_list = [c.strip() for c in concepts_input.split('\n') if c.strip()]
-                
-                if concepts_list:
-                    fig, results_data = create_mass_comparison_plot(huey, concepts_list)
-                    
-                    if fig:
-                        st.plotly_chart(fig, use_container_width=True)
-                    
-                    # Show detailed results
-                    st.subheader("Detailed Results")
-                    for data in results_data:
-                        status = "✅ Found" if data['found'] else "❌ Not Found"
-                        mass_str = f"{data['mass']:.3f}" if data['found'] else "N/A"
-                        st.write(f"**{data['concept']}**: {mass_str} {status}")
-                else:
-                    st.error("Please enter at least one concept to compare")
-        
-        with tab4:
-            st.subheader("Eigenvalue Analysis")
-            
-            min_mass_eigen = st.number_input("Minimum mass for eigenvalue analysis", min_value=0.001, max_value=1.0, value=0.05, step=0.001, format="%.3f")
-            
-            if st.button("🧮 Analyze Eigenvalues"):
-                with st.spinner("Computing eigenvalues..."):
-                    try:
-                        # Get concepts above threshold
-                        concepts = []
-                        for neuron_id, word in huey.network.neuron_to_word.items():
-                            # Calculate concept mass from inertial_mass
-                            total_mass = 0.0
-                            if hasattr(huey.network, 'inertial_mass'):
-                                for (i, j), mass in huey.network.inertial_mass.items():
-                                    if i == neuron_id or j == neuron_id:
-                                        total_mass += mass
-                            
-                            if total_mass >= min_mass_eigen:
-                                concepts.append({
-                                    'id': neuron_id,
-                                    'concept': word,
-                                    'mass': total_mass
-                                })
-                        
-                        if len(concepts) >= 2:
-                            # Build association matrix
-                            n = len(concepts)
-                            association_matrix = np.zeros((n, n))
-                            
-                            for i, concept_i in enumerate(concepts):
-                                for j, concept_j in enumerate(concepts):
-                                    # Get connection strength from inertial_mass
-                                    strength = 0.0
-                                    neuron_i_id = concept_i['id']
-                                    neuron_j_id = concept_j['id']
-                                    
-                                    if i != j and hasattr(huey.network, 'inertial_mass'):
-                                        # Check both directions for off-diagonal elements
-                                        if (neuron_i_id, neuron_j_id) in huey.network.inertial_mass:
-                                            strength = huey.network.inertial_mass[(neuron_i_id, neuron_j_id)]
-                                        elif (neuron_j_id, neuron_i_id) in huey.network.inertial_mass:
-                                            strength = huey.network.inertial_mass[(neuron_j_id, neuron_i_id)]
-                                    
-                                    # Set matrix element (diagonal will remain 0, allowing negative eigenvalues)
-                                    association_matrix[i, j] = strength
-                            
-                            # Compute eigenvalues
-                            from scipy.linalg import eigvals
-                            eigenvalues = eigvals(association_matrix)
-                            
-                            # Extract real parts of eigenvalues (even if some are complex numbers)
-                            real_eigenvalues = [eig.real if hasattr(eig, 'real') else float(eig) for eig in eigenvalues]
-                            
-                            # Classify by sign (triangle inequality framework)
-                            positive_eigs = [eig for eig in real_eigenvalues if eig > 1e-10]  # Real dimensions
-                            negative_eigs = [eig for eig in real_eigenvalues if eig < -1e-10]  # Imaginary dimensions
-                            zero_eigs = [eig for eig in real_eigenvalues if abs(eig) <= 1e-10]  # Near-zero dimensions
-                            
-                            # Display results
-                            col1, col2, col3, col4 = st.columns(4)
-                            with col1:
-                                st.metric("Total Dimensions", len(real_eigenvalues))
-                            with col2:
-                                st.metric("Real Dimensions", len(positive_eigs))
-                            with col3:
-                                st.metric("Imaginary Dimensions", len(negative_eigs))
-                            with col4:
-                                st.metric("Zero Dimensions", len(zero_eigs))
-                            
-                            # Eigenvalue statistics and visualization
-                            st.subheader("Eigenvalue Statistics")
-                            
-                            if positive_eigs:
-                                st.markdown("**Positive Eigenvalues (Real Dimensions)**")
-                                col1, col2, col3, col4 = st.columns(4)
-                                with col1:
-                                    st.metric("Largest", f"{max(positive_eigs):.3f}")
-                                with col2:
-                                    st.metric("Smallest", f"{min(positive_eigs):.3f}")
-                                with col3:
-                                    st.metric("Mean", f"{np.mean(positive_eigs):.3f}")
-                                with col4:
-                                    st.metric("Std Dev", f"{np.std(positive_eigs):.3f}")
-                            
-                            if negative_eigs:
-                                st.markdown("**Negative Eigenvalues (Imaginary Dimensions)**")
-                                col1, col2, col3, col4 = st.columns(4)
-                                with col1:
-                                    st.metric("Largest", f"{max(negative_eigs):.3f}")
-                                with col2:
-                                    st.metric("Smallest", f"{min(negative_eigs):.3f}")
-                                with col3:
-                                    st.metric("Mean", f"{np.mean(negative_eigs):.3f}")
-                                with col4:
-                                    st.metric("Std Dev", f"{np.std(negative_eigs):.3f}")
-                            
-                            # Combined eigenvalue plot
-                            if real_eigenvalues:
-                                fig = px.histogram(x=real_eigenvalues, nbins=min(20, len(real_eigenvalues)),
-                                                 title="Eigenvalue Distribution (All Dimensions)")
-                                fig.add_vline(x=0, line_dash="dash", line_color="red", 
-                                            annotation_text="Zero Line")
-                                st.plotly_chart(fig, use_container_width=True)
-                            
-                            # Triangle inequality analysis
-                            if negative_eigs:
-                                st.info(f"🔍 **Triangle Inequality Violation Detected**: Your data contains {len(negative_eigs)} imaginary dimensions, indicating non-Euclidean (pseudo-Riemannian) concept space.")
-                            else:
-                                st.success("✅ **Euclidean Space**: All eigenvalues are non-negative, indicating your concept space follows Euclidean geometry.")
-                        else:
-                            st.error(f"Need at least 2 concepts with mass ≥ {min_mass_eigen}")
-                            
-                    except Exception as e:
-                        st.error(f"Error in eigenvalue analysis: {e}")
-        
-        with tab5:
-            st.subheader("Detailed Network Statistics")
-            
-            # Consolidated overview metrics (formerly Analysis Overview)
-            if 'neuron_stats' in stats and st.session_state.analysis_results:
-                st.markdown("### 📊 Analysis Overview")
-                col1, col2, col3, col4, col5, col6 = st.columns(6)
-                
-                # Extract speaker and exchange information
-                speakers_info = st.session_state.analysis_results.get('speakers_info', [])
-                conversation_data = st.session_state.analysis_results.get('conversation_data', [])
-                
-                with col1:
-                    st.metric("Speakers", len(speakers_info))
-                
-                with col2:
-                    st.metric("Exchanges", len(conversation_data))
-                
-                with col3:
-                    st.metric("Total Concepts", stats['neuron_stats']['total_neurons'])
-                
-                with col4:
-                    st.metric("Total Mass", f"{stats['neuron_stats']['total_mass']:.1f}")
-                
-                with col5:
-                    network_strength = stats['connection_stats']['average_strength'] * stats['connection_stats']['total_connections']
-                    st.metric("Network Strength", f"{network_strength:.1f}")
-                
-                with col6:
-                    connection_mass = stats['connection_stats']['average_strength'] * stats['neuron_stats']['total_mass']
-                    st.metric("Connection Mass", f"{connection_mass:.1f}")
-                
-                st.markdown("---")  # Separator
-            
-            if 'neuron_stats' in stats:
-                # Network overview
-                st.markdown("### Network Overview")
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    st.write(f"**Total Neurons:** {stats['neuron_stats']['total_neurons']}")
-                    st.write(f"**Active Neurons:** {stats['neuron_stats']['active_neurons']}")
-                    st.write(f"**Total Mass:** {stats['neuron_stats']['total_mass']:.3f}")
-                    st.write(f"**Average Mass:** {stats['neuron_stats']['average_mass']:.3f}")
-                
-                with col2:
-                    st.write(f"**Total Connections:** {stats['connection_stats']['total_connections']}")
-                    st.write(f"**Strong Connections:** {stats['connection_stats']['strong_connections']}")
-                    st.write(f"**Average Strength:** {stats['connection_stats']['average_strength']:.3f}")
-                    st.write(f"**Max Strength:** {stats['connection_stats']['max_strength']:.3f}")
-                
-                # Network Health Summary
-                st.markdown("### 🏥 Network Health")
-                if hasattr(huey.network, 'conversation_history'):
-                    st.write(f"**Processing Rate:** {len(huey.network.conversation_history)} conversations processed")
-                st.write(f"**System Status:** ✅ Active and Learning")
-                
-                # Speaker statistics
-                if 'speaker_stats' in stats:
-                    st.markdown("### Speaker Activity")
-                    for speaker, speaker_stats in stats['speaker_stats'].items():
-                        blocks = speaker_stats.get('blocks_processed', 0)
-                        st.write(f"**{speaker}:** {blocks} blocks processed")
-        
-        with tab6:
-            st.subheader("Advanced Directional Flow Analysis")
-            st.markdown("**Analyze temporal and causal concept relationships using left/right eigenvectors**")
-            
-            # Flow Analysis Section
-            st.markdown("### 🌊 Concept Flow Analysis")
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                flow_concept = st.selectbox(
-                    "Select concept for flow analysis",
-                    options=[''] + sorted([word for word in huey.network.word_to_neuron.keys()]),
-                    key="flow_concept_selector"
-                )
-            
-            with col2:
-                flow_threshold = st.number_input(
-                    "Flow strength threshold", 
-                    min_value=0.0, max_value=1.0, value=0.1, step=0.05,
-                    help="Minimum connection strength to show in flow analysis"
-                )
-            
-            if flow_concept and st.button("🔍 Analyze Concept Flow"):
-                with st.spinner("Analyzing directional flow patterns..."):
-                    # Create flow analysis
-                    flow_results = analyze_concept_flow(huey.network, flow_concept, flow_threshold)
-                    
-                    if flow_results and 'error' not in flow_results:
-                        col_out, col_in = st.columns(2)
-                        
-                        with col_out:
-                            st.markdown(f"#### 📤 **{flow_concept}** → Outgoing Influence")
-                            st.caption("Concepts that this concept influences (right eigenvector analysis)")
-                            if flow_results['outgoing']:
-                                for target, strength in flow_results['outgoing'][:10]:
-                                    st.write(f"• **{target}**: {strength:.3f}")
-                            else:
-                                st.info("No significant outgoing influences found")
-                        
-                        with col_in:
-                            st.markdown(f"#### 📥 **{flow_concept}** ← Incoming Influence")  
-                            st.caption("Concepts that influence this concept (left eigenvector analysis)")
-                            if flow_results['incoming']:
-                                for source, strength in flow_results['incoming'][:10]:
-                                    st.write(f"• **{source}**: {strength:.3f}")
-                            else:
-                                st.info("No significant incoming influences found")
-                        
-                        # Flow asymmetry analysis
-                        if flow_results['asymmetry_score'] > 0:
-                            st.markdown("#### ⚖️ Flow Asymmetry Analysis")
-                            asymmetry = flow_results['asymmetry_score']
-                            if asymmetry > 0.3:
-                                st.success(f"🎯 **High Asymmetry** ({asymmetry:.2f}) - Strong directional flow pattern")
-                            elif asymmetry > 0.1:
-                                st.warning(f"🔄 **Moderate Asymmetry** ({asymmetry:.2f}) - Some directional bias")
-                            else:
-                                st.info(f"↔️ **Low Asymmetry** ({asymmetry:.2f}) - Mostly bidirectional connections")
-                    
-                    elif flow_results and 'error' in flow_results:
-                        st.error(f"❌ **Flow Analysis Failed**: {flow_results['error']}")
-                        st.warning("⚠️ Cannot analyze directional flow patterns")
-                        st.info("💡 This usually means:")
-                        st.info("• Network has no learned connections for this concept")
-                        st.info("• Connection threshold is too high")
-                        st.info("• Network processing failed - check other tabs")
-                    else:
-                        st.error("❌ **Flow Analysis Failed**: No results returned")
-                        st.warning("⚠️ Network may not have sufficient data for flow analysis")
-            
-            # Network-wide asymmetry analysis
-            st.markdown("### 🌐 Network Asymmetry Analysis")
-            
-            if st.button("📊 Analyze Network-wide Flow Patterns"):
-                with st.spinner("Computing network asymmetry metrics..."):
-                    network_asymmetry = analyze_network_asymmetry(huey.network)
-                    
-                    if network_asymmetry:
-                        col1, col2, col3 = st.columns(3)
-                        
-                        with col1:
-                            st.metric(
-                                "Overall Asymmetry", 
-                                f"{network_asymmetry['overall_asymmetry']:.3f}",
-                                help="Global measure of directional bias in the network"
-                            )
-                        
-                        with col2:
-                            st.metric(
-                                "Strong Flows", 
-                                network_asymmetry['strong_asymmetric_connections'],
-                                help="Number of connections with strong directional bias"
-                            )
-                        
-                        with col3:
-                            st.metric(
-                                "Flow Efficiency", 
-                                f"{network_asymmetry['flow_efficiency']:.3f}",
-                                help="How efficiently information flows through the network"
-                            )
-                        
-                        # Top asymmetric concepts
-                        st.markdown("#### 🏆 Most Asymmetric Concepts")
-                        st.caption("Concepts with strongest directional flow patterns")
-                        
-                        asymmetric_concepts = network_asymmetry.get('top_asymmetric_concepts', [])
-                        if asymmetric_concepts:
-                            for i, (concept, score, flow_type) in enumerate(asymmetric_concepts[:10], 1):
-                                direction_emoji = "📤" if flow_type == "outgoing" else "📥" if flow_type == "incoming" else "🔄"
-                                st.write(f"{i}. {direction_emoji} **{concept}**: {score:.3f} ({flow_type})")
-                        else:
-                            st.info("No strongly asymmetric concepts found")
-        
-        # Export section
-        st.markdown('<h2 class="section-header">💾 Export Results</h2>', unsafe_allow_html=True)
+        # Network statistics (fix: concepts are in huey.network, the temporal network)
+        concept_count = len(getattr(huey.network, 'concept_neurons', {}))
+        connection_count = len(getattr(huey.network, 'connections', {}))
         
         col1, col2 = st.columns(2)
-        
         with col1:
-            if st.button("📋 Generate Analysis Report"):
-                with st.spinner("Generating comprehensive report..."):
-                    report = huey.create_analysis_report(include_visualizations=True)
-                    st.download_button(
-                        label="⬇️ Download Report",
-                        data=report,
-                        file_name=f"{huey.session_name}_analysis_report.md",
-                        mime="text/markdown"
-                    )
-        
+            st.metric("Concepts Learned", concept_count)
         with col2:
-            if st.button("💾 Export Session Data"):
-                with st.spinner("Exporting session data..."):
-                    filename = huey.export_session_data()
-                    with open(filename, 'r') as f:
-                        data = f.read()
-                    st.download_button(
-                        label="⬇️ Download Session Data",
-                        data=data,
-                        file_name=f"{huey.session_name}_complete_data.json",
-                        mime="application/json"
-                    )
-        
-        with tab7:
-            st.subheader("🕐 HueyTime W/S Matrix Analysis")
-            st.markdown("**Compare directed (W) vs symmetric (S) connection matrices from temporal learning**")
+            st.metric("Connections Formed", connection_count)
             
-            if hasattr(huey.network, 'huey_time') and huey.network.huey_time:
+        if concept_count > 0:
+            st.success("🎉 Temporal learning successfully created semantic network!")
+            
+            # Show top concepts
+            if hasattr(huey.network, 'neuron_to_word') and huey.network.neuron_to_word:
+                st.subheader("📋 Learned Concepts")
+                concepts = list(huey.network.neuron_to_word.values())[:20]
+                st.write(", ".join(concepts))
+                
+            # Show connection strengths
+            if hasattr(huey.network, 'connections') and huey.network.connections:
+                st.subheader("🔗 Connection Strengths")
+                connections = huey.network.connections
+                if connections:
+                    avg_strength = sum(connections.values()) / len(connections)
+                    max_strength = max(connections.values())
+                    strong_connections = sum(1 for s in connections.values() if s > 0.5)
+                    
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Average Strength", f"{avg_strength:.3f}")
+                    with col2:
+                        st.metric("Max Strength", f"{max_strength:.3f}")
+                    with col3:
+                        st.metric("Strong Connections (>0.5)", strong_connections)
+                        
+                # Add visualization and analysis controls
+                st.markdown("---")
+                st.subheader("📊 Network Analysis & Visualization")
+                
+                # 3D Plot controls
+                st.markdown("**🎯 3D MDS Plot**")
                 col1, col2 = st.columns(2)
-                
                 with col1:
-                    st.markdown("### 🎯 Directed Matrix (W)")
-                    st.markdown("*Captures temporal order and causality*")
-                    
-                    if st.button("📊 Show W Matrix Stats"):
-                        W = huey.network.huey_time.export_W()
-                        st.write(f"Shape: {W.shape}")
-                        st.write(f"Non-zero entries: {np.count_nonzero(W)}")
-                        st.write(f"Asymmetry index: {np.sum(np.abs(W - W.T)) / max(np.sum(np.abs(W)), 1e-12):.3f}")
-                        
-                        # Show strongest directional connections
-                        st.markdown("**Strongest A→B influences:**")
-                        flat_indices = np.argsort(W.flatten())[-10:]
-                        for idx in reversed(flat_indices):
-                            i, j = np.unravel_index(idx, W.shape)
-                            if W[i, j] > 0:
-                                word_i = next((w for w, nid in huey.network.word_to_neuron.items() if nid == i), f"id_{i}")
-                                word_j = next((w for w, nid in huey.network.word_to_neuron.items() if nid == j), f"id_{j}")
-                                st.write(f"  {word_i} → {word_j}: {W[i, j]:.4f}")
-                
+                    num_concepts = st.slider("Number of concepts to plot", 10, 100, 50)
                 with col2:
-                    st.markdown("### ⚖️ Symmetric Matrix (S)")
-                    st.markdown("*Used for traditional embedding and visualization*")
-                    
-                    if st.button("📊 Show S Matrix Stats"):
-                        S = huey.network.huey_time.export_S(mode="avg")
-                        st.write(f"Shape: {S.shape}")
-                        st.write(f"Non-zero entries: {np.count_nonzero(S)}")
-                        st.write(f"Symmetry check: {np.allclose(S, S.T)}")
-                        
-                        # Show strongest symmetric connections
-                        st.markdown("**Strongest mutual associations:**")
-                        triu_indices = np.triu_indices(S.shape[0], k=1)
-                        triu_values = S[triu_indices]
-                        strongest_indices = np.argsort(triu_values)[-10:]
-                        
-                        for idx in reversed(strongest_indices):
-                            i, j = triu_indices[0][idx], triu_indices[1][idx]
-                            if S[i, j] > 0:
-                                word_i = next((w for w, nid in huey.network.word_to_neuron.items() if nid == i), f"id_{i}")
-                                word_j = next((w for w, nid in huey.network.word_to_neuron.items() if nid == j), f"id_{j}")
-                                st.write(f"  {word_i} ↔ {word_j}: {S[i, j]:.4f}")
+                    min_mass_threshold = st.slider("Minimum connection strength", 0.0, 1.0, 0.1, 0.05)
                 
-                st.markdown("### 🔄 Matrix Comparison")
-                if st.button("⚖️ Compare W vs S Properties"):
-                    W = huey.network.huey_time.export_W()
-                    S = huey.network.huey_time.export_S(mode="avg")
-                    
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.metric("Directed Connections", np.count_nonzero(W))
-                    with col2:
-                        st.metric("Symmetric Connections", np.count_nonzero(S))
-                    with col3:
-                        asymmetry = np.sum(np.abs(W - W.T)) / max(np.sum(np.abs(W)), 1e-12)
-                        st.metric("Asymmetry Index", f"{asymmetry:.3f}")
-            else:
-                st.info("💡 Enable HueyTime temporal learning to access W/S matrix analysis")
-        
-        with tab8:
-            st.subheader("🌊 Interactive Activation Cascade")
-            st.markdown("**Watch activation flow through the network in real-time - select inputs and see concepts brighten sequentially**")
-            st.markdown("*Perfect for understanding how interviewer questions activate Feynman's responses!*")
-            
-            # Import the activation cascade module
-            try:
-                import sys
-                import os
-                sys.path.append(os.path.dirname(__file__))
-                from huey_activation_cascade import create_cascade_interface
-                
-                # ⚙️ NEUROBIOLOGICAL CASCADE PARAMETERS
-                st.markdown("### 🧬 Neural Cascade System")
-                st.markdown("**Scientifically grounded activation propagation** - neurons fire once, signals propagate with delays based on connection strength")
-                
-                with st.expander("📊 System Parameters", expanded=False):
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.metric("Decay Rate", "0.8", help="Neurons retain 80% of activation each step")
-                        st.metric("Signal Scale", "0.1", help="Connection strength × activation × 0.1")
-                    with col2:
-                        st.metric("Delay Constant", "2.0", help="delay = 2.0 / connection_strength")
-                        st.metric("Min Delay", "1 step", help="Minimum transmission delay")
-                    with col3:
-                        st.metric("Fire-Once", "✓", help="Each neuron fires only once when reaching threshold")
-                        st.metric("Parallel Processing", "✓", help="All neurons process signals simultaneously")
-                
-                # Create the cascade interface with standard parameters
-                cascade = create_cascade_interface(huey.network)
-                
-                # Get available concepts for selection
-                available_concepts = cascade.get_available_concepts()
-                
-                if len(available_concepts) == 0:
-                    st.warning("⚠️ No concepts available in the network")
-                    st.info("💡 Process a conversation file first to build the neural network")
-                else:
-                    st.success(f"✅ {len(available_concepts)} concepts available for cascade analysis")
-                    
-                    # Main cascade interface
-                    st.markdown("### 🎯 Cascade Configuration")
-                    
-                    # Select input concepts (multiple selection)
-                    st.markdown("**Select Input Concepts** (stimuli that will start the cascade):")
-                    input_concepts = st.multiselect(
-                        "Choose concepts to initially activate:",
-                        options=available_concepts,
-                        default=[],
-                        help="These are the concepts that will be activated at the start (like interviewer questions)"
-                    )
-                    
-                    # Select target concept
-                    st.markdown("**Select Target Concept** (what you want to activate):")
-                    target_concept = st.selectbox(
-                        "Choose the concept you want to reach:",
-                        options=available_concepts,
-                        help="This is the concept we want to activate through the cascade (like Feynman's response)"
-                    )
-                    
-                    # Cascade parameters
-                    st.markdown("### ⚙️ Cascade Parameters")
-                    col1, col2 = st.columns(2)
-                    
-                    with col1:
-                        input_strength = st.number_input("Input Strength", min_value=0.1, max_value=2.0, value=1.0, step=0.1,
-                                                       help="Initial activation strength for input concepts")
-                    with col2:
-                        activation_threshold = st.number_input("Activation Threshold", min_value=0.0001, max_value=0.1, value=0.001, format="%.4f",
-                                                             help="Minimum activation to consider a concept 'active'")
-                    
-                    st.info("🧬 **Cascade runs until natural convergence** - neurons fire once, signals propagate with realistic transmission delays")
-                    
-                    # Suggest inputs for target
-                    if target_concept:
-                        with st.expander(f"💡 Suggested inputs for '{target_concept}'", expanded=False):
-                            suggestions = cascade.suggest_inputs_for_target(target_concept, top_k=10)
-                            if suggestions:
-                                st.markdown("**Top concepts that might activate your target:**")
-                                for i, (concept, strength) in enumerate(suggestions):
-                                    st.write(f"{i+1}. **{concept}** (strength: {strength:.3f})")
-                            else:
-                                st.info("No strong input connections found for this target concept")
-                    
-                    # Run cascade button
-                    if st.button("🚀 Run Activation Cascade", type="primary"):
-                        if not input_concepts:
-                            st.error("❌ Please select at least one input concept")
-                        elif not target_concept:
-                            st.error("❌ Please select a target concept")
-                        elif target_concept in input_concepts:
-                            st.warning("⚠️ Target concept cannot be the same as input concepts")
-                        else:
-                            with st.spinner("🔄 Running activation cascade..."):
-                                try:
-                                    # Run the cascade (max_steps determined automatically by personality)
-                                    cascade_steps = cascade.run_cascade(
-                                        input_concepts=input_concepts,
-                                        target_concept=target_concept,
-                                        input_strength=input_strength
+                if st.button("🎯 Generate 3D Plot", type="primary"):
+                    with st.spinner("Creating 3D visualization..."):
+                        try:
+                            # Create 3D plot using temporal network data
+                            import plotly.graph_objects as go
+                            import numpy as np
+                            
+                            # Get concepts and coordinates
+                            concepts = list(huey.network.neuron_to_word.values())[:num_concepts]
+                            
+                            if len(concepts) >= 3:
+                                # Generate coordinates for temporal network
+                                if hasattr(huey.network, 'connections') and huey.network.connections:
+                                    # Create distance matrix from connections
+                                    from scipy.spatial.distance import pdist, squareform
+                                    from sklearn.manifold import MDS
+                                    
+                                    # Build adjacency matrix
+                                    n = len(concepts)
+                                    adj_matrix = np.zeros((n, n))
+                                    
+                                    word_to_idx = {word: i for i, word in enumerate(concepts)}
+                                    
+                                    for (i, j), strength in huey.network.connections.items():
+                                        if i in huey.network.neuron_to_word and j in huey.network.neuron_to_word:
+                                            word_i = huey.network.neuron_to_word[i]
+                                            word_j = huey.network.neuron_to_word[j]
+                                            if word_i in word_to_idx and word_j in word_to_idx:
+                                                idx_i, idx_j = word_to_idx[word_i], word_to_idx[word_j]
+                                                adj_matrix[idx_i][idx_j] = strength
+                                                adj_matrix[idx_j][idx_i] = strength
+                                    
+                                    # Convert to distances (1 - similarity)
+                                    dist_matrix = 1 - adj_matrix
+                                    np.fill_diagonal(dist_matrix, 0)
+                                    
+                                    # Apply MDS
+                                    mds = MDS(n_components=3, dissimilarity='precomputed', random_state=42)
+                                    coords_3d = mds.fit_transform(dist_matrix)
+                                    
+                                    # Calculate concept masses for varied sizes and colors
+                                    concept_masses = []
+                                    for concept in concepts:
+                                        # Find concept ID
+                                        concept_id = None
+                                        for nid, word in huey.network.neuron_to_word.items():
+                                            if word == concept:
+                                                concept_id = nid
+                                                break
+                                        
+                                        if concept_id:
+                                            # Calculate mass as sum of connection strengths
+                                            mass = sum(strength for (i, j), strength in huey.network.connections.items() 
+                                                     if (i == concept_id or j == concept_id))
+                                            concept_masses.append(max(0.1, mass))
+                                        else:
+                                            concept_masses.append(0.1)
+                                    
+                                    # Scale sizes for visibility (5-25 range)
+                                    max_mass = max(concept_masses) if concept_masses else 1
+                                    marker_sizes = [5 + (mass/max_mass) * 20 for mass in concept_masses]
+                                    
+                                    # Create clean 3D scatter plot with mass-based sizes and colors
+                                    fig = go.Figure(data=go.Scatter3d(
+                                        x=coords_3d[:, 0],
+                                        y=coords_3d[:, 1], 
+                                        z=coords_3d[:, 2],
+                                        mode='markers+text',
+                                        text=concepts,
+                                        textposition="top center",  # Labels above markers for better readability
+                                        textfont=dict(
+                                            size=16,  # Larger text
+                                            color='black',
+                                            family='Arial'
+                                        ),
+                                        marker=dict(
+                                            size=marker_sizes,  # Varied sizes based on mass
+                                            color=concept_masses,  # Color intensity by mass
+                                            colorscale='Plasma',  # High contrast color scale
+                                            opacity=0.8,
+                                            line=dict(
+                                                width=1,
+                                                color='black'
+                                            ),
+                                            colorbar=dict(
+                                                title="Concept Mass",
+                                                tickfont=dict(size=12)
+                                            )
+                                        ),
+                                        name='Concepts',
+                                        hovertemplate='<b>%{text}</b><br>Mass: %{marker.color:.3f}<br>Coordinates: (%{x:.2f}, %{y:.2f}, %{z:.2f})<extra></extra>'
+                                    ))
+                                    
+                                    # NO CONNECTION LINES - clean visualization
+                                    
+                                    fig.update_layout(
+                                        title=f"3D MDS Plot - {len(concepts)} Concepts",
+                                        scene=dict(
+                                            xaxis_title="MDS Dimension 1",
+                                            yaxis_title="MDS Dimension 2", 
+                                            zaxis_title="MDS Dimension 3",
+                                            bgcolor='white',
+                                            xaxis=dict(gridcolor='lightgray'),
+                                            yaxis=dict(gridcolor='lightgray'),
+                                            zaxis=dict(gridcolor='lightgray')
+                                        ),
+                                        height=700,
+                                        showlegend=False
                                     )
                                     
-                                    # Display results
-                                    st.success(f"✅ Cascade completed in {len(cascade_steps)} steps")
+                                    st.plotly_chart(fig, use_container_width=True)
+                                    st.success(f"✅ Plotted {len(concepts)} concepts with {np.sum(adj_matrix > min_mass_threshold)//2} connections")
                                     
-                                    # Check if target was reached
-                                    final_step = cascade_steps[-1]
-                                    target_activation = final_step.activations.get(target_concept, 0.0)
-                                    
-                                    if target_activation >= activation_threshold:
-                                        st.balloons()
-                                        st.success(f"🎯 **TARGET REACHED!** '{target_concept}' activated with strength {target_activation:.3f}")
-                                    else:
-                                        st.warning(f"⚠️ Target '{target_concept}' not fully activated (final strength: {target_activation:.3f})")
-                                    
-                                    # Display spectral radius analysis if available
-                                    if hasattr(final_step, 'spectral_analysis') and final_step.spectral_analysis.get('analysis_available', False):
-                                        st.markdown("### 📊 Network Stability Analysis")
-                                        analysis = final_step.spectral_analysis
-                                        
-                                        col1, col2, col3 = st.columns(3)
-                                        with col1:
-                                            st.metric("ρ_eff (Loop Gain)", f"{analysis['rho_eff']:.4f}")
-                                        with col2:
-                                            if 'time_to_1e3' in analysis:
-                                                st.metric("Time to 10⁻³", f"{analysis['time_to_1e3']:.1f} steps")
-                                        with col3:
-                                            if 'time_to_1e6' in analysis:
-                                                st.metric("Time to 10⁻⁶", f"{analysis['time_to_1e6']:.1f} steps")
-                                        
-                                        # Interpretation
-                                        decay_pred = analysis.get('decay_prediction', 'unknown')
-                                        if decay_pred == "quick":
-                                            st.success("✅ Network will decay reasonably quickly")
-                                        elif decay_pred == "slow":
-                                            st.info("⏰ Network will persist for a long time (normal behavior)")
-                                        elif decay_pred == "no_decay":
-                                            st.warning("⚠️ Network may not decay (ρ_eff ≥ 1.0)")
-                                        
-                                        # Technical details in expander
-                                        with st.expander("🔬 Technical Details"):
-                                            slope_val = analysis.get('slope', 'N/A')
-                                            e0_val = analysis.get('E0', 'N/A')
-                                            
-                                            if isinstance(slope_val, (int, float)):
-                                                st.write(f"**Decay slope:** {slope_val:.6f}")
-                                            else:
-                                                st.write(f"**Decay slope:** {slope_val}")
-                                                
-                                            if isinstance(e0_val, (int, float)):
-                                                st.write(f"**Initial energy:** {e0_val:.6f}")
-                                            else:
-                                                st.write(f"**Initial energy:** {e0_val}")
-                                                
-                                            st.write("**Method:** Exponential decay fit E_t = E_0 * ρ_eff^t")
-                                            st.write("**Interpretation:** ρ_eff < 1.0 means network will eventually decay to zero")
-                                    elif hasattr(final_step, 'spectral_analysis'):
-                                        reason = final_step.spectral_analysis.get('reason', 'unknown')
-                                        if reason == 'insufficient_steps':
-                                            st.info("📊 Spectral radius analysis requires more cascade steps (>5) for reliable results")
-                                    
-                                    # Display step-by-step progression
-                                    st.markdown("### 📋 Cascade Step-by-Step")
-                                    
-                                    # Create tabs for each step
-                                    if len(cascade_steps) <= 8:  # Create individual tabs if not too many steps
-                                        step_tabs = st.tabs([f"Step {i}" for i in range(len(cascade_steps))])
-                                        
-                                        for i, step in enumerate(cascade_steps):
-                                            with step_tabs[i]:
-                                                st.markdown(f"**{step.description}**")
-                                                
-                                                # Show newly activated concepts
-                                                if step.newly_activated:
-                                                    st.markdown("🆕 **Newly Activated:**")
-                                                    for concept in step.newly_activated:
-                                                        activation = step.activations[concept]
-                                                        st.write(f"  • {concept}: {activation:.3f}")
-                                                
-                                                # Show top active concepts
-                                                active_concepts = [(k, v) for k, v in step.activations.items() if v >= activation_threshold]
-                                                active_concepts.sort(key=lambda x: x[1], reverse=True)
-                                                
-                                                if active_concepts:
-                                                    st.markdown(f"🔥 **All Active Concepts** ({len(active_concepts)}):")
-                                                    for concept, activation in active_concepts[:10]:  # Show top 10
-                                                        bar_length = int(activation * 20)
-                                                        bar = "█" * bar_length + "░" * (20 - bar_length)
-                                                        st.write(f"  {bar} {concept}: {activation:.3f}")
-                                                
-                                                st.metric("Total Energy", f"{step.total_energy:.3f}")
-                                    else:
-                                        # For many steps, use a different display
-                                        st.markdown("**Cascade Summary:**")
-                                        for i, step in enumerate(cascade_steps[::2]):  # Show every other step
-                                            st.write(f"**Step {step.step_number}:** {step.description}")
-                                    
-                                    # Try to create 3D visualization if coordinates available
-                                    st.markdown("### 🎬 3D Activation Animation")
-                                    
-                                    # Check if we have 3D coordinates from main plot
-                                    if hasattr(st.session_state, 'main_plot_coordinates') and st.session_state.main_plot_coordinates:
-                                        try:
-                                            # Create animated visualization
-                                            fig = cascade.create_cascade_visualization(
-                                                cascade_steps, 
-                                                st.session_state.main_plot_coordinates
-                                            )
-                                            st.plotly_chart(fig, use_container_width=True)
-                                            st.markdown("🎮 **Controls:** Use the play button to watch activation flow through the network!")
-                                            
-                                        except Exception as e:
-                                            st.error(f"❌ Could not create 3D animation: {e}")
-                                            st.info("💡 Make sure to generate the 3D visualization in the '🗺️ 3D Visualization' tab first")
-                                    else:
-                                        st.info("💡 **No 3D coordinates available for animation**")
-                                        st.info("To see the animated 3D cascade:")
-                                        st.info("1. Go to the '🗺️ 3D Visualization' tab")
-                                        st.info("2. Generate the 3D plot first")
-                                        st.info("3. Return here to run the cascade animation")
-                                    
-                                except ValueError as e:
-                                    st.error(f"❌ Cascade failed: {e}")
-                                    st.info("💡 Check that the selected concepts exist in the network")
-                                except Exception as e:
-                                    st.error(f"❌ Unexpected error during cascade: {e}")
-                                    import traceback
-                                    st.code(traceback.format_exc())
+                                else:
+                                    st.warning("⚠️ No connection data available for visualization")
+                            else:
+                                st.warning("⚠️ Need at least 3 concepts for 3D visualization")
+                                
+                        except Exception as e:
+                            st.error(f"❌ Error creating visualization: {e}")
+                            import traceback
+                            st.code(traceback.format_exc())
                 
-            except ImportError as e:
-                st.error(f"❌ Could not import activation cascade module: {e}")
-                st.info("💡 Make sure huey_activation_cascade.py is in the same directory")
-            except ValueError as e:
-                st.error(f"❌ Network validation failed: {e}")
-                st.warning("⚠️ **Cannot run activation cascade**")
-                st.info("💡 Possible reasons:")
-                st.info("• No conversation has been processed yet")
-                st.info("• Network processing failed - check for errors in other tabs") 
-                st.info("• File contains no meaningful dialogue or speaker patterns")
-                st.info("• Network has no learned connections between concepts")
-            except Exception as e:
-                st.error(f"❌ Unexpected error: {e}")
-                st.info("💡 This indicates a deeper issue with the network structure")
-                import traceback
-                st.code(traceback.format_exc())
+                # Analysis Functions Bar
+                st.markdown("---")
+                st.markdown("**🔬 Analysis Functions**")
+                
+                col1, col2, col3, col4 = st.columns(4)
+                
+                with col1:
+                    if st.button("🧠 Advanced Cascade", type="secondary"):
+                        st.session_state.show_cascade = True
+                    
+                    if st.session_state.get('show_cascade', False):
+                        st.subheader("🧠 Neurobiologically Realistic Activation Cascade")
+                        st.write("**ChatGPT-5's sophisticated cascade with fire-once neurons, signal delays, and spectral analysis**")
+                        
+                        if hasattr(huey.network, 'neuron_to_word') and huey.network.neuron_to_word:
+                            available_concepts = list(huey.network.neuron_to_word.values())
+                            
+                            if len(available_concepts) >= 3:
+                                # Advanced cascade controls
+                                col_inputs, col_target = st.columns(2)
+                                
+                                with col_inputs:
+                                    selected_concepts = st.multiselect(
+                                        "Input neurons (stimuli):",
+                                        available_concepts,
+                                        default=[],
+                                        help="Choose concepts to initially activate"
+                                    )
+                                
+                                with col_target:
+                                    target_concept = st.selectbox(
+                                        "Target neuron (response):",
+                                        options=[''] + available_concepts,
+                                        help="Optional: Concept you want to activate"
+                                    )
+                                
+                                # Cognitive personality settings
+                                col_a, col_b = st.columns(2)
+                                with col_a:
+                                    personality = st.selectbox(
+                                        "Cognitive style:",
+                                        ["balanced", "taciturn", "expansive", "analytical", "enthusiastic"],
+                                        help="Different thinking patterns with varying decay rates"
+                                    )
+                                    max_steps = st.slider("Max cascade steps", 10, 150, 75)
+                                
+                                with col_b:
+                                    input_strength = st.slider("Input activation", 0.5, 2.0, 1.0, 0.1)
+                                    show_debug = st.checkbox("Show debug info", value=False)
+                                
+                                if selected_concepts and st.button("🧠 Run Advanced Cascade", type="primary"):
+                                    try:
+                                        # Import the advanced cascade system
+                                        import sys
+                                        sys.path.append('/Users/josephwoelfel/asa')
+                                        from huey_activation_cascade import HueyActivationCascade, get_personality_settings
+                                        import numpy as np
+                                        import plotly.graph_objects as go
+                                        
+                                        st.info("🧠 Initializing ChatGPT-5's neurobiological cascade system...")
+                                        
+                                        # Create advanced cascade with personality settings
+                                        personality_params = get_personality_settings(personality)
+                                        cascade_system = HueyActivationCascade(
+                                            huey.network,
+                                            activation_threshold=personality_params['activation_threshold'],
+                                            max_cascade_steps=max_steps
+                                        )
+                                        
+                                        # Run the sophisticated cascade simulation
+                                        st.info("🌊 Running advanced cascade with fire-once neurons and signal delays...")
+                                        
+                                        # Generate 3D coordinates for cascade visualization (same as 3D plot)
+                                        concepts = list(huey.network.neuron_to_word.values())[:num_concepts]
+                                        
+                                        if hasattr(huey.network, 'connections') and huey.network.connections:
+                                            # Generate same MDS coordinates as 3D plot
+                                            from sklearn.manifold import MDS
+                                            import numpy as np
+                                            
+                                            n = len(concepts)
+                                            adj_matrix = np.zeros((n, n))
+                                            word_to_idx = {word: i for i, word in enumerate(concepts)}
+                                            
+                                            for (i, j), strength in huey.network.connections.items():
+                                                if i in huey.network.neuron_to_word and j in huey.network.neuron_to_word:
+                                                    word_i = huey.network.neuron_to_word[i]
+                                                    word_j = huey.network.neuron_to_word[j]
+                                                    if word_i in word_to_idx and word_j in word_to_idx:
+                                                        idx_i, idx_j = word_to_idx[word_i], word_to_idx[word_j]
+                                                        adj_matrix[idx_i][idx_j] = strength
+                                                        adj_matrix[idx_j][idx_i] = strength
+                                            
+                                            # Convert to distances (1 - similarity)
+                                            dist_matrix = 1 - adj_matrix
+                                            np.fill_diagonal(dist_matrix, 0)
+                                            
+                                            # Apply MDS
+                                            mds = MDS(n_components=3, dissimilarity='precomputed', random_state=42)
+                                            coords_3d = mds.fit_transform(dist_matrix)
+                                            
+                                            # Prepare concept positions for advanced visualization
+                                            concept_positions = {}
+                                            for i, concept in enumerate(concepts):
+                                                if i < len(coords_3d):
+                                                    # Find concept ID
+                                                    concept_id = None
+                                                    for nid, word in huey.network.neuron_to_word.items():
+                                                        if word == concept:
+                                                            concept_id = nid
+                                                            break
+                                                    if concept_id:
+                                                        concept_positions[concept_id] = (coords_3d[i, 0], coords_3d[i, 1], coords_3d[i, 2])
+                                        else:
+                                            concept_positions = {}
+                                        
+                                        # Run advanced cascade
+                                        cascade_steps = cascade_system.run_cascade(
+                                            input_concepts=selected_concepts,
+                                            target_concept=target_concept if target_concept else selected_concepts[0],
+                                            max_steps=max_steps,
+                                            input_strength=input_strength
+                                        )
+                                        
+                                        # Create advanced visualization
+                                        if cascade_steps and concept_positions:
+                                            fig = cascade_system.create_cascade_visualization(
+                                                cascade_steps=cascade_steps,
+                                                concept_positions=concept_positions
+                                            )
+                                            
+                                            # Display the sophisticated cascade
+                                            st.plotly_chart(fig, use_container_width=True)
+                                            st.success(f"🧠 Advanced cascade complete! {len(cascade_steps)} neurobiological steps with fire-once neurons")
+                                            
+                                            # Show cascade analysis
+                                            if show_debug and cascade_steps:
+                                                st.subheader("🔬 Cascade Analysis")
+                                                for i, step in enumerate(cascade_steps[:5]):  # Show first 5 steps
+                                                    st.write(f"**Step {step.step_number}:** {step.description}")
+                                                    if step.newly_activated:
+                                                        st.write(f"   New activations: {', '.join(step.newly_activated[:5])}")
+                                        else:
+                                            st.warning("⚠️ No cascade results or positions available")
+                                        
+                                    except Exception as e:
+                                        st.error(f"❌ Advanced Cascade error: {e}")
+                                        import traceback
+                                        st.code(traceback.format_exc())
+                                else:
+                                    st.warning("⚠️ Need at least 3 concepts for cascade")
+                        else:
+                            st.warning("⚠️ No concepts available")
+                
+                with col2:
+                    if st.button("📊 Mass Distribution", type="secondary"):
+                        with st.spinner("Analyzing mass distribution..."):
+                            try:
+                                import plotly.express as px
+                                import pandas as pd
+                                
+                                if hasattr(huey.network, 'neuron_to_word') and huey.network.neuron_to_word:
+                                    # Calculate masses
+                                    concept_data = []
+                                    for concept in huey.network.neuron_to_word.values():
+                                        concept_id = None
+                                        for nid, word in huey.network.neuron_to_word.items():
+                                            if word == concept:
+                                                concept_id = nid
+                                                break
+                                        
+                                        if concept_id and hasattr(huey.network, 'connections'):
+                                            mass = sum(strength for (i, j), strength in huey.network.connections.items() 
+                                                     if (i == concept_id or j == concept_id))
+                                            concept_data.append({'Concept': concept, 'Mass': mass})
+                                    
+                                    if concept_data:
+                                        df = pd.DataFrame(concept_data)
+                                        df = df.sort_values('Mass', ascending=True)
+                                        
+                                        fig = px.bar(df.tail(20), x='Mass', y='Concept', 
+                                                   orientation='h', title='Top 20 Concepts by Mass')
+                                        fig.update_layout(height=600)
+                                        st.plotly_chart(fig, use_container_width=True)
+                                    else:
+                                        st.warning("⚠️ No mass data available")
+                                else:
+                                    st.warning("⚠️ No concepts available")
+                            except Exception as e:
+                                st.error(f"❌ Mass distribution error: {e}")
+                
+                with col3:
+                    if st.button("🕸️ Network Stats", type="secondary"):
+                        with st.spinner("Calculating network statistics..."):
+                            try:
+                                if hasattr(huey.network, 'connections') and huey.network.connections:
+                                    connections = huey.network.connections
+                                    strengths = list(connections.values())
+                                    
+                                    st.subheader("🕸️ Network Statistics")
+                                    
+                                    col_a, col_b = st.columns(2)
+                                    with col_a:
+                                        st.metric("Total Connections", len(connections))
+                                        st.metric("Average Strength", f"{sum(strengths)/len(strengths):.4f}")
+                                        st.metric("Max Strength", f"{max(strengths):.4f}")
+                                    
+                                    with col_b:
+                                        strong_conns = sum(1 for s in strengths if s > 0.5)
+                                        medium_conns = sum(1 for s in strengths if 0.1 < s <= 0.5)
+                                        weak_conns = sum(1 for s in strengths if s <= 0.1)
+                                        
+                                        st.metric("Strong (>0.5)", strong_conns)
+                                        st.metric("Medium (0.1-0.5)", medium_conns)
+                                        st.metric("Weak (≤0.1)", weak_conns)
+                                    
+                                    # Strength distribution histogram
+                                    import plotly.express as px
+                                    import pandas as pd
+                                    
+                                    df = pd.DataFrame({'Connection Strength': strengths})
+                                    fig = px.histogram(df, x='Connection Strength', nbins=20, 
+                                                     title='Connection Strength Distribution')
+                                    st.plotly_chart(fig, use_container_width=True)
+                                else:
+                                    st.warning("⚠️ No connection data available")
+                            except Exception as e:
+                                st.error(f"❌ Network stats error: {e}")
+                
+                with col4:
+                    if st.button("📈 Temporal Analysis", type="secondary"):
+                        with st.spinner("Analyzing temporal patterns..."):
+                            try:
+                                st.subheader("📈 Temporal Network Analysis")
+                                
+                                if hasattr(huey.network, 'tau'):
+                                    st.metric("Time Decay (τ)", f"{huey.network.tau:.1f}")
+                                
+                                if hasattr(huey.network, 'learning_rate'):
+                                    st.metric("Learning Rate", f"{huey.network.learning_rate:.3f}")
+                                
+                                if hasattr(huey.network, 'connections') and huey.network.connections:
+                                    # Show temporal characteristics
+                                    total_strength = sum(huey.network.connections.values())
+                                    avg_strength = total_strength / len(huey.network.connections)
+                                    
+                                    st.write("**Temporal Learning Effectiveness:**")
+                                    st.write(f"• Total network strength: {total_strength:.3f}")
+                                    st.write(f"• Average connection: {avg_strength:.4f}")
+                                    st.write(f"• Network density: {len(huey.network.connections)} connections")
+                                    
+                                    if hasattr(huey.network, 'neuron_to_word'):
+                                        concept_count = len(huey.network.neuron_to_word)
+                                        max_possible = concept_count * (concept_count - 1) / 2
+                                        density_pct = (len(huey.network.connections) / max_possible) * 100
+                                        st.write(f"• Connection density: {density_pct:.1f}%")
+                                
+                                st.success("✅ Temporal analysis complete")
+                            except Exception as e:
+                                st.error(f"❌ Temporal analysis error: {e}")
+                
+                # Connection Explorer
+                st.markdown("---")
+                st.markdown("**🔍 Connection Explorer**")
+                
+                if hasattr(huey.network, 'neuron_to_word') and huey.network.neuron_to_word:
+                    available_concepts = list(huey.network.neuron_to_word.values())
+                    
+                    if available_concepts:
+                        selected_concept = st.selectbox("Select concept to explore:", available_concepts)
+                        connection_threshold = st.slider("Connection threshold", 0.0, 1.0, 0.1, 0.05)
+                        
+                        if st.button("🔍 Explore Connections"):
+                            # Find connections for selected concept
+                            concept_id = None
+                            for nid, word in huey.network.neuron_to_word.items():
+                                if word == selected_concept:
+                                    concept_id = nid
+                                    break
+                            
+                            if concept_id and hasattr(huey.network, 'connections'):
+                                connections_found = []
+                                for (i, j), strength in huey.network.connections.items():
+                                    if strength >= connection_threshold:
+                                        if i == concept_id and j in huey.network.neuron_to_word:
+                                            target_word = huey.network.neuron_to_word[j]
+                                            connections_found.append((target_word, strength))
+                                        elif j == concept_id and i in huey.network.neuron_to_word:
+                                            source_word = huey.network.neuron_to_word[i]
+                                            connections_found.append((source_word, strength))
+                                
+                                if connections_found:
+                                    connections_found.sort(key=lambda x: x[1], reverse=True)
+                                    st.success(f"Found {len(connections_found)} connections for '{selected_concept}':")
+                                    
+                                    for word, strength in connections_found[:20]:
+                                        st.write(f"• {word}: {strength:.3f}")
+                                else:
+                                    st.warning(f"No connections found for '{selected_concept}' above threshold {connection_threshold}")
+                            else:
+                                st.warning("No connection data available")
+                
+                # Export options
+                st.markdown("---")
+                st.markdown("**💾 Export Data**")
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("📋 Export Concept List"):
+                        if hasattr(huey.network, 'neuron_to_word'):
+                            concepts_text = "\n".join(huey.network.neuron_to_word.values())
+                            st.download_button(
+                                label="Download Concepts",
+                                data=concepts_text,
+                                file_name="huey_concepts.txt",
+                                mime="text/plain"
+                            )
+                
+                with col2:
+                    if st.button("🔗 Export Connections"):
+                        if hasattr(huey.network, 'connections'):
+                            connections_text = ""
+                            for (i, j), strength in huey.network.connections.items():
+                                if i in huey.network.neuron_to_word and j in huey.network.neuron_to_word:
+                                    word_i = huey.network.neuron_to_word[i]
+                                    word_j = huey.network.neuron_to_word[j]
+                                    connections_text += f"{word_i}\t{word_j}\t{strength:.4f}\n"
+                            
+                            st.download_button(
+                                label="Download Connections",
+                                data=connections_text,
+                                file_name="huey_connections.tsv",
+                                mime="text/tab-separated-values"
+                            )
+        else:
+            st.warning("⚠️ No concepts learned. Check if the text contains meaningful content.")
 
 if __name__ == "__main__":
     main()
