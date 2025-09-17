@@ -10,6 +10,7 @@ import plotly.graph_objects as go
 from collections import Counter
 from huey_time import HueyTime, HueyTimeConfig, build_vocab
 import os
+from huey_activation_cascade import HueyActivationCascade, create_cascade_interface
 
 # Language detection (ChatGPT-5's code)
 def detect_language(text):
@@ -302,6 +303,13 @@ if 'huey_results' in st.session_state:
                 concept_freqs = [freq for word, freq in top_concepts]
                 max_freq = max(concept_freqs)
                 
+                # Store 3D coordinates for cascade visualization
+                concept_positions = {}
+                for i, concept_name in enumerate(concept_names):
+                    concept_id = vocab[concept_name]
+                    concept_positions[concept_id] = (x_top[i], y_top[i], z_top[i])
+                st.session_state['visualization_coords'] = concept_positions
+                
                 st.write(f"DEBUG: Showing top {len(concept_names)} most frequent concepts (from {len(vocab)} total)")
                 
                 # Create 3D plot
@@ -348,3 +356,141 @@ if 'huey_results' in st.session_state:
                 st.error(f"❌ Visualization error: {e}")
                 import traceback
                 st.code(traceback.format_exc())
+
+# ChatGPT-5's Activation Cascade (outside processing button, uses session state)
+if 'huey_results' in st.session_state:
+    st.subheader("🌊 Activation Cascade Analysis")
+    st.write("Watch how activation flows through the network from input concepts to target concepts")
+    
+    # Create mock network object for cascade interface
+    class MockNetwork:
+        def __init__(self, huey_results):
+            self.vocab = huey_results['vocab']
+            self.W = huey_results['W']
+            self.S = huey_results['S']
+            
+            # Create mappings for cascade interface
+            self.neuron_to_word = {idx: word for word, idx in self.vocab.items()}
+            self.word_to_neuron = self.vocab
+            
+            # Use W matrix connections for cascade
+            self.connections = {}
+            for i in range(self.W.shape[0]):
+                for j in range(self.W.shape[1]):
+                    if self.W[i, j] > 0:
+                        self.connections[(i, j)] = self.W[i, j]
+    
+    try:
+        # Create mock network and cascade interface
+        mock_network = MockNetwork(st.session_state.huey_results)
+        cascade = create_cascade_interface(mock_network)
+        
+        # Get available concepts
+        available_concepts = cascade.get_available_concepts()
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            input_concepts = st.multiselect(
+                "🎯 Select input concepts (stimuli)",
+                available_concepts,
+                help="Choose concepts to initially activate"
+            )
+        
+        with col2:
+            target_concept = st.selectbox(
+                "🏁 Select target concept",
+                available_concepts,
+                help="Choose the concept you want to activate"
+            )
+        
+        # Cascade controls
+        col3, col4 = st.columns(2)
+        with col3:
+            max_steps = st.number_input(
+                "⏰ Maximum cascade steps",
+                min_value=10,
+                max_value=200,
+                value=50,
+                help="Maximum number of propagation steps"
+            )
+        
+        with col4:
+            input_strength = st.slider(
+                "⚡ Input strength",
+                min_value=0.1,
+                max_value=2.0,
+                value=1.0,
+                step=0.1,
+                help="Initial activation strength"
+            )
+        
+        # Run cascade button
+        if st.button("🚀 Run Activation Cascade"):
+            if input_concepts and target_concept:
+                with st.spinner("Running activation cascade..."):
+                    # Run the cascade
+                    cascade_steps = cascade.run_cascade(
+                        input_concepts=input_concepts,
+                        target_concept=target_concept,
+                        max_steps=max_steps,
+                        input_strength=input_strength
+                    )
+                    
+                    # Display results
+                    st.success(f"✅ Cascade completed in {len(cascade_steps)} steps")
+                    
+                    # Show step-by-step progression
+                    st.subheader("📊 Cascade Progression")
+                    for i, step in enumerate(cascade_steps[:10]):  # Show first 10 steps
+                        with st.expander(f"Step {step.step_number}: {step.description}"):
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                st.write(f"**Total Energy:** {step.total_energy:.4f}")
+                                st.write(f"**Newly Activated:** {len(step.newly_activated)}")
+                            with col2:
+                                if step.newly_activated:
+                                    st.write("**New Activations:**")
+                                    for concept in step.newly_activated[:5]:
+                                        activation = step.activations.get(concept, 0)
+                                        st.write(f"- {concept}: {activation:.4f}")
+                    
+                    # Show final target activation
+                    final_step = cascade_steps[-1]
+                    target_activation = final_step.activations.get(target_concept, 0)
+                    
+                    if target_activation >= cascade.activation_threshold:
+                        st.success(f"🎯 **Target '{target_concept}' ACTIVATED!** Final activation: {target_activation:.4f}")
+                    else:
+                        st.warning(f"🎯 Target '{target_concept}' not activated. Final activation: {target_activation:.4f}")
+                    
+                    # Create animated visualization if we have 3D coordinates
+                    if 'visualization_coords' in st.session_state:
+                        st.subheader("🎬 Animated Cascade Visualization")
+                        concept_positions = st.session_state['visualization_coords']
+                        
+                        try:
+                            cascade_fig = cascade.create_cascade_visualization(
+                                cascade_steps, concept_positions
+                            )
+                            st.plotly_chart(cascade_fig, use_container_width=True)
+                        except Exception as e:
+                            st.error(f"Visualization error: {e}")
+                    else:
+                        st.info("💡 Create a 3D visualization first to see animated cascade")
+            else:
+                st.error("Please select both input concepts and a target concept")
+        
+        # Show suggestions for target
+        if target_concept:
+            st.subheader(f"💡 Suggested inputs for '{target_concept}'")
+            suggestions = cascade.suggest_inputs_for_target(target_concept, top_k=5)
+            if suggestions:
+                for concept, strength in suggestions:
+                    st.write(f"- **{concept}** (connection strength: {strength:.4f})")
+            else:
+                st.write("No strong connections found to this target")
+                
+    except Exception as e:
+        st.error(f"❌ Cascade interface error: {e}")
+        import traceback
+        st.code(traceback.format_exc())
