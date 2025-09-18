@@ -198,15 +198,25 @@ if uploaded_file:
 if 'huey_results' in st.session_state:
     st.subheader("🎯 3D Visualization Controls")
     
-    # User controls for visualization
-    vocab_size = len(st.session_state.huey_results['vocab'])
-    max_concepts = st.number_input(
-        "📊 Total concepts to show (all will be labeled)",
-        min_value=1,
-        max_value=vocab_size,
-        value=min(200, vocab_size),
-        help=f"Enter any number from 1 to {vocab_size} concepts to visualize"
-    )
+    # User controls for visualization - using narrower columns for compact inputs
+    col1, col2, col3 = st.columns([1, 1, 2])
+    with col1:
+        vocab_size = len(st.session_state.huey_results['vocab'])
+        max_concepts = st.number_input(
+            "📊 Concepts to show",
+            min_value=1,
+            max_value=vocab_size,
+            value=min(200, vocab_size),
+            help=f"Enter 1 to {vocab_size}",
+            format="%d"
+        )
+    
+    with col2:
+        eigenvector_choice = st.selectbox(
+            "🧮 Eigenvector type",
+            ["Average (default)", "Left eigenvectors", "Right eigenvectors"],
+            help="Choose eigenvectors for visualization"
+        )
     
     if st.button("🎯 Create 3D Visualization"):
         st.write("DEBUG: Button clicked!")
@@ -218,6 +228,7 @@ if 'huey_results' in st.session_state:
                 # Get data from session state
                 results = st.session_state.huey_results
                 S = results['S']
+                W = results['W']
                 vocab = results['vocab']
                 words = results['words']
                 
@@ -226,14 +237,28 @@ if 'huey_results' in st.session_state:
                 # Proper Galileo Torgerson double-centering for pseudo-Riemannian space
                 st.write("🌌 Using Torgerson double-centering for proper Galileo plot...")
                 
-                # Use the similarity matrix S (not weight matrix W) for proper semantic clustering
-                similarity_matrix = S  # S contains the learned similarities, not raw weights
+                # Choose matrix based on eigenvector selection
+                if eigenvector_choice == "Left eigenvectors":
+                    # Use W directly (left eigenvectors of directed matrix)
+                    similarity_matrix = W
+                    st.write("🔍 Using directed W matrix (left eigenvectors)")
+                elif eigenvector_choice == "Right eigenvectors":
+                    # Use W transpose (right eigenvectors of directed matrix)
+                    similarity_matrix = W.T
+                    st.write("🔍 Using W transpose matrix (right eigenvectors)")
+                else:
+                    # Use average (default - symmetric similarity matrix)
+                    similarity_matrix = S  # S contains the learned similarities
+                    st.write("🔍 Using symmetric S matrix (average of left/right)")
                 
                 # Torgerson transformation
                 n = similarity_matrix.shape[0]
                 
-                # S is already symmetric similarity matrix from HueyTime
-                similarity = similarity_matrix
+                # For directed matrices, make symmetric for Torgerson
+                if eigenvector_choice != "Average (default)":
+                    similarity = (similarity_matrix + similarity_matrix.T) / 2.0
+                else:
+                    similarity = similarity_matrix  # S is already symmetric
                 
                 # Convert similarities to pseudo-distances
                 max_sim = np.max(np.abs(similarity))
@@ -331,7 +356,7 @@ if 'huey_results' in st.session_state:
                     text=concept_names,
                     textposition="top center",
                     textfont=dict(
-                        size=12, 
+                        size=13, 
                         color='black', 
                         family='Arial, sans-serif'
                     ),
@@ -403,15 +428,16 @@ if 'huey_results' in st.session_state:
                 help="Choose the concept you want to activate"
             )
         
-        # Cascade controls
-        col3, col4 = st.columns(2)
+        # Cascade controls - compact layout
+        col3, col4, col5 = st.columns([1, 1, 2])
         with col3:
             max_steps = st.number_input(
-                "⏰ Maximum cascade steps",
+                "⏰ Max steps",
                 min_value=10,
                 max_value=200,
                 value=50,
-                help="Maximum number of propagation steps"
+                help="Max cascade steps",
+                format="%d"
             )
         
         with col4:
