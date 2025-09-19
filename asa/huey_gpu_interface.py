@@ -14,8 +14,9 @@ from typing import Dict, List, Tuple, Optional
 import time
 import os
 
-# CRITICAL: Enable JAX 64-bit precision to match original Galileo algorithms
-os.environ['JAX_ENABLE_X64'] = '1'
+# CRITICAL: JAX 64-bit precision disabled for Metal GPU compatibility
+# Metal GPU only supports f32, not f64 - ChatGPT-5 confirmed this
+# os.environ['JAX_ENABLE_X64'] = '1'
 
 # High-performance acceleration
 try:

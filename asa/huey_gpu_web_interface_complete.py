@@ -23,131 +23,9 @@ from typing import List, Dict, Tuple
 import os
 import io
 import json
-import unicodedata
 import time
 from datetime import datetime
 from functools import lru_cache
-
-# ============================================================================
-# 🌏 ASIAN LANGUAGE SUPPORT (ChatGPT-5 Enhanced)
-# ============================================================================
-
-def detect_language(text: str) -> str:
-    """
-    Detect language from text using Unicode ranges.
-    Returns: 'zh', 'ja', 'ko', 'en', or 'other'
-    """
-    if not text:
-        return 'en'
-    
-    # Count characters in different Unicode ranges
-    cjk_count = sum(1 for char in text if '\u4e00' <= char <= '\u9fff')  # CJK Unified Ideographs
-    hiragana_count = sum(1 for char in text if '\u3040' <= char <= '\u309f')  # Hiragana
-    katakana_count = sum(1 for char in text if '\u30a0' <= char <= '\u30ff')  # Katakana
-    hangul_count = sum(1 for char in text if '\uac00' <= char <= '\ud7af')  # Hangul
-    latin_count = sum(1 for char in text if 'a' <= char.lower() <= 'z')
-    
-    total_chars = len([c for c in text if c.isalnum()])
-    if total_chars == 0:
-        return 'en'
-    
-    # Determine language based on character distribution
-    if hangul_count / total_chars > 0.3:
-        return 'ko'
-    elif (hiragana_count + katakana_count) / total_chars > 0.2:
-        return 'ja'
-    elif cjk_count / total_chars > 0.3:
-        return 'zh'
-    elif latin_count / total_chars > 0.5:
-        return 'en'
-    else:
-        return 'other'
-
-def load_kill_words(language: str) -> set:
-    """
-    Load language-specific kill words from files.
-    """
-    kill_words = set()
-    
-    try:
-        # Load universal kill words first (punctuation, digits)
-        with open('huey_kill.universal.txt', 'r', encoding='utf-8') as f:
-            universal_words = set(line.strip() for line in f if line.strip())
-            kill_words.update(universal_words)
-    except FileNotFoundError:
-        pass
-    
-    # Language-specific kill file mapping
-    kill_file_map = {
-        'en': 'huey_kill.en.txt',
-        'zh': 'huey_kill.zh.txt',
-        'ja': 'huey_kill.ja.txt',
-        'ko': 'huey_kill.ko.txt',
-        'es': 'huey_kill.es.txt',
-        'fr': 'huey_kill.fr.txt',
-        'de': 'huey_kill.de.txt',
-        'it': 'huey_kill.it.txt',
-        'is': 'huey_kill.is.txt',
-        'ta': 'huey_kill.ta.txt'
-    }
-    
-    kill_file = kill_file_map.get(language, 'huey_kill.en.txt')  # Default to English
-    
-    try:
-        with open(kill_file, 'r', encoding='utf-8') as f:
-            lang_words = set(line.strip() for line in f if line.strip())
-            kill_words.update(lang_words)
-        print(f"🗑️ Loaded {len(lang_words)} {language.upper()} kill words from {kill_file}")
-    except FileNotFoundError:
-        print(f"⚠️ Kill file {kill_file} not found, using minimal defaults")
-        # Fallback minimal kill words
-        if language in ['zh', 'ja', 'ko']:
-            kill_words.update(['的', '了', '在', '是'])  # Basic Chinese function words
-    
-    return kill_words
-
-def preprocess_asian_text(text: str, language: str) -> str:
-    """
-    Preprocess text according to ChatGPT-5's recommendations.
-    """
-    # Step 1: Unicode normalization (NFC - Canonical Decomposition + Canonical Composition)
-    text = unicodedata.normalize('NFC', text)
-    
-    # Step 2: Remove BOM if present
-    if text.startswith('\ufeff'):
-        text = text[1:]
-    
-    # Step 3: Language-specific preprocessing
-    if language in ['zh', 'ja', 'ko']:
-        # For CJK languages, preserve all characters including spaces for proper segmentation
-        # Do NOT lowercase CJK (it's a no-op but can hide bugs)
-        pass
-    else:
-        # For Latin-based languages, standard preprocessing
-        text = text.lower()
-    
-    return text
-
-def tokenize_by_language(text: str, language: str, kill_words: set) -> List[str]:
-    """
-    Tokenize text based on language type following ChatGPT-5's advice.
-    """
-    if language in ['zh', 'ja', 'ko']:
-        # Character-level tokenization for CJK languages
-        tokens = []
-        for char in text:
-            if char.strip() and char not in kill_words:
-                # Only include meaningful characters (exclude whitespace, punctuation from universal kill)
-                if char.isalnum() or ('\u4e00' <= char <= '\u9fff') or ('\u3040' <= char <= '\u30ff') or ('\uac00' <= char <= '\ud7af'):
-                    tokens.append(char)
-        return tokens
-    else:
-        # Word-level tokenization for Western languages
-        # Use Unicode-aware regex
-        words = re.findall(r'\b\w+\b', text, re.UNICODE)
-        return [word for word in words if word.lower() not in kill_words and len(word) > 1]
-
-# ============================================================================
 
 # Import Huey components
 try:
@@ -155,6 +33,7 @@ try:
     from huey_speaker_detector import HueySpeakerDetector
     from huey_gpu_conversational_experiment import HueyGPUConversationalNetwork
     from huey_temporal_simple import HueyTemporalSimple
+    from huey_time import HueyTime, HueyTimeConfig
 except ImportError as e:
     st.error(f"❌ Could not import Huey components: {e}")
     st.stop()
@@ -306,11 +185,10 @@ def segment_text_linguistically(text_content: str) -> List[str]:
 
 def _is_valid_segment(segment: str) -> bool:
     """Check if a segment meets quality criteria for neural processing."""
-    # Must contain letters (including Asian characters)
-    has_letters = bool(re.search(r'[a-zA-Z\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]', segment))
-    # Must have reasonable length (shorter for character-based languages)
-    min_length = 3 if re.search(r'[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]', segment) else 10
-    reasonable_length = min_length <= len(segment) <= 1000
+    # Must contain letters (not just punctuation/numbers)
+    has_letters = bool(re.search(r'[a-zA-Z]', segment))
+    # Must have reasonable length
+    reasonable_length = 10 <= len(segment) <= 1000
     return has_letters and reasonable_length
 
 def _split_long_sentence(sentence: str, max_length: int = 500) -> List[str]:
@@ -557,6 +435,132 @@ def load_previous_session(filename, huey):
         st.error(f"Error loading session: {e}")
         return False
 
+def process_file_with_huey_time(file_path: str, conversation_mode: bool = False) -> Dict:
+    """
+    Process a file using the original ChatGPT HueyTime temporal method.
+    Returns a comprehensive analysis result compatible with the web interface.
+    """
+    import re
+    from huey_time import HueyTime, HueyTimeConfig, build_vocab
+    
+    try:
+        # Read the file
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        st.info("🕐 **Using HueyTime Temporal Method** - Directed asymmetric weight matrices with time-lagged Hebbian learning")
+        
+        # Tokenize the content - simple word tokenization
+        words = re.findall(r'\b\w+\b', content.lower())
+        
+        if not words:
+            return {
+                'success': False,
+                'error': 'No words found in the text',
+                'concept_count': 0,
+                'connection_count': 0
+            }
+        
+        # GPT-5's fix: Limit vocabulary size to prevent memory issues
+        from collections import Counter
+        word_counts = Counter(words)
+        
+        # Keep only top 500 most frequent words (manageable matrix size: 500x500 = 250K elements)
+        max_vocab_size = 500
+        if len(word_counts) > max_vocab_size:
+            st.info(f"🎯 **Vocabulary Filtering**: Limiting to top {max_vocab_size} most frequent words (from {len(word_counts)} total)")
+            most_frequent_words = [word for word, count in word_counts.most_common(max_vocab_size)]
+            # Filter the word sequence to only include frequent words
+            words = [word for word in words if word in most_frequent_words]
+        
+        # Build vocabulary from filtered words
+        vocab = build_vocab(words)
+        st.success(f"📚 Built vocabulary: {len(vocab)} unique words")
+        
+        # Configure HueyTime with optimal parameters
+        config = HueyTimeConfig(
+            vocab=vocab,
+            method="lagged",  # Use sequence-aware Hebbian learning
+            max_lag=8,       # Look ahead 8 positions  
+            tau=3.0,         # Exponential decay parameter
+            eta_fwd=1e-2,    # Forward learning rate
+            eta_fb=2e-3,     # Reverse/feedback learning rate
+            boundary_penalty=0.25,  # Reduce cross-boundary learning
+            l2_decay=1e-4,   # Small regularization
+            allow_self=False # Prevent self-connections
+        )
+        
+        # Initialize HueyTime
+        huey_time = HueyTime(config)
+        
+        # Process the document with sentence boundaries
+        sentences = re.split(r'[.!?]+', content)
+        current_pos = 0
+        boundaries = []
+        
+        for sentence in sentences[:-1]:
+            current_pos += len(re.findall(r'\b\w+\b', sentence.lower()))
+            if current_pos < len(words):
+                boundaries.append(current_pos - 1)
+        
+        # Learn from the document
+        huey_time.update_doc(words, boundaries=boundaries)
+        
+        # Export matrices
+        W_directed = huey_time.export_W()
+        S_symmetric = huey_time.export_S("avg")
+        
+        # Calculate metrics
+        concept_count = len(vocab)
+        connection_count = np.count_nonzero(W_directed)
+        
+        st.success(f"✅ **HueyTime Learning Complete**: {concept_count} concepts, {connection_count} directed connections")
+        
+        # Create concept neurons mapping
+        concept_neurons = {i: word for word, i in vocab.items()}
+        
+        # Create connections mapping with weights
+        connections = {}
+        idx_to_word = {i: word for word, i in vocab.items()}
+        
+        for i in range(len(vocab)):
+            for j in range(len(vocab)):
+                if W_directed[i, j] > 0:
+                    word_i = idx_to_word[i]
+                    word_j = idx_to_word[j]
+                    connections[(word_i, word_j)] = float(W_directed[i, j])
+        
+        # Create analysis results compatible with existing interface
+        analysis_results = {
+            'concept_neurons': concept_neurons,
+            'connections': connections,
+            'directed_matrix': W_directed,
+            'symmetric_matrix': S_symmetric,
+            'vocab': vocab,
+            'word_frequencies': dict(zip(vocab.keys(), huey_time.freq.tolist())),
+            'learning_method': 'HueyTime_lagged',
+            'total_words': len(words),
+            'unique_words': len(vocab),
+            'sentence_boundaries': len(boundaries)
+        }
+        
+        return {
+            'success': True,
+            'concept_count': concept_count,
+            'connection_count': connection_count,
+            'analysis_results': analysis_results,
+            'processing_method': 'HueyTime Temporal Learning'
+        }
+        
+    except Exception as e:
+        st.error(f"❌ HueyTime processing failed: {e}")
+        return {
+            'success': False,
+            'error': str(e),
+            'concept_count': 0,
+            'connection_count': 0
+        }
+
 def recommend_acceleration_method(exchange_count: int) -> Dict[str, str]:
     """
     Recommend acceleration method based on benchmarked performance data.
@@ -683,19 +687,18 @@ def process_uploaded_file(uploaded_file, huey, timeout_hours=2.0, exchange_limit
             
             os.unlink(tmp_file_path)
             
-            # Create artificial conversation data using publication-quality segmentation
-            sentences = segment_text_linguistically(text_content)
+            # NO SEGMENTATION for HueyTime - process entire document as single unit
+            # HueyTime handles sentence boundaries internally during temporal learning
             
-            # Create single "Text" speaker for plain text mode
-            # Note: speakers_info expects tuples (speaker_id, full_name, role?)
+            # Create single "Text" speaker with entire document content
             result = {
                 'speakers_info': [('text', 'Text', 'document')],
-                'conversation_data': [('text', sentence) for sentence in sentences],
+                'conversation_data': [('text', text_content)],  # Single entry with full text
                 'detection_confidence': 1.0,
-                'detection_strategy': 'plain_text_mode'
+                'detection_strategy': 'huey_time_full_document'
             }
             
-            st.success(f"✅ Created {len(sentences)} text segments for analysis")
+            st.success(f"✅ Prepared entire document for HueyTime temporal processing (no segmentation)")
         else:
             # Conversational mode - normalize the result structure
             st.success(f"✅ Speaker detection successful: {detection_confidence:.1%} confidence")
@@ -756,44 +759,40 @@ def process_uploaded_file(uploaded_file, huey, timeout_hours=2.0, exchange_limit
         
         st.markdown("---")
         
-        # ALWAYS USE TEMPORAL PROCESSING - No standard network routing
-        st.success("🕐 **Using Temporal Processing** - The only way we process files")
+        # ALWAYS USE HUEY TIME TEMPORAL PROCESSING
+        st.success("🕐 **Using HueyTime Temporal Processing** - Directed asymmetric weight matrices")
         
-        # 🌏 LANGUAGE DETECTION AND PREPROCESSING (ChatGPT-5 Enhanced)
-        # Detect language from the content
-        combined_text = " ".join([text for _, text in result['conversation_data']])
-        detected_language = detect_language(combined_text)
-        
-        st.info(f"🌏 **Language detected:** {detected_language.upper()} - Using {'character-level' if detected_language in ['zh', 'ja', 'ko'] else 'word-level'} tokenization")
-        
-        # Load language-specific kill words
-        kill_words = load_kill_words(detected_language)
-        
-        # Preprocess and enhance text for each conversation entry
-        enhanced_conversation_data = []
-        for speaker_id, text in result['conversation_data']:
-            # Apply ChatGPT-5's preprocessing recommendations
-            preprocessed_text = preprocess_asian_text(text, detected_language)
-            enhanced_conversation_data.append((speaker_id, preprocessed_text))
-        
-        # Create temporary file with enhanced conversation
+        # Create temporary file with entire conversation
         with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8') as tmp_file:
-            for speaker_id, text in enhanced_conversation_data:
+            for speaker_id, text in result['conversation_data']:
                 tmp_file.write(f"{text}\n")
             tmp_file_path = tmp_file.name
         
         try:
-            # Process entire file at once with temporal learning
-            temporal_result = huey.network.process_file_with_mode(tmp_file_path, conversation_mode=conversation_mode)
+            # Process entire file with HueyTime temporal learning
+            huey_time_result = process_file_with_huey_time(tmp_file_path, conversation_mode=conversation_mode)
             
-            # Get results (fix: concepts are in huey.network, the temporal network)
-            concept_count = len(getattr(huey.network, 'concept_neurons', {}))
-            connection_count = len(getattr(huey.network, 'connections', {}))
+            if not huey_time_result['success']:
+                st.error(f"❌ HueyTime processing failed: {huey_time_result.get('error', 'Unknown error')}")
+                return {'error': f'HueyTime processing failed: {huey_time_result.get("error", "Unknown error")}'}
             
-            st.success(f"✅ **Temporal Processing Complete**: {concept_count} concepts, {connection_count} connections")
+            concept_count = huey_time_result['concept_count']
+            connection_count = huey_time_result['connection_count']
+            analysis_results = huey_time_result['analysis_results']
             
-            # Generate analysis from temporal results
-            analysis_results = {}
+            st.success(f"✅ **HueyTime Processing Complete**: {concept_count} concepts, {connection_count} connections")
+            
+            # Store results in Huey for compatibility with existing tools
+            if hasattr(huey, 'network'):
+                # Update the network with HueyTime results for tool compatibility
+                huey.network.concept_neurons = analysis_results['concept_neurons']
+                huey.network.connections = analysis_results['connections']
+                
+                # Store additional HueyTime-specific data
+                huey.network.directed_matrix = analysis_results['directed_matrix']
+                huey.network.symmetric_matrix = analysis_results['symmetric_matrix']
+                huey.network.vocab = analysis_results['vocab']
+                huey.network.word_frequencies = analysis_results['word_frequencies']
             
             return {
                 'success': True,
@@ -801,24 +800,18 @@ def process_uploaded_file(uploaded_file, huey, timeout_hours=2.0, exchange_limit
                 'conversation_data': result['conversation_data'],
                 'analysis_results': analysis_results,
                 'huey': huey,
-                'processing_method': 'temporal_only'
+                'processing_method': 'HueyTime_temporal',
+                'concept_count': concept_count,
+                'connection_count': connection_count
             }
             
         except Exception as e:
-            st.error(f"❌ Temporal processing failed: {e}")
+            st.error(f"❌ HueyTime processing failed: {e}")
             import traceback
             st.code(traceback.format_exc())
-            return {'error': f'Temporal processing failed: {e}'}
+            return {'error': f'HueyTime processing failed: {e}'}
         finally:
             os.unlink(tmp_file_path)
-        
-        # Return successful temporal processing results
-        return {
-            'success': True,
-            'speakers_info': result['speakers_info'],
-            'conversation_data': result['conversation_data'],
-            'huey': huey
-        }
         
     except Exception as e:
         return {'error': str(e)}
@@ -953,7 +946,7 @@ def main():
         
         st.markdown('<h2 class="section-header">🧠 Analysis Results</h2>', unsafe_allow_html=True)
         
-        # Network statistics (fix: concepts are in huey.network, the temporal network)
+        # Network statistics
         concept_count = len(getattr(huey.network, 'concept_neurons', {}))
         connection_count = len(getattr(huey.network, 'connections', {}))
         

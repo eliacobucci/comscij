@@ -32,9 +32,108 @@ try:
     from huey_plusplus_complete_platform import HueyCompletePlatform
     from huey_speaker_detector import HueySpeakerDetector
     from huey_gpu_conversational_experiment import HueyGPUConversationalNetwork
+    from huey_time import HueyTime, HueyTimeConfig
 except ImportError as e:
     st.error(f"❌ Could not import Huey components: {e}")
     st.stop()
+
+def process_file_with_huey_time(file_path: str, conversation_mode: bool = True) -> Dict:
+    """
+    Process file using original ChatGPT HueyTime temporal method.
+    This creates directed, asymmetric weight matrices with proper temporal learning.
+    """
+    try:
+        # Read file content
+        with open(file_path, 'r', encoding='utf-8') as f:
+            text = f.read()
+        
+        st.info(f"🎯 **Using Original ChatGPT HueyTime Method**")
+        st.info(f"   📄 Text length: {len(text):,} characters")
+        
+        # Simple tokenization for building vocabulary
+        import re
+        # Clean and tokenize text
+        text = re.sub(r'[^\w\s]', ' ', text.lower())  # Remove punctuation, lowercase
+        words = text.split()
+        words = [w for w in words if len(w) > 1]  # Remove single characters
+        
+        st.info(f"   🔤 Total words: {len(words):,}")
+        
+        # Build vocabulary from unique words
+        unique_words = list(set(words))
+        vocab = {word: i for i, word in enumerate(unique_words)}
+        
+        st.info(f"   📚 Vocabulary size: {len(vocab):,} unique words")
+        
+        # Configure HueyTime with ChatGPT's recommended settings
+        config = HueyTimeConfig(
+            vocab=vocab,
+            method="lagged",  # Use sequence-aware Hebbian with exponential decay
+            max_lag=8,        # Look ahead 8 words for temporal connections
+            tau=3.0,          # Exponential decay parameter
+            eta_fwd=1e-2,     # Forward learning rate
+            eta_fb=2e-3,      # Reverse learning rate for feedback
+            l2_decay=1e-4,    # Multiplicative forgetting
+            boundary_penalty=0.25,  # Reduce connections across boundaries
+            allow_self=False  # No self-connections
+        )
+        
+        # Create HueyTime learner
+        huey_time = HueyTime(config)
+        
+        # Process text with temporal learning
+        st.info(f"   🧠 Running temporal Hebbian learning...")
+        
+        # For conversation mode, try to detect sentence boundaries
+        if conversation_mode:
+            # Split into sentences and mark boundaries
+            sentences = re.split(r'[.!?]+', text)
+            sentence_words = []
+            boundaries = []
+            word_count = 0
+            
+            for sentence in sentences:
+                if sentence.strip():
+                    sent_words = sentence.strip().lower().split()
+                    sent_words = [w for w in sent_words if len(w) > 1 and w in vocab]
+                    sentence_words.extend(sent_words)
+                    word_count += len(sent_words)
+                    if sent_words:  # Only add boundary if sentence had words
+                        boundaries.append(word_count - 1)  # Mark end of sentence
+            
+            # Update with sentence boundaries
+            huey_time.update_doc(sentence_words, boundaries)
+        else:
+            # Plain text mode - no boundaries
+            filtered_words = [w for w in words if w in vocab]
+            huey_time.update_doc(filtered_words)
+        
+        # Export results
+        W = huey_time.export_W()  # Directed asymmetric weight matrix
+        S = huey_time.export_S()  # Symmetric matrix for visualization
+        
+        st.success(f"   ✅ HueyTime processing complete!")
+        st.info(f"   📊 Concepts extracted: {len(vocab):,}")
+        st.info(f"   🔗 Connection matrix: {W.shape[0]}×{W.shape[1]} (directed)")
+        st.info(f"   🎨 Visualization matrix: {S.shape[0]}×{S.shape[1]} (symmetric)")
+        
+        return {
+            'temporal_result': {
+                'total_concepts': len(vocab),
+                'concept_neurons': vocab,
+                'word_to_neuron': vocab,
+                'neuron_to_word': {i: word for word, i in vocab.items()},
+                'directed_weights': W,
+                'symmetric_weights': S,
+                'vocab_size': len(vocab),
+                'method': 'HueyTime_lagged'
+            },
+            'speakers_info': [('Author', 'Author', 'participant')],
+            'processing_method': 'huey_time_temporal'
+        }
+        
+    except Exception as e:
+        return {'error': f"HueyTime processing failed: {str(e)}"}
 
 def segment_text_linguistically(text_content: str) -> List[str]:
     """
@@ -613,8 +712,25 @@ def process_uploaded_file(uploaded_file, huey, timeout_hours=2.0, exchange_limit
         
         st.markdown("---")
         
-        # Register speakers and process conversation with monitoring
-        huey.register_speakers(result['speakers_info'])
+        # Use HueyTime temporal processing instead of traditional Huey
+        st.info("🎯 **Switching to Original ChatGPT HueyTime Temporal Method**")
+        temporal_result = process_file_with_huey_time(tmp_file_path, conversation_mode=conversation_mode)
+        
+        if 'error' in temporal_result:
+            return {'error': temporal_result['error']}
+        
+        # Create enhanced result structure for full interface compatibility
+        enhanced_result = {
+            'success': True,
+            'speakers_info': temporal_result['speakers_info'],
+            'conversation_data': [],  # HueyTime processes entire file
+            'huey_time_result': temporal_result,
+            'analysis_results': {'temporal_result': temporal_result['temporal_result']},
+            'processing_method': 'huey_time_temporal'
+        }
+        
+        # Return immediately with HueyTime results
+        return enhanced_result
         
         # Add progress monitoring
         import time

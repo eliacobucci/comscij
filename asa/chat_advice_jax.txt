@@ -1,0 +1,173 @@
+Got it, Joseph — this is a classic “PJRT handshake” problem between JAX
+and the Metal plugin. The good news: there are two reliable ways to get
+Huey’s GPU path back on Apple Silicon.
+0) First try the quick toggle (often enough)
+The Metal plugin supports a compatibility shim. Run Huey with:
+export ENABLE_PJRT_COMPATIBILITY=1
+python -c "import jax; print(jax.devices())"
+If you see something like [METAL(id=0)], you’re back on the GPU. This
+env-flag is an officially documented workaround for PJRT API version
+drift between JAX and the plugin. 
+GitHub
++1
+1) If you want version pinning (stable fix)
+Pick one of these matrices; both are known-good against the PJRT
+mismatch you described.
+A. Stay near your current stack but within plugin’s comfort zone
+# fresh venv is recommended
+python3 -m venv ~/jax-metal && source ~/jax-metal/bin/activate
+python -m pip install -U pip wheel numpy
+
+# Metal plugin
+pip install jax-metal==0.1.1
+
+# Pair with JAX that the community has reported as working with PJRT
+#0.47-era plugins
+pip install "jax==0.4.26" "jaxlib==0.4.26"
+# (If pip tries to upgrade jax/jaxlib later, re-pin them.)
+This exact downgrade path resolved the 0.54 (framework) vs 0.47 (plugin)
+error for others hitting your message. 
+Stack Overflow
+B. Or move forward as of 2025 (often better on M-series)
+python3 -m venv ~/jax-metal && source ~/jax-metal/bin/activate
+python -m pip install -U pip wheel numpy
+pip install jax-metal==0.1.1
+pip install "jax==0.5.0" "jaxlib==0.5.0"
+# (If needed:) export ENABLE_PJRT_COMPATIBILITY=1
+python -c "import jax; print(jax.devices())"
+Reports in 2025 indicate jax-metal 0.1.1 + jax/jaxlib 0.5.0 works, while
+0.5.1+ may break again (until plugin catches up). If you’re on 0.5.1+
+and see the same error, pin back to 0.5.0. 
+GitHub
+Apple’s own notes emphasize that the Metal plugin requires specific
+JAX/jaxlib versions; the compatibility env var is the endorsed escape
+hatch when versions drift.
+JAX Documentation
++1
+2) Sanity test (10 seconds)
+Run this after installing to confirm Metal is live:
+python - <<'PY'
+import jax, jax.numpy as jnp
+print("Devices:", jax.devices())
+x = jnp.arange(10_000_000, dtype=jnp.float32)
+y = jnp.sin(x) + jnp.cos(x)
+y.block_until_ready()
+print("OK")
+PY
+Expected: Devices: [METAL(id=0)] and it finishes quickly. If you still
+see CPU or it crawls, flip on ENABLE_PJRT_COMPATIBILITY=1 and rerun. 
+Apple Developer
+3) Why this happened (and how to avoid it)
+PJRT (the runtime API JAX uses under OpenXLA) changes across JAX/jaxlib
+releases; the Metal plugin lags occasionally. That’s the 0.54 vs 0.47
+mismatch you’re seeing.
+To avoid regressions:
+Pin versions in Huey’s requirements.txt (or conda env):
+Option A pins: jax-metal==0.1.1; jax==0.4.26; jaxlib==0.4.26
+Option B pins: jax-metal==0.1.1; jax==0.5.0; jaxlib==0.5.0
+Keep a tiny CI check that runs python -c "import jax;
+print(jax.devices())" and a small matmul, failing fast if Metal goes
+missing.
+If you want, I can hand you a one-file “Huey GPU preflight” script that
+asserts Metal is present and aborts with a clear message if the PJRT
+versions slip again.
+You said:
+yes please
+ChatGPT said:
+Perfect — here’s a Huey GPU preflight script Claude can drop into your
+workflow. It does three things:
+Imports JAX + Metal plugin and checks PJRT compatibility.
+Runs a small matmul to force GPU work.
+Prints clear diagnostics (framework version, plugin version if
+available, device list).
+If Metal isn’t there, it aborts with guidance.
+📄 huey_gpu_preflight.py
+#!/usr/bin/env python3
+import os, sys, importlib.util
+
+print("=== Huey GPU Preflight ===")
+
+# Print versions
+try:
+    import jax, jaxlib
+    print(f"JAX:     {jax.__version__}")
+    print(f"jaxlib:  {jaxlib.__version__}")
+except Exception as e:
+    print("❌ Could not import JAX/jaxlib:", e)
+    sys.exit(1)
+
+# Try to detect Metal plugin
+spec = importlib.util.find_spec("jax_metallib") or
+importlib.util.find_spec("jax_metal")
+if spec:
+    try:
+        import jax_metal
+        print(f"jax-metal: {getattr(jax_metal, '__version__',
+'unknown')}")
+    except Exception as e:
+        print("⚠️ Found jax-metal spec but import failed:", e)
+else:
+    print("⚠️ jax-metal plugin not found in this environment.")
+
+# Check devices
+try:
+    devices = jax.devices()
+    print("Devices detected:", devices)
+    if not devices or all(d.platform == "cpu" for d in devices):
+        print("❌ No GPU devices found. If this is Apple Silicon, try:")
+        print("   export ENABLE_PJRT_COMPATIBILITY=1")
+        sys.exit(2)
+except Exception as e:
+    print("❌ Error while querying devices:", e)
+    sys.exit(3)
+
+# Sanity compute on GPU
+try:
+    import jax.numpy as jnp
+    x = jnp.arange(2_000_000, dtype=jnp.float32)
+    y = jnp.sin(x) + jnp.cos(x)
+    y.block_until_ready()
+    print("✅ GPU computation succeeded.")
+except Exception as e:
+    print("❌ GPU computation failed:", e)
+    sys.exit(4)
+
+print("=== Preflight OK ===")
+Usage
+python huey_gpu_preflight.py
+Expected good output
+=== Huey GPU Preflight ===
+JAX:     0.5.0
+jaxlib:  0.5.0
+jax-metal: 0.1.1
+Devices detected: [METAL(id=0)]
+✅ GPU computation succeeded.
+=== Preflight OK ===
+If you see only cpu devices, the script will stop and remind you to set:
+export ENABLE_PJRT_COMPATIBILITY=1
+Do you want me to also make a tiny shell wrapper that Claude can run
+before Huey starts (so Huey won’t even launch if GPU isn’t detected)?
+That way you don’t waste hours on CPU fallback again.
+You said:
+No, I don't think so, because some users won't have a gpu so they have
+to enjoy the turtle races.
+ChatGPT said:
+That makes sense, Joseph — you’re right that not everyone running Huey
+will have GPU acceleration available, and in that case the CPU “turtle
+races” are the only option. The preflight script I gave you is still
+useful for your setup, because it makes the difference explicit: if
+Metal is active, it’ll say so; if not, you’ll just see CPU devices. That
+way you and Claude know immediately whether Huey is racing or crawling.
+For broader distribution, you don’t need to gate Huey’s startup.
+Instead, you can let Huey run on CPU but log a warning when no GPU is
+present. For example, you could add one line in Huey’s initialization:
+
+if all(d.platform == "cpu" for d in jax.devices()):
+    print("⚠️ Running Huey on CPU — expect slower performance.")
+That way, power users with Apple Silicon GPUs get the benefit, while
+others still run without confusion.
+Would you like me to draft a lightweight “diagnostic banner” module you
+can import at Huey startup that always reports: JAX version, Metal
+plugin version, available devices, and expected performance tier? That
+might make debugging and user education easier without breaking CPU-only
+users.

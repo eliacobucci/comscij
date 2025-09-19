@@ -1,0 +1,107 @@
+
+Thought for 16s
+Short version: Apple’s Metal backend for JAX does not support float64
+(f64) kernels on the GPU. It never has. Your earlier 20-second run
+almost certainly didn’t execute f64 on the GPU; either (a) X64 was off
+(so you were on f32 and fast), or (b) JAX silently fell back to CPU for
+the f64 ops while other work still hit the GPU. After your changes, the
+Metal→PJRT pipeline is now stricter and refuses to lower f64 at all,
+hence the error.
+So the fix is to run GPU work in f32/bf16 and, if you truly need f64,
+route those pieces to the CPU. Below is a practical way to get Huey back
+to “fast + faithful”.
+
+What to do
+1) Prove the dtype reality in 10 seconds
+Run these on your M-series box:
+import os, jax, jax.numpy as jnp
+print("Devices:", jax.devices())
+
+# Expect success on GPU:
+x32 = jnp.arange(8, dtype=jnp.float32)
+print("f32 sin OK:", jnp.sin(x32).block_until_ready() is None)
+
+# Expect failure (or CPU fallback) for f64 on Metal:
+x64 = jnp.arange(8, dtype=jnp.float64)
+y64 = jnp.sin(x64)
+print("y64 device:", y64.device_buffer.device())
+y64.block_until_ready()
+If you’re on Metal and JAX_ENABLE_X64=1, the f64 op will fail at compile
+time (your current error) or run on CPU if JAX is allowed to place it
+there.
+2) Turn f64 off when using the GPU
+In your GPU-accelerated path, disable X64 and cast inputs to f32:
+export JAX_PLATFORMS=metal,cpu         # prefer Metal but keep CPU
+available
+export ENABLE_PJRT_COMPATIBILITY=1     # you already use this
+export JAX_ENABLE_X64=0                # <- critical
+And in code (belt-and-suspenders):
+from jax import config
+config.update("jax_enable_x64", False)
+
+# sanitize inputs
+def to_f32(*arrays):
+    return [jnp.asarray(a, dtype=jnp.float32) for a in arrays]
+3) Route only the truly-needed f64 to CPU
+Keep the heavy Hebbian loops and linear algebra on the GPU in f32, but
+do any numerically sensitive f64 steps on CPU. Two easy patterns:
+A. Whole-function CPU JIT
+from functools import partial
+from jax import jit, devices
+
+cpu0 = devices("cpu")[0]
+
+@partial(jit, backend="cpu")
+def high_precision_step_f64(a64, b64):
+    # do the small, sensitive bit in f64 on CPU
+    return jnp.linalg.solve(a64, b64)
+B. Local CPU context
+from jax import default_device, devices
+cpu0 = devices("cpu")[0]
+
+def step_mixed_precision(a32, b32):
+    # f32 GPU stuff first...
+    c32 = a32 @ b32
+
+    # f64 on CPU only for the sensitive reduce:
+    with default_device(cpu0):
+        c64 = jnp.asarray(c32, dtype=jnp.float64)
+        s64 = jnp.sum(c64)  # example
+    return c32, s64
+This preserves the 15–16× speedup for the bulk work while still giving
+you f64 where it matters.
+4) Make f32 behave better (if you were relying on f64 for stability)
+If the reason you forced f64 was numerical stability, try these first in
+f32:
+Rescale inputs (z-score or divide by a power of two to keep dynamic
+range tame).
+Use numerically stable forms: logsumexp, expm1, log1p, etc.
+For sums/dot products, consider compensated summation (Kahan/Neumaier)
+in f32.
+Accumulate in f32 but perform the final few scalar reductions on CPU/f64
+(cheap).
+5) Lock your environment so it doesn’t regress
+Keep JAX_ENABLE_X64=0 in your GPU runtime env (and your
+requirements.txt/pyproject.toml pins for JAX + jax-metal).
+Add a tiny preflight at Huey startup:
+import os, jax
+gpu = any(d.platform == "metal" for d in jax.devices())
+x64 = os.environ.get("JAX_ENABLE_X64", "0") == "1"
+if gpu and x64:
+    print("⚠️ Metal GPU active but JAX_ENABLE_X64=1 — expect failures.
+For GPU runs, set JAX_ENABLE_X64=0.")
+Why your earlier run was fast
+Metal+JAX can do f16/bf16/f32 on the GPU at high speed.
+Apple GPUs do not expose f64 in Metal kernels. If you saw 20 seconds,
+the hot path was running in f32 (likely with JAX_ENABLE_X64=0 or silent
+casting), or the f64 bits were tiny/CPU and the GPU still dominated the
+runtime.
+TL;DR for Claude
+Metal doesn’t do f64. Stop trying to push tensor<f64> to the GPU.
+Run Huey’s big kernels in f32 on Metal, and selectively dispatch f64 to
+CPU.
+Enforce with JAX_ENABLE_X64=0 for GPU runs; add cast/guards.
+If you absolutely must run everything in f64, accept CPU (“turtle race”)
+or move to a CUDA box.
+If you want, I’ll help you mark the f64 hotspots in Huey and wrap them
+with backend='cpu', leaving the rest JIT-compiled to Metal.

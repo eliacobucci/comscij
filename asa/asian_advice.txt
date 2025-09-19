@@ -1,0 +1,84 @@
+While pruning and cloning up Huey, Claude and I somehow lost the ability
+to read Asian languages. I'd appreciate any advice you ight have for
+regaining that ability. Also, we need kill files for Mandarin, Japanese,
+Korean, Tamil, Icelandic, Italian, German, French, Spanish and English.
+Does it make sense to combine them all into one big file, or should we
+keep them serrate? Can you supply them? Thanks!
+ChatGPT said:
+
+Thought for 26s
+Absolutely. Two parts below: (A) how to regain Huey’s ability to “read”
+Asian languages, and (B) clean baseline kill files for all the languages
+you listed—kept separate (recommended), plus an optional universal
+layer.
+A) Regaining Asian-language input in Huey
+1) File I/O & encoding
+Read as UTF-8 explicitly. In Python: open(path, encoding="utf-8",
+errors="strict"). In Fortran, don’t assume single-byte chars—either:
+Read raw bytes and let Python pre-process into code points, or
+Use a UTF-8 capable layer and treat text as bytes → decode.
+Strip BOM if present: handle \ufeff at start of files.
+Normalize Unicode once, early:
+unicodedata.normalize("NFC", text) (NFKC if you want compatibility
+folding).
+Preserve line/segment markers (-1) exactly as Huey expects.
+2) Tokenization gates
+Make sure your “ASCII guardrails” aren’t dropping non-Latin characters.
+In regex, include Unicode: e.g., Python re.UNICODE and ranges for CJK
+[\u4E00-\u9FFF].
+Do not lowercase CJK; it’s a no-op but can hide bugs if applied blindly.
+For Mandarin/Japanese/Korean, if you don’t have a word segmenter ready,
+fall back to character-level tokens (it’s robust and comparable across
+languages). Later, you can add a word-segmenter path.
+3) Visualization/fonts (if plots look empty)
+Ensure your plotting library can render CJK:
+In Matplotlib, set a font that supports CJK before plotting (e.g., Noto
+Sans CJK).
+Verify glyph fallback—otherwise points/labels render as empty boxes.
+4) Environment & locales
+On macOS/Linux, set LANG/LC_ALL to a UTF-8 locale (e.g., en_US.UTF-8).
+In Python, PYTHONIOENCODING=utf-8 avoids surprises on stdout/stderr.
+5) Sanity tests
+Round-trip a short Chinese/Japanese/Korean sentence through the entire
+Huey read → tokenize → Hebbian update pipeline. If counts increase as
+expected and no characters drop, you’re good.
+B) Kill files (separate per language)
+It’s best to keep them separate. Reasons:
+Tokenization differs (word vs. character scripts).
+Homographs and function words don’t map 1-to-1 cross-lingually.
+You can still maintain a universal prefilter (digits, punctuation)
+applied to all languages first.
+Here are downloadable baseline kill files (UTF-8 plain text, one token
+per line). Use them as starting points; then extend automatically via
+your frequency/dispersion logic.
+English: huey_kill.en.txt
+Spanish: huey_kill.es.txt
+French: huey_kill.fr.txt
+German: huey_kill.de.txt
+Italian: huey_kill.it.txt
+Icelandic: huey_kill.is.txt
+Mandarin (character-level): huey_kill.zh.txt
+Japanese: huey_kill.ja.txt
+Korean: huey_kill.ko.txt
+Tamil: huey_kill.ta.txt
+Universal (digits/punct): huey_kill.universal.txt
+
+These are deliberately conservative. They remove common function
+words/particles but avoid aggressive pruning of potentially meaningful
+content. You can auto-expand them per corpus using your frequency +
+dispersion procedure (the one we prototyped earlier), with a keep-list
+to protect semantically crucial tokens (e.g., 蓝光 / “blue light”).
+Minimal plug-in checklist for Huey
+Preprocess step (per language):
+Read UTF-8 → normalize("NFC") → apply universal kill → apply language
+kill → pass to tokenizer.
+Tokenizer switch:
+if lang in {"zh","ja","ko"}: char_tokenize(); else: word_tokenize()
+Optionally add a second code path for segmented CJK later.
+Auto-extend kill files:
+After initial runs, compute per-corpus candidates (top X% freq, high
+dispersion across segments), subtract a keep-list, append to the
+per-language kill file.
+If you want, I can also drop in a tiny UTF-8/CJK smoke-test script you
+can run inside Huey’s repo to confirm reading + counting works for
+Mandarin/Japanese/Korean before spinning up the full Hebbian updates.

@@ -1,0 +1,114 @@
+ChatGPT said:
+Yes, Joseph — I can give Claude some practical “triage” steps to help
+Huey get its GPU legs back. The fact that Huey used to run the big
+Feynman file in ~20 seconds and now has fallen back to CPU tells us the
+GPU pipeline was working before, but something broke during the
+“surgery.” Here’s how I’d suggest Claude approach it systematically:
+1. Confirm hardware & drivers are visible
+Check GPU visibility at the OS level:
+On Linux: nvidia-smi
+On macOS (with Apple Silicon): system_profiler SPDisplaysDataType
+On Windows: Device Manager → Display adapters
+If the GPU is not listed: driver/firmware issue.
+If it is listed but shows no processes: the software layer isn’t binding
+to it.
+2. Verify CUDA/cuDNN or vendor stack
+If Huey is in Python:
+import torch; print(torch.cuda.is_available()) (PyTorch)
+import tensorflow as tf; print(tf.config.list_physical_devices('GPU'))
+(TensorFlow)
+If Fortran/C++:
+Check that the CUDA toolkit is still installed and the correct version
+is linked.
+After surgery, library versions may have drifted — e.g., CUDA mismatch
+between driver and runtime.
+3. Re-check the build / linkage flags
+If Huey compiles Fortran/C++ code:
+Ensure the nvfortran or nvcc toolchains are still being invoked.
+Rebuild with GPU flags enabled (e.g., -cuda, -Mcuda, -acc for OpenACC).
+If Huey’s GPU support was via Python bindings:
+Confirm that the GPU-enabled wheel (torch, tensorflow-gpu, etc.) is
+still installed.
+4. Environment & runtime variables
+Some frameworks require explicit env vars:
+CUDA_VISIBLE_DEVICES=0 to make GPU 0 visible.
+OMP_NUM_THREADS tuning may help if CPU fallback is happening silently.
+If Huey has its own config files, make sure GPU mode wasn’t toggled off
+(sometimes device=cpu sneaks in after changes).
+5. Regression hunt
+Since this broke after “minor surgery,” it’s worth:
+Diffing the code/configs before and after. Look especially at:
+Import paths (e.g., CPU-only fallback libraries).
+Build scripts (flags for GPU acceleration).
+Runtime arguments (device flags).
+Minimal test: run a toy Hebbian update on a small matrix and time it. If
+it’s much slower than before, you’re on CPU.
+6. Quick restore path
+If Claude just needs Huey working again quickly:
+Reinstall the GPU stack cleanly (driver + CUDA runtime + library).
+Recompile Huey with GPU flags.
+Run a trivial benchmark (matrix multiply, vector dot) to confirm GPU
+path.
+Only then reintroduce the large Feynman file.
+⚡ In short: Claude should start from the bottom (driver), work up to
+CUDA/cuDNN, then to Huey’s build flags, and finally check the runtime
+config. Somewhere in that chain the GPU got dropped.
+Would you like me to also prepare Claude a minimal GPU self-test script
+(say in Python and Fortran) that just does a big matrix multiply and
+times it, so he can quickly confirm whether the GPU is being used at all
+before digging back into Huey?
+You said:
+Yes please.
+ChatGPT said:
+
+Thought for 15s
+Great — I’ve packaged a minimal GPU self-test bundle Claude can run to
+isolate where Huey lost GPU access. Download what you need and run
+locally:
+Files
+Shell checklist: gpu_check.sh
+PyTorch bench: torch_bench.py
+CuPy bench: cupy_bench.py
+TensorFlow check: tf_bench.py
+CUDA C toolchain test: cuda_vecadd.cu
+OpenACC Fortran test (NVIDIA HPC SDK): openacc_matmul.F90
+How to use
+Quick environment sanity
+bash gpu_check.sh
+You should see GPU info (nvidia-smi), plus whether PyTorch/CuPy/TF see
+CUDA.
+If all show CPU/empty, the break is below the framework (driver/CUDA
+runtime).
+Framework-level timing checks
+PyTorch:
+python3 torch_bench.py
+Expect Device: cuda and a large speedup vs CPU. If Device: cpu, your
+torch build or CUDA path is wrong.
+CuPy:
+python3 cupy_bench.py
+Prints average time + GFLOP/s; fails fast if CUDA runtime isn’t found.
+TensorFlow:
+python3 tf_bench.py
+Should list a GPU device; prints a small matmul timing.
+Toolchain checks
+CUDA C (proves nvcc + driver):
+nvcc -O3 -arch=sm_70 -o vecadd cuda_vecadd.cu && ./vecadd
+# Expect: "OK"
+Adjust -arch (e.g., sm_86) to your GPU.
+Fortran OpenACC (proves nvfortran + GPU offload):
+nvfortran -acc -O3 -Minfo=accel -o acc_matmul openacc_matmul.F90
+./acc_matmul
+Timing should be seconds on GPU; much slower on CPU or if offload fails.
+If something fails
+nvidia-smi missing → install driver; verify OS sees the GPU.
+Framework sees CPU only → reinstall matching versions:
+PyTorch: CUDA-enabled wheel for your CUDA version.
+CuPy: pip install cupy-cuda12x (match 12.x to your driver).
+TF: version with GPU support (Linux/NVIDIA only).
+CUDA C fails to compile → install CUDA Toolkit and set
+PATH/LD_LIBRARY_PATH.
+OpenACC fails → install NVIDIA HPC SDK; confirm nvfortran exists.
+Once one of these reports clear GPU acceleration, point Huey at the same
+environment (or container) and re-run the Feynman job. If you want, I
+can also draft a Huey config snippet to force device=cuda:0 and log
+whether kernels land on the GPU.

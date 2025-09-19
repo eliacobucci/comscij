@@ -389,9 +389,9 @@ class HueyTemporalSimple(HueyConversationalNetwork):
         # Create neurons for words and track them
         window_neurons = []
         for word in words:
-            # Skip kill words
-            if hasattr(self, 'kill_words') and word in self.kill_words:
-                continue
+            # TEMPORARILY DISABLE KILL WORDS to test concept extraction
+            # if hasattr(self, 'kill_words') and word in self.kill_words:
+            #     continue
                 
             # Add/activate neuron for this word
             if word not in self.concept_neurons:
@@ -487,9 +487,8 @@ class HueyTemporalSimple(HueyConversationalNetwork):
         import unicodedata
         
         print(f"     🔤 TOKENIZE_MULTILINGUAL START")
-        print(f"     📝 Input text: '{text}'")
+        print(f"     📝 Input text: [{len(text)} characters] {text[:100]}...")
         print(f"     📊 Text length: {len(text)} characters")
-        print(f"     🔢 Text bytes: {text.encode('utf-8')}")
         
         # Step 1: Detect language
         detected_lang = self._detect_language(text)
@@ -558,10 +557,10 @@ class HueyTemporalSimple(HueyConversationalNetwork):
             
             for token in tokens:
                 if len(token) >= 1 and token.strip():
-                    # Skip language-specific kill words
-                    if token in lang_kill_words:
-                        print(f"       ❌ Skipping kill word: '{token}'")
-                        continue
+                    # TEMPORARILY DISABLE KILL WORDS
+                    # if token in lang_kill_words:
+                    #     print(f"       ❌ Skipping kill word: '{token}'")
+                    #     continue
                     
                     # Keep Asian characters as-is, lowercase others
                     if re.search(r'[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]', token):
@@ -580,8 +579,9 @@ class HueyTemporalSimple(HueyConversationalNetwork):
             # Western language processing: space-based splitting with kill word filtering
             print(f"     🌍 Western language tokenization")
             words = text.lower().split()
-            # Filter out language-specific kill words
-            filtered_words = [word for word in words if word not in lang_kill_words]
+            # TEMPORARILY DISABLE KILL WORDS  
+            # filtered_words = [word for word in words if word not in lang_kill_words]
+            filtered_words = words
             print(f"     🌍 Western tokenization: {len(filtered_words)} tokens from {len(words)} total")
             return filtered_words
     
@@ -600,7 +600,7 @@ class HueyTemporalSimple(HueyConversationalNetwork):
         
         debug_log(f"🌏 Temporal processing with language detection...")
         debug_log(f"   Speaker: {speaker_name}")
-        debug_log(f"   Input text: '{text.strip()}'")
+        debug_log(f"   Input text: [{len(text)} chars] '{text.strip()[:100]}...'")
         
         # Set current speaker
         self.current_speaker = speaker_name

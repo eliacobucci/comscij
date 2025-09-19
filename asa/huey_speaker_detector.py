@@ -111,8 +111,8 @@ class HueySpeakerDetector:
         except Exception as e:
             return {'error': f"Error reading file: {str(e)}"}
         
-        # Cheeky preprocessing: repeat speaker names on continuation lines
-        content = self._add_speaker_to_continuation_lines(content)
+        # DISABLED: This was breaking conversations into micro-fragments
+        # content = self._add_speaker_to_continuation_lines(content)
         
         # Handle line breaks between speaker and text - more aggressive approach
         # First, handle the specific "Speaker: ActualName" format

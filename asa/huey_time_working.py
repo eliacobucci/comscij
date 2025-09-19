@@ -32,28 +32,47 @@ def detect_language(text):
 
 def load_kill_words(language_code):
     """Load appropriate kill words file for detected language."""
+    # Map language codes to the new file naming convention
+    language_file_map = {
+        "en": "kill_english.txt",
+        "es": "kill_spanish.txt", 
+        "fr": "kill_french.txt",
+        "de": "kill_german.txt",
+        "it": "kill_italian.txt",
+        "is": "kill_icelandic.txt",
+        "zh": "kill_mandarin_chinese.txt",
+        "ja": "kill_japanese.txt",
+        "ko": "kill_korean.txt",  # Will need this file
+        "ta": "kill_tamil.txt",
+        "hi": "kill_hindi.txt"
+    }
+    
+    # Try the new organized folder first
+    if language_code in language_file_map:
+        kill_file = f"blue_killfiles_all/{language_file_map[language_code]}"
+        if os.path.exists(kill_file):
+            try:
+                with open(kill_file, 'r', encoding='utf-8') as f:
+                    kill_words = set(line.strip().lower() for line in f if line.strip())
+                st.info(f"📚 Loaded {len(kill_words)} kill words from {kill_file}")
+                return kill_words
+            except Exception as e:
+                st.warning(f"⚠️ Error loading kill words from {kill_file}: {e}")
+    
+    # Fallback to old naming convention
     kill_file = f"huey_kill.{language_code}.txt"
+    if os.path.exists(kill_file):
+        try:
+            with open(kill_file, 'r', encoding='utf-8') as f:
+                kill_words = set(line.strip().lower() for line in f if line.strip())
+            st.info(f"📚 Loaded {len(kill_words)} kill words from {kill_file}")
+            return kill_words
+        except Exception as e:
+            st.warning(f"⚠️ Error loading kill words: {e}")
     
-    if not os.path.exists(kill_file):
-        # Fallback to English if specific language not found
-        kill_file = "huey_kill.en.txt"
-        
-    if not os.path.exists(kill_file):
-        # Final fallback to universal
-        kill_file = "huey_kill.universal.txt"
-        
-    if not os.path.exists(kill_file):
-        st.warning("⚠️ No kill words file found - proceeding without filtering")
-        return set()
-    
-    try:
-        with open(kill_file, 'r', encoding='utf-8') as f:
-            kill_words = set(line.strip().lower() for line in f if line.strip())
-        st.info(f"📚 Loaded {len(kill_words)} kill words from {kill_file}")
-        return kill_words
-    except Exception as e:
-        st.warning(f"⚠️ Error loading kill words: {e}")
-        return set()
+    # Final fallback
+    st.warning("⚠️ No kill words file found - proceeding without filtering")
+    return set()
 
 # Import JAX for GPU operations with CPU fallback for unsupported ops
 try:
@@ -99,12 +118,39 @@ if uploaded_file:
     st.write(f"**File:** {uploaded_file.name}")
     st.write(f"**Length:** {len(content)} characters")
     
+    # Language selection
+    language_options = {
+        "Auto-detect (CJK only)": "auto",
+        "English": "en",
+        "Spanish": "es", 
+        "French": "fr",
+        "German": "de",
+        "Italian": "it",
+        "Icelandic": "is",
+        "Hindi": "hi",
+        "Mandarin Chinese": "zh",
+        "Japanese": "ja",
+        "Korean": "ko",
+        "Tamil": "ta"
+    }
+    
+    selected_language_name = st.selectbox(
+        "🌍 Language",
+        list(language_options.keys()),
+        help="Select the language of your text for proper kill word filtering"
+    )
+    selected_language_code = language_options[selected_language_name]
+    
     if st.button("🚀 Process with HueyTime"):
         with st.spinner("Processing..."):
             
-            # Detect language and load appropriate kill words
-            detected_language = detect_language(content)
-            st.success(f"🌍 **Detected language:** {detected_language}")
+            # Use selected language or auto-detect
+            if selected_language_code == "auto":
+                detected_language = detect_language(content)
+                st.info(f"🔍 **Auto-detected language:** {detected_language}")
+            else:
+                detected_language = selected_language_code
+                st.success(f"🌍 **Selected language:** {selected_language_name}")
             
             kill_words = load_kill_words(detected_language)
             
