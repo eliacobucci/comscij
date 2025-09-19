@@ -108,8 +108,9 @@ if uploaded_file:
             
             kill_words = load_kill_words(detected_language)
             
-            # EXACT same code as reset_test.py that works
+            # Process text exactly as provided - no modifications
             words = re.findall(r'\b\w+\b', content.lower())
+            
             st.write(f"**Words before filtering:** {len(words)}")
             
             # Filter out kill words if available
