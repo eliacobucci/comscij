@@ -11,6 +11,7 @@ from collections import Counter
 from huey_time import HueyTime, HueyTimeConfig, build_vocab
 import os
 from huey_activation_cascade import HueyActivationCascade, create_cascade_interface
+from cov_hebb import CovHebbLearner
 
 # Language detection (ChatGPT-5's code)
 def detect_language(text):
@@ -74,23 +75,32 @@ def load_kill_words(language_code):
     st.warning("⚠️ No kill words file found - proceeding without filtering")
     return set()
 
-# Import JAX for GPU operations with CPU fallback for unsupported ops
+# Import JAX with proper ARM64 handling
 try:
     import jax
     import jax.numpy as jnp
     from jax import device_put, jit
     from functools import partial
     jax_available = True
-    st.write("🚀 JAX available - GPU for supported ops, CPU for eigendecomposition")
+    st.write("🚀 JAX available - GPU acceleration enabled")
     
-    # ChatGPT-5's solution: CPU decorator for operations Metal doesn't support
-    @partial(jit, backend="cpu")
-    def cpu_eigendecomposition(matrix):
-        """Force eigendecomposition to run on CPU where it's supported"""
-        return jnp.linalg.eigh(matrix)
+    # Test for Metal GPU
+    devices = jax.devices()
+    if any('metal' in str(device).lower() for device in devices):
+        st.success("⚡ JAX Metal GPU acceleration detected!")
+    else:
+        st.info(f"💻 JAX running on: {devices}")
         
-except ImportError:
+except (ImportError, RuntimeError) as e:
     jax_available = False
+    st.error(f"❌ JAX FAILED: {e}")
+    st.stop()
+
+# JAX is essential - define the CPU eigendecomposition function
+@partial(jit, backend="cpu")
+def cpu_eigendecomposition(matrix):
+    """Force eigendecomposition to run on CPU where it's supported"""
+    return jnp.linalg.eigh(matrix)
 
 st.set_page_config(page_title="🕐 HueyTime WORKING", layout="wide")
 
@@ -141,6 +151,25 @@ if uploaded_file:
     )
     selected_language_code = language_options[selected_language_name]
     
+    # IAC toggle and competition control
+    use_iac = st.checkbox(
+        "🧠 Interactive Activation & Competition (IAC)",
+        value=False,
+        help="Enable signed covariance-based learning for competitive dynamics (e.g., dog-meows negative connection)"
+    )
+
+    # Competition level slider (only show when IAC is enabled)
+    if use_iac:
+        inhibition_baseline = st.slider(
+            "⚔️ Competition Level",
+            min_value=0.0,
+            max_value=1.0,
+            value=0.002,
+            step=0.001,
+            format="%.3f",
+            help="Higher values = more competition (more negative connections). Lower values = more cooperation."
+        )
+    
     if st.button("🚀 Process with HueyTime"):
         with st.spinner("Processing..."):
             
@@ -186,6 +215,47 @@ if uploaded_file:
             concepts = len(vocab)
             connections = (W > 0).sum()
             
+            # IAC Processing if enabled
+            iac_learner = None
+            W_iac = None
+            if use_iac:
+                st.write("🧠 **Interactive Activation & Competition Processing**")
+                
+                # Initialize IAC learner
+                iac_learner = CovHebbLearner(n=len(vocab), eta=5e-3, beta=1e-2, gamma=1e-4)
+                
+                # Process text with sliding window for IAC learning
+                window_size = 5  # Words in each window
+                for i in range(len(words) - window_size + 1):
+                    window_words = words[i:i + window_size]
+                    # Convert words to indices
+                    window_indices = [vocab[word] for word in window_words if word in vocab]
+                    if len(window_indices) >= 2:  # Need at least 2 words for covariance
+                        iac_learner.update_from_window(window_indices)
+                    
+                    # Prune every 100 windows to keep memory manageable
+                    if (i + 1) % 100 == 0:
+                        iac_learner.prune_topk(256)
+                
+                # Final pruning
+                iac_learner.prune_topk(256)
+                
+                # Get IAC matrix with simple baseline subtraction
+                vocab_indices = list(range(len(vocab)))
+                W_covariance = iac_learner.to_dense_block(vocab_indices)
+                
+                # Apply inhibition baseline for competition (user-controlled via slider!)
+                W_iac = W_covariance - inhibition_baseline
+                # Keep diagonal at zero - "wherever you go, there you are"
+                np.fill_diagonal(W_iac, 0.0)
+                
+                st.success(f"✅ IAC learning complete! Processed {len(words) - window_size + 1} windows")
+                st.write(f"  - IAC matrix shape: {W_iac.shape}")
+                st.write(f"  - Competition level (inhibition): {inhibition_baseline:.4f}")
+                st.write(f"  - IAC positive connections: {np.sum(W_iac > 0)}")
+                st.write(f"  - IAC negative connections: {np.sum(W_iac < 0)}")
+                st.write(f"  - IAC max: {np.max(W_iac):.6f}, min: {np.min(W_iac):.6f}")
+            
             # Debug the matrices
             st.write(f"🔍 **Matrix Analysis:**")
             st.write(f"  - W shape: {W.shape}")
@@ -204,7 +274,10 @@ if uploaded_file:
                 'concepts': concepts,
                 'connections': connections,
                 'detected_language': detected_language,
-                'kill_words_used': len(kill_words) if kill_words else 0
+                'kill_words_used': len(kill_words) if kill_words else 0,
+                'iac_enabled': use_iac,
+                'iac_learner': iac_learner,
+                'W_iac': W_iac
             }
             
             # Display results
@@ -246,7 +319,7 @@ if 'huey_results' in st.session_state:
     st.subheader("🎯 3D Visualization Controls")
     
     # User controls for visualization - using narrower columns for compact inputs
-    col1, col2, col3 = st.columns([1, 1, 2])
+    col1, col2, col3 = st.columns([1, 1, 1])
     with col1:
         vocab_size = len(st.session_state.huey_results['vocab'])
         max_concepts = st.number_input(
@@ -259,6 +332,18 @@ if 'huey_results' in st.session_state:
         )
     
     with col2:
+        # Matrix type selector
+        matrix_options = ["HueyTime (S matrix)", "HueyTime (W matrix)"]
+        if st.session_state.huey_results.get('iac_enabled', False):
+            matrix_options.append("IAC (signed weights)")
+        
+        matrix_choice = st.selectbox(
+            "🧠 Matrix type",
+            matrix_options,
+            help="Choose which matrix to visualize"
+        )
+    
+    with col3:
         eigenvector_choice = st.selectbox(
             "🧮 Eigenvector type",
             ["Average (default)", "Left eigenvectors", "Right eigenvectors"],
@@ -276,6 +361,7 @@ if 'huey_results' in st.session_state:
                 results = st.session_state.huey_results
                 S = results['S']
                 W = results['W']
+                W_iac = results.get('W_iac', None)
                 vocab = results['vocab']
                 words = results['words']
                 
@@ -284,19 +370,35 @@ if 'huey_results' in st.session_state:
                 # Proper Galileo Torgerson double-centering for pseudo-Riemannian space
                 st.write("🌌 Using Torgerson double-centering for proper Galileo plot...")
                 
-                # Choose matrix based on eigenvector selection
+                # Choose base matrix first
+                if matrix_choice == "IAC (signed weights)" and W_iac is not None:
+                    base_matrix = W_iac
+                    st.write("🧠 Using IAC signed weight matrix")
+                elif matrix_choice == "HueyTime (W matrix)":
+                    base_matrix = W
+                    st.write("🔍 Using HueyTime W matrix")
+                else:
+                    base_matrix = S
+                    st.write("🔍 Using HueyTime S matrix")
+                
+                # Then choose eigenvector direction
                 if eigenvector_choice == "Left eigenvectors":
-                    # Use W directly (left eigenvectors of directed matrix)
-                    similarity_matrix = W
-                    st.write("🔍 Using directed W matrix (left eigenvectors)")
+                    # Use matrix directly (left eigenvectors of directed matrix)
+                    similarity_matrix = base_matrix
+                    st.write("📐 Left eigenvectors")
                 elif eigenvector_choice == "Right eigenvectors":
-                    # Use W transpose (right eigenvectors of directed matrix)
-                    similarity_matrix = W.T
-                    st.write("🔍 Using W transpose matrix (right eigenvectors)")
+                    # Use matrix transpose (right eigenvectors of directed matrix)
+                    similarity_matrix = base_matrix.T
+                    st.write("📐 Right eigenvectors")
                 else:
                     # Use average (default - symmetric similarity matrix)
-                    similarity_matrix = S  # S contains the learned similarities
-                    st.write("🔍 Using symmetric S matrix (average of left/right)")
+                    if matrix_choice == "IAC (signed weights)":
+                        # IAC matrix might be asymmetric, symmetrize it
+                        similarity_matrix = (base_matrix + base_matrix.T) / 2.0
+                        st.write("📐 Symmetrized IAC matrix")
+                    else:
+                        similarity_matrix = base_matrix
+                        st.write("📐 Default matrix")
                 
                 # Torgerson transformation
                 n = similarity_matrix.shape[0]
@@ -567,3 +669,132 @@ if 'huey_results' in st.session_state:
         st.error(f"❌ Cascade interface error: {e}")
         import traceback
         st.code(traceback.format_exc())
+
+# Network Connection Inspector (outside processing button, uses session state)
+if 'huey_results' in st.session_state:
+    st.subheader("🔍 Network Connection Inspector")
+    st.write("Check the connection strength between any two concepts")
+
+    results = st.session_state.huey_results
+    vocab = results['vocab']
+    available_words = sorted(vocab.keys())
+
+    col1, col2 = st.columns(2)
+    with col1:
+        word1 = st.selectbox(
+            "🔤 First word",
+            available_words,
+            help="Select the first word to check"
+        )
+
+    with col2:
+        word2 = st.selectbox(
+            "🔤 Second word",
+            available_words,
+            help="Select the second word to check"
+        )
+
+    if word1 and word2 and word1 != word2:
+        # Get indices
+        idx1 = vocab[word1]
+        idx2 = vocab[word2]
+
+        # Check all available matrices
+        st.write(f"**Connection: '{word1}' ↔ '{word2}'**")
+
+        # HueyTime matrices
+        W = results['W']
+        S = results['S']
+
+        huey_w_conn = W[idx1, idx2] if idx1 < W.shape[0] and idx2 < W.shape[1] else 0.0
+        huey_s_conn = S[idx1, idx2] if idx1 < S.shape[0] and idx2 < S.shape[1] else 0.0
+
+        col3, col4 = st.columns(2)
+        with col3:
+            st.metric("HueyTime W matrix", f"{huey_w_conn:.6f}")
+        with col4:
+            st.metric("HueyTime S matrix", f"{huey_s_conn:.6f}")
+
+        # IAC matrix if available
+        if results.get('iac_enabled', False) and results.get('W_iac') is not None:
+            W_iac = results['W_iac']
+            iac_conn = W_iac[idx1, idx2] if idx1 < W_iac.shape[0] and idx2 < W_iac.shape[1] else 0.0
+
+            st.metric("IAC signed matrix", f"{iac_conn:.6f}")
+
+            # Interpret the IAC connection
+            if iac_conn > 0.001:
+                st.success(f"🤝 **Cooperative relationship** - '{word1}' and '{word2}' reinforce each other")
+            elif iac_conn < -0.001:
+                st.error(f"⚔️ **Competitive relationship** - '{word1}' and '{word2}' inhibit each other")
+            else:
+                st.info(f"🤷 **Neutral relationship** - '{word1}' and '{word2}' have minimal interaction")
+
+        # Show bidirectional connections
+        if huey_w_conn != W[idx2, idx1] or huey_s_conn != S[idx2, idx1]:
+            st.write("**Directional differences:**")
+            st.write(f"- {word1} → {word2}: W={W[idx1, idx2]:.6f}, S={S[idx1, idx2]:.6f}")
+            st.write(f"- {word2} → {word1}: W={W[idx2, idx1]:.6f}, S={S[idx2, idx1]:.6f}")
+
+    elif word1 == word2:
+        st.warning("⚠️ Please select two different words to check their connection")
+
+    # Quick connection lookup
+    st.write("**💡 Quick connection finder:**")
+    search_word = st.text_input(
+        "🔍 Enter a word to see its strongest connections",
+        help="Type any word from your vocabulary"
+    )
+
+    if search_word and search_word in vocab:
+        search_idx = vocab[search_word]
+
+        # Find strongest connections in each matrix
+        matrices_to_check = [
+            ("HueyTime W", results['W']),
+            ("HueyTime S", results['S'])
+        ]
+
+        if results.get('iac_enabled', False) and results.get('W_iac') is not None:
+            matrices_to_check.append(("IAC signed", results['W_iac']))
+
+        for matrix_name, matrix in matrices_to_check:
+            if search_idx < matrix.shape[0]:
+                # Get connections for this word
+                connections = matrix[search_idx, :]
+
+                # Find top positive and negative connections
+                top_positive_idx = np.argsort(connections)[-6:][::-1]  # Top 5 plus self
+                top_negative_idx = np.argsort(connections)[:5]  # Bottom 5
+
+                st.write(f"**{matrix_name} matrix - '{search_word}' connections:**")
+
+                # Positive connections
+                pos_connections = []
+                for idx in top_positive_idx:
+                    if idx != search_idx and connections[idx] > 0.001:  # Skip self and tiny values
+                        # Find word for this index
+                        word_matches = [w for w, i in vocab.items() if i == idx]
+                        if word_matches:
+                            word = word_matches[0]
+                            pos_connections.append(f"{word} ({connections[idx]:.4f})")
+
+                if pos_connections:
+                    st.write(f"  🤝 Positive: {', '.join(pos_connections[:5])}")
+
+                # Negative connections (for IAC)
+                if matrix_name == "IAC signed":
+                    neg_connections = []
+                    for idx in top_negative_idx:
+                        if connections[idx] < -0.001:  # Only significant negative values
+                            # Find word for this index
+                            word_matches = [w for w, i in vocab.items() if i == idx]
+                            if word_matches:
+                                word = word_matches[0]
+                                neg_connections.append(f"{word} ({connections[idx]:.4f})")
+
+                    if neg_connections:
+                        st.write(f"  ⚔️ Negative: {', '.join(neg_connections[:5])}")
+
+    elif search_word and search_word not in vocab:
+        st.warning(f"⚠️ '{search_word}' not found in vocabulary. Available words: {len(vocab)} total")
