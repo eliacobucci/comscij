@@ -119,36 +119,22 @@ if 'huey_results' in st.session_state:
 else:
     st.info("📁 Ready to process new file")
 
-# File upload
-uploaded_file = st.file_uploader("Upload text file", type=['txt'])
+# Very compact file upload and language selection
+col1, col2, col3 = st.columns([1, 1, 2])
+with col1:
+    uploaded_file = st.file_uploader("📁 File", type=['txt'])
+with col2:
+    if uploaded_file:
+        language_options = {
+            "Auto-detect (CJK only)": "auto", "English": "en", "Spanish": "es", "French": "fr",
+            "German": "de", "Italian": "it", "Icelandic": "is", "Hindi": "hi",
+            "Mandarin Chinese": "zh", "Japanese": "ja", "Korean": "ko", "Tamil": "ta"
+        }
+        selected_language_name = st.selectbox("🌍 Lang", list(language_options.keys()))
 
 if uploaded_file:
     content = uploaded_file.getvalue().decode('utf-8')
-    
-    st.write(f"**File:** {uploaded_file.name}")
-    st.write(f"**Length:** {len(content)} characters")
-    
-    # Language selection
-    language_options = {
-        "Auto-detect (CJK only)": "auto",
-        "English": "en",
-        "Spanish": "es", 
-        "French": "fr",
-        "German": "de",
-        "Italian": "it",
-        "Icelandic": "is",
-        "Hindi": "hi",
-        "Mandarin Chinese": "zh",
-        "Japanese": "ja",
-        "Korean": "ko",
-        "Tamil": "ta"
-    }
-    
-    selected_language_name = st.selectbox(
-        "🌍 Language",
-        list(language_options.keys()),
-        help="Select the language of your text for proper kill word filtering"
-    )
+    st.write(f"**File:** {uploaded_file.name} | **Length:** {len(content)} characters")
     selected_language_code = language_options[selected_language_name]
     
     # IAC toggle and competition control
@@ -373,13 +359,21 @@ if 'huey_results' in st.session_state:
                 # Choose base matrix first
                 if matrix_choice == "IAC (signed weights)" and W_iac is not None:
                     base_matrix = W_iac
-                    st.write("🧠 Using IAC signed weight matrix")
+                    st.write("🧠 **Using IAC signed weight matrix**")
                 elif matrix_choice == "HueyTime (W matrix)":
                     base_matrix = W
-                    st.write("🔍 Using HueyTime W matrix")
+                    st.write("🔍 **Using HueyTime W matrix**")
                 else:
                     base_matrix = S
-                    st.write("🔍 Using HueyTime S matrix")
+                    st.write("🔍 **Using HueyTime S matrix**")
+
+                # DIAGNOSTIC: Check which matrix we're actually using
+                st.write("🔍 **Matrix Selection Diagnostics:**")
+                st.write(f"Matrix choice: {matrix_choice}")
+                st.write(f"W_iac available: {W_iac is not None}")
+                st.write(f"Selected matrix type: {'IAC' if matrix_choice == 'IAC (signed weights)' and W_iac is not None else 'W' if matrix_choice == 'HueyTime (W matrix)' else 'S'}")
+                st.write(f"Selected matrix shape: {base_matrix.shape}")
+                st.write(f"Selected matrix range: [{np.min(base_matrix):.6f}, {np.max(base_matrix):.6f}]")
                 
                 # Then choose eigenvector direction
                 if eigenvector_choice == "Left eigenvectors":
@@ -400,57 +394,138 @@ if 'huey_results' in st.session_state:
                         similarity_matrix = base_matrix
                         st.write("📐 Default matrix")
                 
-                # Torgerson transformation
+                # Torgerson transformation with validation
                 n = similarity_matrix.shape[0]
-                
+
+                # Validate matrix size
+                if n == 0:
+                    st.error("❌ Empty similarity matrix - cannot perform Torgerson transformation")
+                    st.stop()
+
+                if n < 2:
+                    st.warning("⚠️ Matrix too small for meaningful Torgerson transformation")
+                    st.stop()
+
+                # Validate matrix content
+                if not np.isfinite(similarity_matrix).all():
+                    st.error("❌ Similarity matrix contains invalid values (NaN or infinity)")
+                    st.stop()
+
                 # For directed matrices, make symmetric for Torgerson
                 if eigenvector_choice != "Average (default)":
                     similarity = (similarity_matrix + similarity_matrix.T) / 2.0
                 else:
                     similarity = similarity_matrix  # S is already symmetric
+
+                # DIAGNOSTIC: Check similarity matrix properties
+                st.write("🔍 **Similarity Matrix Diagnostics:**")
+                st.write(f"Matrix shape: {similarity.shape}")
+                st.write(f"Matrix range: [{np.min(similarity):.6f}, {np.max(similarity):.6f}]")
+                st.write(f"Matrix mean: {np.mean(similarity):.6f}")
+                st.write(f"Matrix std: {np.std(similarity):.6f}")
+                st.write(f"Matrix rank: {np.linalg.matrix_rank(similarity)}")
+                st.write(f"Matrix condition number: {np.linalg.cond(similarity):.2e}")
+
+                # Check for symmetry
+                symmetry_error = np.max(np.abs(similarity - similarity.T))
+                st.write(f"Symmetry error: {symmetry_error:.2e}")
+
+                # Check diagonal
+                diag_vals = np.diag(similarity)
+                st.write(f"Diagonal range: [{np.min(diag_vals):.6f}, {np.max(diag_vals):.6f}]")
+
+                # GOLDEN PEACH METHOD: Convert to distance matrix first (like the working version)
+                try:
+                    # Convert similarities to distances (Golden Peach approach)
+                    max_sim = np.max(similarity) if np.max(similarity) > 0 else 1.0
+                    distance_matrix = max_sim - similarity
+
+                    # Double centering for Torgerson transformation (Golden Peach method)
+                    centering_matrix = np.eye(n) - np.ones((n, n)) / n
+                    gram_matrix = -0.5 * centering_matrix @ (distance_matrix**2) @ centering_matrix
+
+                    # DIAGNOSTIC: Check gram matrix properties
+                    st.write("🔍 **Gram Matrix Diagnostics:**")
+                    st.write(f"Gram matrix range: [{np.min(gram_matrix):.6f}, {np.max(gram_matrix):.6f}]")
+                    st.write(f"Gram matrix rank: {np.linalg.matrix_rank(gram_matrix)}")
+
+                    # Validate final gram matrix
+                    if not np.isfinite(gram_matrix).all():
+                        st.warning("⚠️ Invalid Gram matrix detected, using fallback")
+                        gram_matrix = np.eye(n) * 1e-6  # Small identity matrix fallback
+
+                except Exception as e:
+                    st.error(f"❌ Error in Galileo double-centering: {str(e)}")
+                    st.stop()
                 
-                # Convert similarities to pseudo-distances
-                max_sim = np.max(np.abs(similarity))
-                if max_sim > 1e-10:
-                    pseudo_distances = np.sign(similarity) * (max_sim - np.abs(similarity)) / max_sim
-                else:
-                    pseudo_distances = np.zeros_like(similarity)
-                
-                # Square the pseudo-distances 
-                distances_squared = np.sign(pseudo_distances) * (pseudo_distances ** 2)
-                
-                # Double centering to get Gram matrix
-                ones = np.ones((n, n))
-                centering_matrix = np.eye(n) - (1.0 / n) * ones
-                gram_matrix = -0.5 * centering_matrix @ distances_squared @ centering_matrix
-                
-                # Eigendecomposition of Gram matrix (can have negative eigenvalues)
-                if jax_available:
-                    st.write("🚀 Using JAX CPU for Gram matrix eigendecomposition...")
-                    gram_jax = jnp.array(gram_matrix)
-                    eigenvals, eigenvecs = cpu_eigendecomposition(gram_jax)
-                    eigenvals = np.array(eigenvals)
-                    eigenvecs = np.array(eigenvecs)
-                else:
-                    eigenvals, eigenvecs = np.linalg.eigh(gram_matrix)
-                
-                # Sort by eigenvalue magnitude (Galileo style)
-                idx = np.argsort(np.abs(eigenvals))[::-1]
-                sorted_eigenvals = eigenvals[idx]
-                sorted_eigenvecs = eigenvecs[:, idx]
+                # Eigendecomposition of Gram matrix with error handling
+                try:
+                    if jax_available:
+                        st.write("🚀 Using JAX CPU for Gram matrix eigendecomposition...")
+                        gram_jax = jnp.array(gram_matrix)
+                        eigenvals, eigenvecs = cpu_eigendecomposition(gram_jax)
+                        eigenvals = np.array(eigenvals)
+                        eigenvecs = np.array(eigenvecs)
+                    else:
+                        eigenvals, eigenvecs = np.linalg.eigh(gram_matrix)
+
+                    # Validate eigenvalue results
+                    if not np.isfinite(eigenvals).all() or not np.isfinite(eigenvecs).all():
+                        st.warning("⚠️ Invalid eigenvalues detected, using fallback")
+                        eigenvals = np.ones(n) * 1e-6
+                        eigenvecs = np.eye(n)
+
+                    # Sort by eigenvalue magnitude (Galileo style)
+                    idx = np.argsort(np.abs(eigenvals))[::-1]
+                    sorted_eigenvals = eigenvals[idx]
+                    sorted_eigenvecs = eigenvecs[:, idx]
+
+                except Exception as e:
+                    st.error(f"❌ Error in eigendecomposition: {str(e)}")
+                    # Use fallback values
+                    eigenvals = np.ones(n) * 1e-6
+                    eigenvecs = np.eye(n)
+                    sorted_eigenvals = eigenvals
+                    sorted_eigenvecs = eigenvecs
                 
                 st.write(f"🌌 Torgerson transform complete: {len(eigenvals)} eigenvalues")
                 st.write(f"📊 Eigenvalue signature: {np.sum(eigenvals > 0)} positive, {np.sum(eigenvals < 0)} negative")
+
+                # DIAGNOSTIC: Detailed eigenvalue analysis
+                st.write("🔍 **Eigenvalue Spectrum Analysis:**")
+                st.write(f"Top 10 eigenvalues: {sorted_eigenvals[:10]}")
+                st.write(f"Bottom 5 eigenvalues: {sorted_eigenvals[-5:]}")
+
+                # Check for dominant eigenvalue
+                if len(sorted_eigenvals) > 1:
+                    ratio = abs(sorted_eigenvals[0]) / abs(sorted_eigenvals[1]) if abs(sorted_eigenvals[1]) > 1e-10 else float('inf')
+                    st.write(f"Eigenvalue dominance ratio (λ₁/λ₂): {ratio:.2f}")
+
+                # Cumulative variance explained
+                abs_eigenvals = np.abs(sorted_eigenvals)
+                total_variance = np.sum(abs_eigenvals)
+                if total_variance > 1e-10:
+                    cumulative_variance = np.cumsum(abs_eigenvals) / total_variance * 100
+                    st.write(f"Variance explained by first 3 dimensions: {cumulative_variance[2]:.1f}%")
+                    st.write(f"First dimension explains: {cumulative_variance[0]:.1f}%")
+
+                # Check for effective rank
+                significant_eigenvals = np.sum(np.abs(sorted_eigenvals) > 1e-6)
+                st.write(f"Effective rank (eigenvals > 1e-6): {significant_eigenvals}")
                 
-                # Use top 3 eigenvectors for 3D coordinates (by magnitude)
+                # Use top 3 eigenvectors for 3D coordinates (Golden Peach method)
                 if len(sorted_eigenvals) >= 3:
-                    # Scale by square root of absolute eigenvalue (Galileo scaling)
+                    # GOLDEN PEACH METHOD: Square root scaling (the working version)
                     coords = np.zeros((n, 3))
                     for i in range(3):
                         eigenval = sorted_eigenvals[i]
                         eigenvec = sorted_eigenvecs[:, i]
-                        if abs(eigenval) > 1e-10:
-                            coords[:, i] = eigenvec * np.sqrt(abs(eigenval)) * np.sign(eigenval)
+                        if eigenval > 1e-8:
+                            # Positive eigenvalue: standard scaling (Golden Peach method)
+                            coords[:, i] = eigenvec * np.sqrt(eigenval)
+                        elif eigenval < -1e-8:
+                            # Negative eigenvalue: imaginary scaling (Golden Peach method)
+                            coords[:, i] = eigenvec * np.sqrt(abs(eigenval))
                         else:
                             coords[:, i] = eigenvec * 1e-3
                     x, y, z = coords[:, 0], coords[:, 1], coords[:, 2]
@@ -562,20 +637,11 @@ if 'huey_results' in st.session_state:
         # Get available concepts
         available_concepts = cascade.get_available_concepts()
         
-        col1, col2 = st.columns(2)
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
-            input_concepts = st.multiselect(
-                "🎯 Select input concepts (stimuli)",
-                available_concepts,
-                help="Choose concepts to initially activate"
-            )
-        
+            input_concepts = st.multiselect("🎯 Input concepts", available_concepts)
         with col2:
-            target_concept = st.selectbox(
-                "🏁 Select target concept",
-                available_concepts,
-                help="Choose the concept you want to activate"
-            )
+            target_concept = st.selectbox("🏁 Target concept", available_concepts)
         
         # Cascade controls - compact layout
         col3, col4, col5 = st.columns([1, 1, 2])
