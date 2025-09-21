@@ -634,16 +634,17 @@ class HueyActivationCascade:
                 z=[c['z'] for c in concepts_data],
                 mode='markers+text',
                 marker=dict(
-                    size=[c['size'] for c in concepts_data],
+                    size=[max(8, c['size']) for c in concepts_data],  # Ensure minimum size of 8
                     color=[c['color'] for c in concepts_data],
-                    opacity=0.9  # Slightly more opaque
+                    opacity=1.0,  # Full opacity for visibility
+                    line=dict(width=1, color='black')  # Add border for better visibility
                 ),
                 text=[c['text'] for c in concepts_data],
                 textposition="top center",
                 textfont=dict(
-                    size=[c['text_size'] for c in concepts_data],
-                    color=[c['text_color'] for c in concepts_data],
-                    family="Arial Black"  # Bold font for better visibility
+                    size=14,  # Larger text for better visibility
+                    color='black',  # Black text for better contrast
+                    family="Arial"  # Regular font weight
                 ),
                 hovertemplate='<b>%{text}</b><br>' +
                             'Activation: %{customdata:.3f}<br>' +
@@ -687,25 +688,15 @@ class HueyActivationCascade:
         # Add animation frames
         fig.frames = frames
         
-        # Add animation controls
+        # Add animation controls with main plot styling
         fig.update_layout(
             title="🔄 Interactive Activation Cascade",
-            width=1380,  # Expanded by ~15% from 1200
-            height=920,  # Expanded by ~15% from 800
             scene=dict(
-                xaxis_title='Dimension 1',
-                yaxis_title='Dimension 2', 
-                zaxis_title='Dimension 3',
-                bgcolor='rgba(0,0,0,0.9)',  # Much darker background for contrast
-                aspectratio=dict(x=1, y=1, z=0.8),
-                camera=dict(
-                    eye=dict(x=1.3, y=1.3, z=1.3),  # Zoomed in 15% more: 1.5 → 1.3
-                    center=dict(x=0, y=0, z=0),
-                    up=dict(x=0, y=0, z=1)
-                ),
-                # Allow user interaction and preserve camera state during animation
-                dragmode='orbit'
+                xaxis_title="Dimension 1",
+                yaxis_title="Dimension 2",
+                zaxis_title="Dimension 3"
             ),
+            height=600,
             updatemenus=[{
                 'buttons': [
                     {
