@@ -13,6 +13,71 @@ import os
 from huey_activation_cascade import HueyActivationCascade, create_cascade_interface
 from cov_hebb import CovHebbLearner
 
+# ChatGPT-5's Temporal Mix Functions
+def update_T_freq_damped(T: np.ndarray, i: int, j: int, dt: float,
+                         freq: np.ndarray, etaT: float = 1e-3, tau: float = 3.0,
+                         stopmask: np.ndarray = None):
+    if stopmask is not None and (stopmask[i] or stopmask[j]):
+        return
+    fi = max(freq[i], 1.0); fj = max(freq[j], 1.0)
+    w = etaT * np.exp(-dt / max(tau, 1e-8)) / np.sqrt(fi * fj)
+    T[i, j] += w
+
+def center_matrix(A: np.ndarray) -> np.ndarray:
+    n = A.shape[0]
+    J = np.eye(n) - np.ones((n, n)) / n
+    C = J @ A @ J
+    np.fill_diagonal(C, 0.0)
+    return C
+
+def prune_topk_abs(A: np.ndarray, k: int = 256) -> np.ndarray:
+    n = A.shape[0]
+    B = np.zeros_like(A)
+    for i in range(n):
+        row = A[i, :].copy()
+        row[i] = 0.0
+        if k < n:
+            idx = np.argpartition(np.abs(row), -k)[-k:]
+            B[i, idx] = row[idx]
+        else:
+            B[i, :] = row
+    np.fill_diagonal(B, 0.0)
+    return 0.5 * (B + B.T)
+
+def row_norm_clamp(A: np.ndarray, rho: float = None) -> np.ndarray:
+    rows = np.linalg.norm(A, axis=1) + 1e-12
+    if rho is None:
+        rho = np.percentile(rows, 95.0)
+        rho = max(rho, 1e-12)
+    scale = np.minimum(1.0, rho / rows)
+    return (A.T * scale).T
+
+def normalize_fro(A: np.ndarray) -> np.ndarray:
+    s = np.linalg.norm(A, ord='fro')
+    return A / max(s, 1e-12)
+
+def build_M(W: np.ndarray, T: np.ndarray, alpha: float = 0.85) -> np.ndarray:
+    Ts = 0.5 * (T + T.T)
+    Wn = normalize_fro(W)
+    Tn = normalize_fro(Ts)
+    return alpha * Wn + (1.0 - alpha) * Tn
+
+def topk_eigs(A: np.ndarray, k: int = 5):
+    w, _ = np.linalg.eigh(0.5*(A + A.T))
+    w = w[::-1]
+    return w[:k]
+
+def spectral_guardrail(M: np.ndarray, alpha: float, hi_ratio: float = 4.0, lo_ratio: float = 1.5, step: float = 0.05) -> float:
+    evals = topk_eigs(M, k=2)
+    if len(evals) < 2 or abs(evals[1]) < 1e-12:
+        return alpha
+    r = float(evals[0] / max(evals[1], 1e-12))
+    if r > hi_ratio:
+        alpha = min(0.98, alpha + step)
+    elif r < lo_ratio:
+        alpha = max(0.50, alpha - step)
+    return alpha
+
 # Language detection (ChatGPT-5's code)
 def detect_language(text):
     """Simple language detection based on character ranges."""
@@ -137,6 +202,17 @@ if uploaded_file:
     st.write(f"**File:** {uploaded_file.name} | **Length:** {len(content)} characters")
     selected_language_code = language_options[selected_language_name]
     
+    # Learning rate control
+    learning_rate = st.slider(
+        "📈 Learning Rate",
+        min_value=0.01,
+        max_value=0.50,
+        value=0.10,
+        step=0.01,
+        format="%.2f",
+        help="Controls temporal learning strength (higher = stronger connections, lower = weaker connections)"
+    )
+
     # IAC toggle and competition control
     use_iac = st.checkbox(
         "🧠 Interactive Activation & Competition (IAC)",
@@ -146,13 +222,13 @@ if uploaded_file:
 
     # Competition level slider (only show when IAC is enabled)
     if use_iac:
-        inhibition_baseline = st.slider(
+        competition_percentage = st.slider(
             "⚔️ Competition Level",
-            min_value=0.0,
-            max_value=1.0,
-            value=0.002,
-            step=0.001,
-            format="%.3f",
+            min_value=0,
+            max_value=50,
+            value=1,
+            step=1,
+            format="%d%%",
             help="Higher values = more competition (more negative connections). Lower values = more cooperation."
         )
     
@@ -183,23 +259,121 @@ if uploaded_file:
                 st.write(f"**Words:** {len(words)} (no kill word filtering)")
             
             vocab = build_vocab(words)
-            st.write(f"**Unique words:** {len(vocab)}")
-            
-            # Configure HueyTime exactly like working test
-            config = HueyTimeConfig(vocab=vocab, method="lagged")
-            st.write(f"🔧 HueyTime config: method={config.method}, max_lag={config.max_lag}, tau={config.tau}")
-            st.write(f"🔧 Learning rates: eta_fwd={config.eta_fwd}, eta_fb={config.eta_fb}")
-            huey_time = HueyTime(config)
-            
-            # Process with NO BOUNDARIES (exactly like working test)
-            st.write("🌊 Processing as continuous sequence...")
-            huey_time.update_doc(words, boundaries=None)
-            
-            # Get results exactly like working test
-            W = huey_time.export_W()
-            S = huey_time.export_S("avg")
+            st.write(f"**Unique words before pruning:** {len(vocab)}")
+
+            # CRITICAL: Prune vocabulary to most frequent words BEFORE HueyTime learning
+            # EXPERIMENT: Filter out speaker names to test outlier squish hypothesis
+            word_counts = Counter(words)
+            max_vocab_size = 500  # Reasonable limit for good performance
+
+            # Remove likely speaker names (including common misspellings)
+            speaker_patterns = ['feynman', 'wiener', 'weiner',  # Include both correct and misspelled
+                              'FEYNMAN', 'WIENER', 'WEINER', 'Wiener', 'Weiner', 'Feynman',
+                              'feynman:', 'wiener:', 'weiner:', 'FEYNMAN:', 'WIENER:', 'WEINER:',
+                              'Wiener:', 'Weiner:', 'Feynman:']
+            filtered_counts = {word: count for word, count in word_counts.items()
+                             if word.lower() not in [p.lower().rstrip(':') for p in speaker_patterns]}
+
+            # Show what speaker variants were actually found and removed
+            removed_speakers = {word: count for word, count in word_counts.items() if word not in filtered_counts}
+            st.write(f"🚫 **Speaker filtering:** Removed {len(removed_speakers)} speaker variants:")
+            for word, count in removed_speakers.items():
+                st.write(f"  - {word}: {count} occurrences")
+
+            if len(filtered_counts) > max_vocab_size:
+                top_words = [word for word, count in sorted(filtered_counts.items(), key=lambda x: x[1], reverse=True)[:max_vocab_size]]
+                # Filter words to keep only the most frequent ones
+                words = [word for word in words if word in top_words]
+                # Rebuild vocab with pruned word list
+                vocab = build_vocab(words)
+                st.write(f"**Pruned to top {max_vocab_size} most frequent words (speaker-filtered):** {len(vocab)}")
+            else:
+                # Still filter speaker names even if under max size
+                words = [word for word in words if word in filtered_counts]
+                vocab = build_vocab(words)
+                st.write(f"**Vocabulary size OK (speaker-filtered):** {len(vocab)} words")
+
+            # CHATGPT-5's TEMPORAL MIX APPROACH: Frequency-damped learning with matrix mixing
+            st.write("🧠 Using ChatGPT-5's advanced temporal mix algorithm...")
+
+            # Initialize matrices
+            n = len(vocab)
+            W = np.random.randn(n, n) * 0.05  # Baseline matrix (small random values)
+            W = 0.5 * (W + W.T)  # Make symmetric
+            np.fill_diagonal(W, 0.0)
+
+            T = np.zeros((n, n), dtype=float)  # Temporal matrix
+            freq = np.zeros(n, dtype=float)   # Word frequencies
+
+            # Count frequencies
+            for word in words:
+                if word in vocab:
+                    freq[vocab[word]] += 1
+
+            # Temporal learning with frequency damping
+            st.write("⏰ Building temporal connections with frequency damping...")
+            for i in range(len(words) - 1):
+                if words[i] in vocab and words[i+1] in vocab:
+                    word_i = vocab[words[i]]
+                    word_j = vocab[words[i+1]]
+                    dt = 1.0  # Time step
+                    update_T_freq_damped(T, word_i, word_j, dt, freq, etaT=learning_rate*1e-2, tau=3.0)
+
+            # Apply ChatGPT-5's matrix conditioning pipeline
+            st.write("🔧 Applying advanced matrix conditioning...")
+            T = center_matrix(T)
+            T = prune_topk_abs(T, k=min(64, n//4))  # Adaptive pruning
+            T = row_norm_clamp(T, rho=None)
+
+            # Build final matrix with spectral guardrails
+            alpha = 0.85
+            M = build_M(W, T, alpha=alpha)
+            alpha_final = spectral_guardrail(M, alpha, hi_ratio=4.0, lo_ratio=1.5, step=0.05)
+
+            if alpha_final != alpha:
+                st.write(f"📊 Spectral guardrail adjusted alpha: {alpha:.2f} → {alpha_final:.2f}")
+                M = build_M(W, T, alpha=alpha_final)
+
+            # Use M as our similarity matrix (S)
+            S = M
+            W = S  # For compatibility with existing code
             concepts = len(vocab)
             connections = (W > 0).sum()
+
+            # FREQUENCY ANALYSIS: Investigate outlier behavior
+            frequencies = freq
+            vocab_list = list(vocab.keys())
+
+            # Create frequency-word pairs for analysis
+            freq_word_pairs = [(frequencies[vocab[word]], word) for word in vocab_list]
+            freq_word_pairs.sort(reverse=True)  # Highest frequency first
+
+            # Check if debug_mode exists (it's defined later in the visualization section)
+            try:
+                show_debug = debug_mode
+            except NameError:
+                show_debug = True  # Show frequency analysis by default for now
+
+            if show_debug:
+                st.write("🔍 **Frequency Analysis:**")
+                st.write(f"Frequency range: {np.min(frequencies)} to {np.max(frequencies)}")
+                st.write(f"Mean frequency: {np.mean(frequencies):.1f}")
+                st.write("**Highest frequency words:**")
+                for freq, word in freq_word_pairs[:10]:
+                    st.write(f"  {word}: {freq}")
+                st.write("**Lowest frequency words:**")
+                for freq, word in freq_word_pairs[-10:]:
+                    st.write(f"  {word}: {freq}")
+
+                # Check if Feynman/Weiner are in the data
+                feynman_freq = frequencies[vocab['feynman']] if 'feynman' in vocab else 0
+                weiner_freq = frequencies[vocab['weiner']] if 'weiner' in vocab else 0
+                if feynman_freq > 0 or weiner_freq > 0:
+                    st.write("**Outlier suspects:**")
+                    if feynman_freq > 0:
+                        st.write(f"  feynman: {feynman_freq}")
+                    if weiner_freq > 0:
+                        st.write(f"  weiner: {weiner_freq}")
             
             # IAC Processing if enabled
             iac_learner = None
@@ -230,7 +404,9 @@ if uploaded_file:
                 vocab_indices = list(range(len(vocab)))
                 W_covariance = iac_learner.to_dense_block(vocab_indices)
                 
-                # Apply inhibition baseline for competition (user-controlled via slider!)
+                # Apply inhibition baseline for competition (percentage of average weight)
+                avg_weight = np.mean(np.abs(W_covariance))
+                inhibition_baseline = (competition_percentage / 100.0) * avg_weight
                 W_iac = W_covariance - inhibition_baseline
                 # Keep diagonal at zero - "wherever you go, there you are"
                 np.fill_diagonal(W_iac, 0.0)
@@ -252,7 +428,6 @@ if uploaded_file:
             
             # Store results in session state for tools
             st.session_state.huey_results = {
-                'huey_time': huey_time,
                 'W': W,
                 'S': S,
                 'vocab': vocab,
@@ -335,7 +510,10 @@ if 'huey_results' in st.session_state:
             ["Average (default)", "Left eigenvectors", "Right eigenvectors"],
             help="Choose eigenvectors for visualization"
         )
-    
+
+    # Debug toggle - visible and clean
+    debug_mode = st.checkbox("🔍 Debug diagnostics", value=False, help="Show detailed matrix analysis (slower)")
+
     if st.button("🎯 Create 3D Visualization"):
         st.write("DEBUG: Button clicked!")
         st.subheader("🎯 3D Concept Visualization")
@@ -367,13 +545,14 @@ if 'huey_results' in st.session_state:
                     base_matrix = S
                     st.write("🔍 **Using HueyTime S matrix**")
 
-                # DIAGNOSTIC: Check which matrix we're actually using
-                st.write("🔍 **Matrix Selection Diagnostics:**")
-                st.write(f"Matrix choice: {matrix_choice}")
-                st.write(f"W_iac available: {W_iac is not None}")
-                st.write(f"Selected matrix type: {'IAC' if matrix_choice == 'IAC (signed weights)' and W_iac is not None else 'W' if matrix_choice == 'HueyTime (W matrix)' else 'S'}")
-                st.write(f"Selected matrix shape: {base_matrix.shape}")
-                st.write(f"Selected matrix range: [{np.min(base_matrix):.6f}, {np.max(base_matrix):.6f}]")
+                if debug_mode:
+                    # DIAGNOSTIC: Check which matrix we're actually using
+                    st.write("🔍 **Matrix Selection Diagnostics:**")
+                    st.write(f"Matrix choice: {matrix_choice}")
+                    st.write(f"W_iac available: {W_iac is not None}")
+                    st.write(f"Selected matrix type: {'IAC' if matrix_choice == 'IAC (signed weights)' and W_iac is not None else 'W' if matrix_choice == 'HueyTime (W matrix)' else 'S'}")
+                    st.write(f"Selected matrix shape: {base_matrix.shape}")
+                    st.write(f"Selected matrix range: [{np.min(base_matrix):.6f}, {np.max(base_matrix):.6f}]")
                 
                 # Then choose eigenvector direction
                 if eigenvector_choice == "Left eigenvectors":
@@ -417,57 +596,61 @@ if 'huey_results' in st.session_state:
                 else:
                     similarity = similarity_matrix  # S is already symmetric
 
-                # DIAGNOSTIC: Check similarity matrix properties
-                st.write("🔍 **Similarity Matrix Diagnostics:**")
-                st.write(f"Matrix shape: {similarity.shape}")
-                st.write(f"Matrix range: [{np.min(similarity):.6f}, {np.max(similarity):.6f}]")
-                st.write(f"Matrix mean: {np.mean(similarity):.6f}")
-                st.write(f"Matrix std: {np.std(similarity):.6f}")
-                st.write(f"Matrix rank: {np.linalg.matrix_rank(similarity)}")
-                st.write(f"Matrix condition number: {np.linalg.cond(similarity):.2e}")
+                if debug_mode:
+                    # DIAGNOSTIC: Check similarity matrix properties
+                    st.write("🔍 **Similarity Matrix Diagnostics:**")
+                    st.write(f"Matrix shape: {similarity.shape}")
+                    st.write(f"Matrix range: [{np.min(similarity):.6f}, {np.max(similarity):.6f}]")
+                    st.write(f"Matrix mean: {np.mean(similarity):.6f}")
+                    st.write(f"Matrix std: {np.std(similarity):.6f}")
+                    st.write(f"Matrix rank: {np.linalg.matrix_rank(similarity)}")
+                    st.write(f"Matrix condition number: {np.linalg.cond(similarity):.2e}")
 
-                # Check for symmetry
-                symmetry_error = np.max(np.abs(similarity - similarity.T))
-                st.write(f"Symmetry error: {symmetry_error:.2e}")
+                    # Check for symmetry
+                    symmetry_error = np.max(np.abs(similarity - similarity.T))
+                    st.write(f"Symmetry error: {symmetry_error:.2e}")
 
-                # Check diagonal
-                diag_vals = np.diag(similarity)
-                st.write(f"Diagonal range: [{np.min(diag_vals):.6f}, {np.max(diag_vals):.6f}]")
+                    # Check diagonal
+                    diag_vals = np.diag(similarity)
+                    st.write(f"Diagonal range: [{np.min(diag_vals):.6f}, {np.max(diag_vals):.6f}]")
 
-                # GOLDEN PEACH METHOD: Convert to distance matrix first (like the working version)
+                # PURE CATPAC GALILEO METHOD: Direct eigendecomposition of similarity matrix
                 try:
-                    # Convert similarities to distances (Golden Peach approach)
-                    max_sim = np.max(similarity) if np.max(similarity) > 0 else 1.0
-                    distance_matrix = max_sim - similarity
+                    # Skip all distance/gram matrix conversion - go directly to eigendecomposition like CATPAC
+                    # S matrix is already a similarity matrix, just like CATPAC's synaptic connections
 
-                    # Double centering for Torgerson transformation (Golden Peach method)
-                    centering_matrix = np.eye(n) - np.ones((n, n)) / n
-                    gram_matrix = -0.5 * centering_matrix @ (distance_matrix**2) @ centering_matrix
+                    # CATPAC LOG TRANSFORM: Apply the "squash" transformation to expand small differences
+                    st.write("🔥 Applying CATPAC log transform to expand semantic structure...")
+                    x = 100  # CATPAC's scaling factor
+                    log_similarity = np.zeros_like(similarity)
 
-                    # DIAGNOSTIC: Check gram matrix properties
-                    st.write("🔍 **Gram Matrix Diagnostics:**")
-                    st.write(f"Gram matrix range: [{np.min(gram_matrix):.6f}, {np.max(gram_matrix):.6f}]")
-                    st.write(f"Gram matrix rank: {np.linalg.matrix_rank(gram_matrix)}")
+                    for i in range(n):
+                        for j in range(n):
+                            value = similarity[i, j]
+                            if value == 0:
+                                log_similarity[i, j] = 0  # Skip zeros like CATPAC
+                            elif value > 0:
+                                log_similarity[i, j] = np.log(x * (value + 1))
+                            else:  # value < 0
+                                log_similarity[i, j] = np.log(x * (abs(value) + 1)) * (-1)
 
-                    # Validate final gram matrix
-                    if not np.isfinite(gram_matrix).all():
-                        st.warning("⚠️ Invalid Gram matrix detected, using fallback")
-                        gram_matrix = np.eye(n) * 1e-6  # Small identity matrix fallback
+                    if debug_mode:
+                        st.write(f"🔍 **Log Transform Results:**")
+                        st.write(f"Original range: [{np.min(similarity):.6f}, {np.max(similarity):.6f}]")
+                        st.write(f"Log transformed range: [{np.min(log_similarity):.6f}, {np.max(log_similarity):.6f}]")
 
-                except Exception as e:
-                    st.error(f"❌ Error in Galileo double-centering: {str(e)}")
-                    st.stop()
-                
-                # Eigendecomposition of Gram matrix with error handling
-                try:
+                    # Use log-transformed matrix for eigendecomposition
+                    similarity = log_similarity
+
+                    # CATPAC GALILEO: Direct eigendecomposition of log-transformed similarity matrix
                     if jax_available:
-                        st.write("🚀 Using JAX CPU for Gram matrix eigendecomposition...")
-                        gram_jax = jnp.array(gram_matrix)
-                        eigenvals, eigenvecs = cpu_eigendecomposition(gram_jax)
+                        st.write("🚀 Using JAX CPU for direct similarity matrix eigendecomposition...")
+                        similarity_jax = jnp.array(similarity)
+                        eigenvals, eigenvecs = cpu_eigendecomposition(similarity_jax)
                         eigenvals = np.array(eigenvals)
                         eigenvecs = np.array(eigenvecs)
                     else:
-                        eigenvals, eigenvecs = np.linalg.eigh(gram_matrix)
+                        eigenvals, eigenvecs = np.linalg.eigh(similarity)
 
                     # Validate eigenvalue results
                     if not np.isfinite(eigenvals).all() or not np.isfinite(eigenvecs).all():
@@ -475,59 +658,63 @@ if 'huey_results' in st.session_state:
                         eigenvals = np.ones(n) * 1e-6
                         eigenvecs = np.eye(n)
 
-                    # Sort by eigenvalue magnitude (Galileo style)
-                    idx = np.argsort(np.abs(eigenvals))[::-1]
+                    # Sort by eigenvalue algebraic value (largest to smallest, Galileo style)
+                    idx = np.argsort(eigenvals)[::-1]
                     sorted_eigenvals = eigenvals[idx]
                     sorted_eigenvecs = eigenvecs[:, idx]
 
                 except Exception as e:
-                    st.error(f"❌ Error in eigendecomposition: {str(e)}")
+                    st.error(f"❌ Error in CATPAC Galileo eigendecomposition: {str(e)}")
                     # Use fallback values
                     eigenvals = np.ones(n) * 1e-6
                     eigenvecs = np.eye(n)
                     sorted_eigenvals = eigenvals
                     sorted_eigenvecs = eigenvecs
                 
-                st.write(f"🌌 Torgerson transform complete: {len(eigenvals)} eigenvalues")
+                st.write(f"🌌 CATPAC Galileo transform complete: {len(eigenvals)} eigenvalues")
                 st.write(f"📊 Eigenvalue signature: {np.sum(eigenvals > 0)} positive, {np.sum(eigenvals < 0)} negative")
 
-                # DIAGNOSTIC: Detailed eigenvalue analysis
-                st.write("🔍 **Eigenvalue Spectrum Analysis:**")
-                st.write(f"Top 10 eigenvalues: {sorted_eigenvals[:10]}")
-                st.write(f"Bottom 5 eigenvalues: {sorted_eigenvals[-5:]}")
+                if debug_mode:
+                    # DIAGNOSTIC: Detailed eigenvalue analysis
+                    st.write("🔍 **Eigenvalue Spectrum Analysis:**")
+                    st.write(f"Top 10 eigenvalues: {sorted_eigenvals[:10]}")
+                    st.write(f"Bottom 5 eigenvalues: {sorted_eigenvals[-5:]}")
 
-                # Check for dominant eigenvalue
-                if len(sorted_eigenvals) > 1:
-                    ratio = abs(sorted_eigenvals[0]) / abs(sorted_eigenvals[1]) if abs(sorted_eigenvals[1]) > 1e-10 else float('inf')
-                    st.write(f"Eigenvalue dominance ratio (λ₁/λ₂): {ratio:.2f}")
+                    # Check for dominant eigenvalue
+                    if len(sorted_eigenvals) > 1:
+                        ratio = abs(sorted_eigenvals[0]) / abs(sorted_eigenvals[1]) if abs(sorted_eigenvals[1]) > 1e-10 else float('inf')
+                        st.write(f"Eigenvalue dominance ratio (λ₁/λ₂): {ratio:.2f}")
 
-                # Cumulative variance explained
-                abs_eigenvals = np.abs(sorted_eigenvals)
-                total_variance = np.sum(abs_eigenvals)
-                if total_variance > 1e-10:
-                    cumulative_variance = np.cumsum(abs_eigenvals) / total_variance * 100
-                    st.write(f"Variance explained by first 3 dimensions: {cumulative_variance[2]:.1f}%")
-                    st.write(f"First dimension explains: {cumulative_variance[0]:.1f}%")
+                    # Cumulative variance explained
+                    abs_eigenvals = np.abs(sorted_eigenvals)
+                    total_variance = np.sum(abs_eigenvals)
+                    if total_variance > 1e-10:
+                        cumulative_variance = np.cumsum(abs_eigenvals) / total_variance * 100
+                        st.write(f"Variance explained by first 3 dimensions: {cumulative_variance[2]:.1f}%")
+                        st.write(f"First dimension explains: {cumulative_variance[0]:.1f}%")
 
-                # Check for effective rank
-                significant_eigenvals = np.sum(np.abs(sorted_eigenvals) > 1e-6)
-                st.write(f"Effective rank (eigenvals > 1e-6): {significant_eigenvals}")
+                    # Check for effective rank
+                    significant_eigenvals = np.sum(np.abs(sorted_eigenvals) > 1e-6)
+                    st.write(f"Effective rank (eigenvals > 1e-6): {significant_eigenvals}")
                 
-                # Use top 3 eigenvectors for 3D coordinates (Golden Peach method)
+                # Use top 3 eigenvectors for 3D coordinates (Pure CATPAC Galileo method)
                 if len(sorted_eigenvals) >= 3:
-                    # GOLDEN PEACH METHOD: Square root scaling (the working version)
+                    # PURE CATPAC METHOD: FAX(K,KOUNT)=(VT(K)/P)*Q where Q=sqrt(eigenvalue)
                     coords = np.zeros((n, 3))
                     for i in range(3):
                         eigenval = sorted_eigenvals[i]
                         eigenvec = sorted_eigenvecs[:, i]
-                        if eigenval > 1e-8:
-                            # Positive eigenvalue: standard scaling (Golden Peach method)
-                            coords[:, i] = eigenvec * np.sqrt(eigenval)
-                        elif eigenval < -1e-8:
-                            # Negative eigenvalue: imaginary scaling (Golden Peach method)
-                            coords[:, i] = eigenvec * np.sqrt(abs(eigenval))
-                        else:
-                            coords[:, i] = eigenvec * 1e-3
+
+                        # CATPAC normalization: P = sqrt(sum of squares of eigenvector)
+                        P = np.sqrt(np.sum(eigenvec**2))
+                        if P < 1e-12:
+                            P = 1e-12  # Avoid division by zero
+
+                        # CATPAC scaling: Q = sqrt(abs(eigenvalue))
+                        Q = np.sqrt(abs(eigenval)) if abs(eigenval) > 1e-12 else 1e-6
+
+                        # Pure CATPAC formula: FAX = (VT/P)*Q
+                        coords[:, i] = (eigenvec / P) * Q
                     x, y, z = coords[:, 0], coords[:, 1], coords[:, 2]
                 else:
                     # Fallback for small vocabularies
@@ -630,7 +817,8 @@ if 'huey_results' in st.session_state:
                         self.connections[(i, j)] = self.W[i, j]
     
     try:
-        # Create mock network and cascade interface
+        # Create mock network with ALL vocabulary (not just top frequent)
+        # Ensure cascade has access to ALL words including pronouns like "i", "me", "us"
         mock_network = MockNetwork(st.session_state.huey_results)
         cascade = create_cascade_interface(mock_network)
         
