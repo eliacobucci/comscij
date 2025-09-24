@@ -8,10 +8,34 @@ import re
 import numpy as np
 import plotly.graph_objects as go
 from collections import Counter
+import PyPDF2
+import io
 from huey_time import HueyTime, HueyTimeConfig, build_vocab
 import os
 from huey_activation_cascade import HueyActivationCascade, create_cascade_interface
 from cov_hebb import CovHebbLearner
+
+# PDF Text Extraction Function
+def extract_pdf_text(uploaded_file):
+    """Extract text from PDF file"""
+    try:
+        # Create a BytesIO object from the uploaded file
+        pdf_bytes = io.BytesIO(uploaded_file.read())
+
+        # Create PDF reader
+        pdf_reader = PyPDF2.PdfReader(pdf_bytes)
+
+        # Extract text from all pages
+        text = ""
+        for page in pdf_reader.pages:
+            page_text = page.extract_text()
+            if page_text:
+                text += page_text + "\n"
+
+        return text.strip()
+    except Exception as e:
+        st.error(f"Error reading PDF: {str(e)}")
+        return ""
 
 # ChatGPT-5's Temporal Mix Functions
 def update_T_freq_damped(T: np.ndarray, i: int, j: int, dt: float,
@@ -187,7 +211,7 @@ else:
 # Very compact file upload and language selection
 col1, col2, col3 = st.columns([1, 1, 2])
 with col1:
-    uploaded_file = st.file_uploader("📁 File", type=['txt'])
+    uploaded_file = st.file_uploader("📁 File", type=['txt', 'pdf'])
 with col2:
     if uploaded_file:
         language_options = {
@@ -198,18 +222,26 @@ with col2:
         selected_language_name = st.selectbox("🌍 Lang", list(language_options.keys()))
 
 if uploaded_file:
-    content = uploaded_file.getvalue().decode('utf-8')
-    st.write(f"**File:** {uploaded_file.name} | **Length:** {len(content)} characters")
+    # Handle different file types
+    if uploaded_file.name.lower().endswith('.pdf'):
+        content = extract_pdf_text(uploaded_file)
+        if not content:
+            st.error("Could not extract text from PDF. Please try a different file.")
+            st.stop()
+    else:
+        content = uploaded_file.getvalue().decode('utf-8')
+
+    st.write(f"**File:** {uploaded_file.name} | **Type:** {'PDF' if uploaded_file.name.lower().endswith('.pdf') else 'Text'} | **Length:** {len(content)} characters")
     selected_language_code = language_options[selected_language_name]
     
     # Learning rate control
     learning_rate = st.slider(
         "📈 Learning Rate",
-        min_value=0.01,
-        max_value=0.50,
+        min_value=0.001,
+        max_value=2.0,
         value=0.10,
-        step=0.01,
-        format="%.2f",
+        step=0.001,
+        format="%.3f",
         help="Controls temporal learning strength (higher = stronger connections, lower = weaker connections)"
     )
 
@@ -304,20 +336,77 @@ if uploaded_file:
 
             T = np.zeros((n, n), dtype=float)  # Temporal matrix
             freq = np.zeros(n, dtype=float)   # Word frequencies
+            concept_mass = np.zeros(n, dtype=float)  # Inertial mass for each concept
 
             # Count frequencies
             for word in words:
                 if word in vocab:
                     freq[vocab[word]] += 1
 
-            # Temporal learning with frequency damping
-            st.write("⏰ Building temporal connections with frequency damping...")
+            # Temporal learning with frequency damping and mass accumulation
+            st.write("⏰ Building temporal connections with frequency damping and mass tracking...")
+
+            # Diagnostics for learning process
+            total_connections_learned = 0
+            total_strength_increase = 0.0
+            total_mass_accumulated = 0.0
+            max_strength_increase = 0.0
+            sample_learning_events = []
+
             for i in range(len(words) - 1):
                 if words[i] in vocab and words[i+1] in vocab:
                     word_i = vocab[words[i]]
                     word_j = vocab[words[i+1]]
                     dt = 1.0  # Time step
-                    update_T_freq_damped(T, word_i, word_j, dt, freq, etaT=learning_rate*1e-2, tau=3.0)
+
+                    # Store connection strength before update to calculate mass increase
+                    old_strength = T[word_i, word_j]
+
+                    update_T_freq_damped(T, word_i, word_j, dt, freq, etaT=learning_rate, tau=3.0)
+
+                    # Calculate mass increase (10% of strength increase, like original implementation)
+                    new_strength = T[word_i, word_j]
+                    strength_increase = new_strength - old_strength
+                    mass_increase = strength_increase * 0.1
+
+                    # Accumulate mass for both concepts involved in the connection
+                    concept_mass[word_i] += mass_increase
+                    concept_mass[word_j] += mass_increase
+
+                    # Collect diagnostics
+                    if strength_increase > 0:
+                        total_connections_learned += 1
+                        total_strength_increase += strength_increase
+                        total_mass_accumulated += mass_increase * 2  # Both concepts get the mass
+                        max_strength_increase = max(max_strength_increase, strength_increase)
+
+                        # Collect sample learning events (first 10)
+                        if len(sample_learning_events) < 10:
+                            sample_learning_events.append({
+                                'words': (words[i], words[i+1]),
+                                'freqs': (freq[word_i], freq[word_j]),
+                                'strength_increase': strength_increase,
+                                'mass_increase': mass_increase
+                            })
+
+            # Show temporal learning diagnostics
+            if total_connections_learned > 0:
+                avg_strength_increase = total_strength_increase / total_connections_learned
+                st.write(f"📊 **Temporal Learning Diagnostics:**")
+                st.write(f"  - Connections learned: {total_connections_learned:,}")
+                st.write(f"  - Total strength accumulated: {total_strength_increase:.6f}")
+                st.write(f"  - Average strength increase: {avg_strength_increase:.6f}")
+                st.write(f"  - Max strength increase: {max_strength_increase:.6f}")
+                st.write(f"  - Total mass accumulated: {total_mass_accumulated:.6f}")
+                st.write(f"  - Learning rate (etaT): {learning_rate:.3f}")
+
+                if sample_learning_events:
+                    st.write("**Sample learning events:**")
+                    for event in sample_learning_events[:5]:
+                        st.write(f"  '{event['words'][0]}' → '{event['words'][1]}' (freq: {event['freqs'][0]:.0f}, {event['freqs'][1]:.0f}) "
+                               f"→ strength: +{event['strength_increase']:.6f}, mass: +{event['mass_increase']:.6f}")
+            else:
+                st.warning("⚠️ **No temporal learning occurred!** All strength increases were zero.")
 
             # Apply ChatGPT-5's matrix conditioning pipeline
             st.write("🔧 Applying advanced matrix conditioning...")
@@ -426,6 +515,9 @@ if uploaded_file:
             st.write(f"  - S max: {np.max(S):.6f}, min: {np.min(S):.6f}, mean: {np.mean(S):.6f}")
             st.write(f"  - S non-zero: {np.count_nonzero(S)}")
             
+            # Calculate total network mass
+            total_mass = np.sum(concept_mass)
+
             # Store results in session state for tools
             st.session_state.huey_results = {
                 'W': W,
@@ -438,7 +530,9 @@ if uploaded_file:
                 'kill_words_used': len(kill_words) if kill_words else 0,
                 'iac_enabled': use_iac,
                 'iac_learner': iac_learner,
-                'W_iac': W_iac
+                'W_iac': W_iac,
+                'concept_mass': concept_mass,
+                'total_mass': total_mass
             }
             
             # Display results
@@ -454,11 +548,13 @@ if uploaded_file:
             
             st.info(f"🌍 **Language:** {lang_name} | 📚 **Kill words filtered:** {len(kill_words) if kill_words else 0}")
             
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns(3)
             with col1:
                 st.metric("Concepts", concepts)
             with col2:
                 st.metric("Connections", connections)
+            with col3:
+                st.metric("Total Mass", f"{total_mass:.2f}")
             
             # Verify it worked correctly
             if concepts == len(vocab):
@@ -466,14 +562,24 @@ if uploaded_file:
             else:
                 st.error(f"❌ Wrong: Expected {len(vocab)} concepts, got {concepts}")
             
-            # Show some vocabulary
-            st.subheader("📚 Vocabulary Sample")
-            vocab_items = list(vocab.items())[:20]  # First 20 words
-            for word, idx in vocab_items:
-                st.write(f"- {word} (index {idx})")
-            
+            # Show vocabulary with mass information
+            st.subheader("📚 Vocabulary with Mass")
+
+            # Create list of (word, index, mass) and sort by mass (descending)
+            vocab_with_mass = [(word, idx, concept_mass[idx]) for word, idx in vocab.items()]
+            vocab_with_mass.sort(key=lambda x: x[2], reverse=True)
+
+            # Show top 20 by mass
+            st.write("**Top concepts by inertial mass:**")
+            for word, idx, mass in vocab_with_mass[:20]:
+                st.write(f"- **{word}** (mass: {mass:.3f}, index {idx})")
+
             if len(vocab) > 20:
-                st.write(f"... and {len(vocab) - 20} more words")
+                st.write(f"... and {len(vocab) - 20} more concepts")
+
+            # Show mass distribution
+            if len(concept_mass) > 0:
+                st.write(f"**Mass distribution:** min: {np.min(concept_mass):.3f}, max: {np.max(concept_mass):.3f}, mean: {np.mean(concept_mass):.3f}")
             
 # 3D Visualization (outside processing button, uses session state)
 if 'huey_results' in st.session_state:
@@ -738,6 +844,22 @@ if 'huey_results' in st.session_state:
                 concept_names = top_words
                 concept_freqs = [freq for word, freq in top_concepts]
                 max_freq = max(concept_freqs)
+
+                # Get mass data for top concepts
+                concept_masses = []
+                if 'concept_mass' in st.session_state.huey_results:
+                    concept_mass_array = st.session_state.huey_results['concept_mass']
+                    for word in top_words:
+                        if word in vocab:
+                            word_idx = vocab[word]
+                            mass = concept_mass_array[word_idx] if word_idx < len(concept_mass_array) else 0.0
+                            concept_masses.append(mass)
+                        else:
+                            concept_masses.append(0.0)
+                else:
+                    # No mass data available - likely using old session state before mass implementation
+                    concept_masses = [0.0] * len(concept_names)
+                    st.warning("⚠️ **Mass data not available** - This is likely cached data from before mass calculation was implemented. Upload a new file to see mass values!")
                 
                 # Store 3D coordinates for cascade visualization
                 concept_positions = {}
@@ -767,12 +889,15 @@ if 'huey_results' in st.session_state:
                     text=concept_names,
                     textposition="top center",
                     textfont=dict(
-                        size=13, 
-                        color='black', 
+                        size=13,
+                        color='black',
                         family='Arial, sans-serif'
                     ),
                     name=f"All {len(concept_names)} Concepts (labeled)",
-                    hovertemplate="<b>%{text}</b><br>Frequency: %{marker.color}<extra></extra>"
+                    customdata=concept_masses,  # Add mass data for hover
+                    hovertemplate="<b>%{text}</b><br>" +
+                                "Frequency: %{marker.color}<br>" +
+                                "Inertial Mass: %{customdata:.3f}<extra></extra>"
                 ))
                 
                 fig.update_layout(
@@ -1002,6 +1127,11 @@ if 'huey_results' in st.session_state:
 
     if search_word and search_word in vocab:
         search_idx = vocab[search_word]
+
+        # Show concept mass for this word
+        if 'concept_mass' in results:
+            word_mass = results['concept_mass'][search_idx]
+            st.metric(f"'{search_word}' Concept Mass", f"{word_mass:.3f}")
 
         # Find strongest connections in each matrix
         matrices_to_check = [
