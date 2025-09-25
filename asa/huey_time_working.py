@@ -252,6 +252,14 @@ if uploaded_file:
         help="Enable signed covariance-based learning for competitive dynamics (e.g., dog-meows negative connection)"
     )
 
+    # Self-concept (◊) consciousness control
+    self_control = st.selectbox(
+        "◊ Self-Concept Control",
+        options=["Natural", "Always ON", "Always OFF"],
+        index=0,
+        help="Test 'wherever you go, there you are' hypothesis - force ◊ symbol always active/inactive during IAC processing"
+    )
+
     # Competition level slider (only show when IAC is enabled)
     if use_iac:
         competition_percentage = st.slider(
@@ -277,8 +285,8 @@ if uploaded_file:
             
             kill_words = load_kill_words(detected_language)
             
-            # Process text exactly as provided - no modifications
-            words = re.findall(r'\b\w+\b', content.lower())
+            # Process text - include diamond symbol ◊ for self-concept experiments
+            words = re.findall(r'\b\w+\b|◊', content.lower())
             
             st.write(f"**Words before filtering:** {len(words)}")
             
@@ -617,6 +625,13 @@ if 'huey_results' in st.session_state:
             help="Choose eigenvectors for visualization"
         )
 
+        # Log transform toggle for better readability
+        log_transform = st.checkbox(
+            "📏 Log transform display",
+            value=False,
+            help="⚠️ Spreads points for readability but DISTORTS true distances - display only!"
+        )
+
     # Debug toggle - visible and clean
     debug_mode = st.checkbox("🔍 Debug diagnostics", value=False, help="Show detailed matrix analysis (slower)")
 
@@ -838,9 +853,23 @@ if 'huey_results' in st.session_state:
                 
                 # Filter coordinates and data to top concepts only
                 x_top = x[top_indices]
-                y_top = y[top_indices] 
+                y_top = y[top_indices]
                 z_top = z[top_indices]
-                
+
+                # Apply log transform if requested (for display readability only)
+                if log_transform:
+                    # Use a compression transform that brings outliers closer to center
+                    # This compresses large values more than small ones
+                    def compress_coord(coord):
+                        abs_coord = np.abs(coord)
+                        # Use a softer compression: sign(x) * log(1 + |x|)
+                        return np.sign(coord) * np.log(1.0 + abs_coord)
+
+                    x_top = compress_coord(x_top)
+                    y_top = compress_coord(y_top)
+                    z_top = compress_coord(z_top)
+                    st.info("🔄 **Log compression applied** - outliers pulled closer for readability (distances distorted)")
+
                 concept_names = top_words
                 concept_freqs = [freq for word, freq in top_concepts]
                 max_freq = max(concept_freqs)
@@ -860,7 +889,7 @@ if 'huey_results' in st.session_state:
                     # No mass data available - likely using old session state before mass implementation
                     concept_masses = [0.0] * len(concept_names)
                     st.warning("⚠️ **Mass data not available** - This is likely cached data from before mass calculation was implemented. Upload a new file to see mass values!")
-                
+
                 # Store 3D coordinates for cascade visualization
                 concept_positions = {}
                 for i, concept_name in enumerate(concept_names):
@@ -873,7 +902,7 @@ if 'huey_results' in st.session_state:
                 # Create 3D plot
                 fig = go.Figure()
                 
-                # Single scatter plot with ALL concepts labeled
+                # Single scatter plot with ALL concepts labeled (back to original)
                 fig.add_trace(go.Scatter3d(
                     x=x_top, y=y_top, z=z_top,
                     mode='markers+text',
@@ -894,17 +923,22 @@ if 'huey_results' in st.session_state:
                         family='Arial, sans-serif'
                     ),
                     name=f"All {len(concept_names)} Concepts (labeled)",
-                    customdata=concept_masses,  # Add mass data for hover
+                    customdata=concept_masses,
                     hovertemplate="<b>%{text}</b><br>" +
                                 "Frequency: %{marker.color}<br>" +
                                 "Inertial Mass: %{customdata:.3f}<extra></extra>"
                 ))
                 
+                # Create title with log transform indicator
+                title_text = f"3D Concept Space (top {len(concept_names)} of {len(vocab)} concepts)"
+                if log_transform:
+                    title_text += " - LOG TRANSFORMED (Display Only)"
+
                 fig.update_layout(
-                    title=f"3D Concept Space (top {len(concept_names)} of {len(vocab)} concepts)",
+                    title=title_text,
                     scene=dict(
                         xaxis_title="Dimension 1",
-                        yaxis_title="Dimension 2", 
+                        yaxis_title="Dimension 2",
                         zaxis_title="Dimension 3"
                     ),
                     height=600
