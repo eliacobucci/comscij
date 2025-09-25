@@ -735,35 +735,9 @@ if 'huey_results' in st.session_state:
                     diag_vals = np.diag(similarity)
                     st.write(f"Diagonal range: [{np.min(diag_vals):.6f}, {np.max(diag_vals):.6f}]")
 
-                # PURE CATPAC GALILEO METHOD: Direct eigendecomposition of similarity matrix
+                # GALILEO METHOD: Direct eigendecomposition of similarity matrix
                 try:
-                    # Skip all distance/gram matrix conversion - go directly to eigendecomposition like CATPAC
-                    # S matrix is already a similarity matrix, just like CATPAC's synaptic connections
-
-                    # CATPAC LOG TRANSFORM: Apply the "squash" transformation to expand small differences
-                    st.write("🔥 Applying CATPAC log transform to expand semantic structure...")
-                    x = 100  # CATPAC's scaling factor
-                    log_similarity = np.zeros_like(similarity)
-
-                    for i in range(n):
-                        for j in range(n):
-                            value = similarity[i, j]
-                            if value == 0:
-                                log_similarity[i, j] = 0  # Skip zeros like CATPAC
-                            elif value > 0:
-                                log_similarity[i, j] = np.log(x * (value + 1))
-                            else:  # value < 0
-                                log_similarity[i, j] = np.log(x * (abs(value) + 1)) * (-1)
-
-                    if debug_mode:
-                        st.write(f"🔍 **Log Transform Results:**")
-                        st.write(f"Original range: [{np.min(similarity):.6f}, {np.max(similarity):.6f}]")
-                        st.write(f"Log transformed range: [{np.min(log_similarity):.6f}, {np.max(log_similarity):.6f}]")
-
-                    # Use log-transformed matrix for eigendecomposition
-                    similarity = log_similarity
-
-                    # CATPAC GALILEO: Direct eigendecomposition of log-transformed similarity matrix
+                    # Direct eigendecomposition of similarity matrix (proper Galileo approach)
                     if jax_available:
                         st.write("🚀 Using JAX CPU for direct similarity matrix eigendecomposition...")
                         similarity_jax = jnp.array(similarity)
@@ -785,14 +759,14 @@ if 'huey_results' in st.session_state:
                     sorted_eigenvecs = eigenvecs[:, idx]
 
                 except Exception as e:
-                    st.error(f"❌ Error in CATPAC Galileo eigendecomposition: {str(e)}")
+                    st.error(f"❌ Error in Galileo eigendecomposition: {str(e)}")
                     # Use fallback values
                     eigenvals = np.ones(n) * 1e-6
                     eigenvecs = np.eye(n)
                     sorted_eigenvals = eigenvals
                     sorted_eigenvecs = eigenvecs
                 
-                st.write(f"🌌 CATPAC Galileo transform complete: {len(eigenvals)} eigenvalues")
+                st.write(f"🌌 Galileo eigendecomposition complete: {len(eigenvals)} eigenvalues")
                 st.write(f"📊 Eigenvalue signature: {np.sum(eigenvals > 0)} positive, {np.sum(eigenvals < 0)} negative")
 
                 if debug_mode:
@@ -818,24 +792,16 @@ if 'huey_results' in st.session_state:
                     significant_eigenvals = np.sum(np.abs(sorted_eigenvals) > 1e-6)
                     st.write(f"Effective rank (eigenvals > 1e-6): {significant_eigenvals}")
                 
-                # Use top 3 eigenvectors for 3D coordinates (Pure CATPAC Galileo method)
+                # Use top 3 eigenvectors for 3D coordinates (Galileo method)
                 if len(sorted_eigenvals) >= 3:
-                    # PURE CATPAC METHOD: FAX(K,KOUNT)=(VT(K)/P)*Q where Q=sqrt(eigenvalue)
+                    # Standard Galileo coordinate calculation
                     coords = np.zeros((n, 3))
                     for i in range(3):
                         eigenval = sorted_eigenvals[i]
                         eigenvec = sorted_eigenvecs[:, i]
 
-                        # CATPAC normalization: P = sqrt(sum of squares of eigenvector)
-                        P = np.sqrt(np.sum(eigenvec**2))
-                        if P < 1e-12:
-                            P = 1e-12  # Avoid division by zero
-
-                        # CATPAC scaling: Q = sqrt(abs(eigenvalue))
-                        Q = np.sqrt(abs(eigenval)) if abs(eigenval) > 1e-12 else 1e-6
-
-                        # Pure CATPAC formula: FAX = (VT/P)*Q
-                        coords[:, i] = (eigenvec / P) * Q
+                        # Standard eigenvector scaling with eigenvalue weighting
+                        coords[:, i] = eigenvec * np.sqrt(abs(eigenval))
                     x, y, z = coords[:, 0], coords[:, 1], coords[:, 2]
                 else:
                     # Fallback for small vocabularies
@@ -858,17 +824,30 @@ if 'huey_results' in st.session_state:
 
                 # Apply log transform if requested (for display readability only)
                 if log_transform:
-                    # Use a compression transform that brings outliers closer to center
-                    # This compresses large values more than small ones
+                    # Show original coordinate ranges for debugging
+                    orig_x_range = f"[{np.min(x_top):.3f}, {np.max(x_top):.3f}]"
+                    orig_y_range = f"[{np.min(y_top):.3f}, {np.max(y_top):.3f}]"
+                    orig_z_range = f"[{np.min(z_top):.3f}, {np.max(z_top):.3f}]"
+
+                    # Use a power-law compression for very small coordinates
                     def compress_coord(coord):
                         abs_coord = np.abs(coord)
-                        # Use a softer compression: sign(x) * log(1 + |x|)
-                        return np.sign(coord) * np.log(1.0 + abs_coord)
+                        # For small values, use square root compression: sign(x) * sqrt(|x|)
+                        # This dramatically compresses outliers while preserving sign
+                        return np.sign(coord) * np.sqrt(abs_coord)
 
                     x_top = compress_coord(x_top)
                     y_top = compress_coord(y_top)
                     z_top = compress_coord(z_top)
-                    st.info("🔄 **Log compression applied** - outliers pulled closer for readability (distances distorted)")
+
+                    # Show transformed coordinate ranges
+                    new_x_range = f"[{np.min(x_top):.3f}, {np.max(x_top):.3f}]"
+                    new_y_range = f"[{np.min(y_top):.3f}, {np.max(y_top):.3f}]"
+                    new_z_range = f"[{np.min(z_top):.3f}, {np.max(z_top):.3f}]"
+
+                    st.info(f"🔄 **Log compression applied** - outliers pulled closer for readability (distances distorted)")
+                    st.write(f"**Before:** X{orig_x_range}, Y{orig_y_range}, Z{orig_z_range}")
+                    st.write(f"**After:** X{new_x_range}, Y{new_y_range}, Z{new_z_range}")
 
                 concept_names = top_words
                 concept_freqs = [freq for word, freq in top_concepts]
