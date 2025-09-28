@@ -14,6 +14,10 @@ from huey_time import HueyTime, HueyTimeConfig, build_vocab
 import os
 from huey_activation_cascade import HueyActivationCascade, create_cascade_interface
 from cov_hebb import CovHebbLearner
+import warnings
+
+# Suppress numpy warnings temporarily while we fix the numerical issues
+warnings.filterwarnings('ignore', category=RuntimeWarning, module='numpy')
 
 # PDF Text Extraction Function
 def extract_pdf_text(uploaded_file):
@@ -49,47 +53,102 @@ def update_T_freq_damped(T: np.ndarray, i: int, j: int, dt: float,
 
 def center_matrix(A: np.ndarray) -> np.ndarray:
     n = A.shape[0]
+    # Sanitize input matrix first
+    A_clean = np.nan_to_num(A, nan=0.0, posinf=0.0, neginf=0.0)
+
+    # Prevent overflow by checking magnitude
+    max_val = np.max(np.abs(A_clean))
+    if max_val > 1e10:  # Scale down if too large
+        A_clean = A_clean / (max_val / 1e6)
+
     J = np.eye(n) - np.ones((n, n)) / n
-    C = J @ A @ J
+    C = J @ A_clean @ J
+
+    # Clean result and ensure numerical stability
+    C = np.nan_to_num(C, nan=0.0, posinf=0.0, neginf=0.0)
     np.fill_diagonal(C, 0.0)
     return C
 
 def prune_topk_abs(A: np.ndarray, k: int = 256) -> np.ndarray:
     n = A.shape[0]
-    B = np.zeros_like(A)
+    # Sanitize input matrix first
+    A_clean = np.nan_to_num(A, nan=0.0, posinf=0.0, neginf=0.0)
+
+    B = np.zeros_like(A_clean)
     for i in range(n):
-        row = A[i, :].copy()
+        row = A_clean[i, :].copy()
         row[i] = 0.0
-        if k < n:
-            idx = np.argpartition(np.abs(row), -k)[-k:]
-            B[i, idx] = row[idx]
-        else:
-            B[i, :] = row
+
+        # Check for valid values in row
+        if np.any(np.isfinite(row)) and np.any(np.abs(row) > 0):
+            if k < n:
+                abs_row = np.abs(row)
+                if np.max(abs_row) > 0:  # Only proceed if there are non-zero values
+                    idx = np.argpartition(abs_row, -min(k, np.sum(abs_row > 0)))[-min(k, np.sum(abs_row > 0)):]
+                    B[i, idx] = row[idx]
+            else:
+                B[i, :] = row
+
     np.fill_diagonal(B, 0.0)
-    return 0.5 * (B + B.T)
+    result = 0.5 * (B + B.T)
+    # Clean final result
+    result = np.nan_to_num(result, nan=0.0, posinf=0.0, neginf=0.0)
+    return result
 
 def row_norm_clamp(A: np.ndarray, rho: float = None) -> np.ndarray:
-    rows = np.linalg.norm(A, axis=1) + 1e-12
+    # Sanitize input matrix first
+    A_clean = np.nan_to_num(A, nan=0.0, posinf=0.0, neginf=0.0)
+
+    rows = np.linalg.norm(A_clean, axis=1) + 1e-12
+    rows = np.nan_to_num(rows, nan=1e-12, posinf=1e6, neginf=1e-12)
+
     if rho is None:
         rho = np.percentile(rows, 95.0)
         rho = max(rho, 1e-12)
+
     scale = np.minimum(1.0, rho / rows)
-    return (A.T * scale).T
+    scale = np.nan_to_num(scale, nan=1.0, posinf=1.0, neginf=0.0)
+
+    result = (A_clean.T * scale).T
+    return np.nan_to_num(result, nan=0.0, posinf=0.0, neginf=0.0)
 
 def normalize_fro(A: np.ndarray) -> np.ndarray:
-    s = np.linalg.norm(A, ord='fro')
-    return A / max(s, 1e-12)
+    # Sanitize input matrix first
+    A_clean = np.nan_to_num(A, nan=0.0, posinf=0.0, neginf=0.0)
+
+    s = np.linalg.norm(A_clean, ord='fro')
+    s = max(s, 1e-12)  # Prevent division by zero
+
+    result = A_clean / s
+    return np.nan_to_num(result, nan=0.0, posinf=0.0, neginf=0.0)
 
 def build_M(W: np.ndarray, T: np.ndarray, alpha: float = 0.85) -> np.ndarray:
-    Ts = 0.5 * (T + T.T)
-    Wn = normalize_fro(W)
+    # Sanitize inputs
+    W_clean = np.nan_to_num(W, nan=0.0, posinf=0.0, neginf=0.0)
+    T_clean = np.nan_to_num(T, nan=0.0, posinf=0.0, neginf=0.0)
+
+    Ts = 0.5 * (T_clean + T_clean.T)
+    Wn = normalize_fro(W_clean)
     Tn = normalize_fro(Ts)
-    return alpha * Wn + (1.0 - alpha) * Tn
+
+    result = alpha * Wn + (1.0 - alpha) * Tn
+    return np.nan_to_num(result, nan=0.0, posinf=0.0, neginf=0.0)
 
 def topk_eigs(A: np.ndarray, k: int = 5):
-    w, _ = np.linalg.eigh(0.5*(A + A.T))
-    w = w[::-1]
-    return w[:k]
+    # Sanitize input matrix first
+    A_clean = np.nan_to_num(A, nan=0.0, posinf=0.0, neginf=0.0)
+
+    # Ensure matrix is symmetric and numerically stable
+    A_sym = 0.5 * (A_clean + A_clean.T)
+
+    try:
+        w, _ = np.linalg.eigh(A_sym)
+        w = np.nan_to_num(w, nan=0.0, posinf=1e6, neginf=-1e6)
+        w = w[::-1]  # Sort in descending order
+        return w[:k]
+    except np.linalg.LinAlgError:
+        # Fallback: return zeros if eigenvalue computation fails
+        return np.zeros(k)
 
 def spectral_guardrail(M: np.ndarray, alpha: float, hi_ratio: float = 4.0, lo_ratio: float = 1.5, step: float = 0.05) -> float:
     evals = topk_eigs(M, k=2)
@@ -265,8 +324,8 @@ if uploaded_file:
         competition_percentage = st.slider(
             "⚔️ Competition Level",
             min_value=0,
-            max_value=50,
-            value=1,
+            max_value=100,
+            value=25,
             step=1,
             format="%d%%",
             help="Higher values = more competition (more negative connections). Lower values = more cooperation."

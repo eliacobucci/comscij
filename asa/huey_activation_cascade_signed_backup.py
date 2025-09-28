@@ -321,16 +321,12 @@ class HueyActivationCascade:
                 else:
                     print(f"⏱️  Step {step}: No signal arrivals")
                 
-                # SIGNED STATES ACTIVATION (ChatGPT-5's specification)
-                # Replace ReLU with symmetric activation enabling true neural inhibition
-                z = new_activations
-                z = z - z.mean()  # Mean-center pre-activations (baseline centering)
-                new_activations = np.tanh(1.0 * z)  # Symmetric activation with beta=1.0
+                # Simple threshold activation - signals either activate neurons or they don't
+                # No complex logistic function needed
+                new_activations = np.maximum(new_activations, 0.0)  # Just ensure non-negative
                 
-                # LEAK/MIXING UPDATE (ChatGPT-5's specification)
-                # x_next = (1 - lambda_) * x + lambda_ * sigma(z)
-                lambda_leak = 0.2  # Leak rate parameter
-                current_activations = (1 - lambda_leak) * decayed_activations + lambda_leak * new_activations
+                # Combine: decayed existing + new signal arrivals
+                current_activations = decayed_activations + new_activations
                 
                 # Maintain input strength for first few steps
                 if step < 3:
@@ -339,30 +335,30 @@ class HueyActivationCascade:
                         idx = self.id_to_matrix_idx[concept_id]
                         current_activations[idx] = max(current_activations[idx], input_strength * (0.9 ** step))
             
-            # SIGNED STATES: Allow negative activations (true neural inhibition)
-            # No need to clamp to non-negative - this enables natural opposition axes
+            # Ensure non-negative activations
+            current_activations = np.maximum(current_activations, 0.0)
             
-            # Apply dead zone for finite-time extinction (works with signed states)
-            current_activations[np.abs(current_activations) < self.dead_zone_theta] = 0.0
+            # Apply dead zone for finite-time extinction
+            current_activations[current_activations < self.dead_zone_theta] = 0.0
             
-            # DEBUG: Monitor signed states (negative activations are now EXPECTED)
+            # DEBUG: Check for any negative activations (should never happen)
             negative_count = np.sum(current_activations < 0)
-            positive_count = np.sum(current_activations > 0)
-            if step <= 3 or negative_count > 0:  # Show initial steps and when inhibition occurs
+            if negative_count > 0:
                 min_activation = np.min(current_activations)
-                max_activation = np.max(current_activations)
-                print(f"🧠 SIGNED STATES: {positive_count} positive, {negative_count} negative (range: {min_activation:.4f} to {max_activation:.4f})")
+                print(f"🚨 BUG: {negative_count} negative activations found! Min: {min_activation:.6f}")
+                # Force fix any negatives
+                current_activations = np.maximum(current_activations, 0.0)
             
             # Check convergence: TRUE REST means network energy approaches zero
             # SKIP convergence check for step 0 (initial setup only)
             if step > 0:
                 change = np.mean(np.abs(current_activations - previous_activations))
-                total_energy = np.sum(np.abs(current_activations))  # Use absolute energy for signed states
-                max_activation = np.max(np.abs(current_activations))  # Use absolute max for signed states
+                total_energy = np.sum(current_activations)
+                max_activation = np.max(current_activations)
                 
                 # DEBUG: Always show first few step progressions
                 if step <= 3:
-                    active_count = np.sum(np.abs(current_activations) > self.activation_threshold)  # Count both positive and negative states
+                    active_count = np.sum(current_activations > self.activation_threshold)
                     print(f"🔬 Step {step}: change={change:.6f}, energy={total_energy:.6f}, active={active_count}, max_activation={max_activation:.6f}")
                 
                 # TRUE NEURAL REST: very low total energy and max activation
@@ -382,8 +378,8 @@ class HueyActivationCascade:
         
         # Scientific summary
         final_target_activation = current_activations[self.id_to_matrix_idx[self.concept_to_id[target_concept]]]
-        total_active = sum(1 for a in current_activations if abs(a) >= self.activation_threshold)  # Count signed states
-        total_energy = float(np.sum(np.abs(current_activations)))  # Use absolute energy for signed states
+        total_active = sum(1 for a in current_activations if a >= self.activation_threshold)
+        total_energy = float(np.sum(current_activations))
         
         print(f"🧬 CASCADE ANALYSIS:")
         print(f"   Final target activation: {final_target_activation:.6f} ({final_target_activation*100:.3f}%)")
@@ -391,8 +387,6 @@ class HueyActivationCascade:
         print(f"   Total network energy: {total_energy:.6f}")
         print(f"   Max final activation: {np.max(current_activations):.6f}")
         print(f"   Min final activation: {np.min(current_activations):.6f}")
-        print(f"   Max absolute activation: {np.max(np.abs(current_activations)):.6f}")
-        print(f"   Positive states: {np.sum(current_activations > 0)}, Negative states: {np.sum(current_activations < 0)}")
         print(f"   Concepts at true zero: {np.sum(current_activations == 0.0)}/{len(current_activations)}")
         print(f"   Steps to convergence: {len(cascade_steps)}")
         
