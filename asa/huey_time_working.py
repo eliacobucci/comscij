@@ -882,7 +882,7 @@ if 'huey_results' in st.session_state:
                 z_top = z[top_indices]
 
                 # Apply log transform if requested (for display readability only)
-                if not log_transform:
+                if log_transform:
                     # Show original coordinate ranges for debugging
                     orig_x_range = f"[{np.min(x_top):.3f}, {np.max(x_top):.3f}]"
                     orig_y_range = f"[{np.min(y_top):.3f}, {np.max(y_top):.3f}]"
@@ -969,7 +969,7 @@ if 'huey_results' in st.session_state:
                 
                 # Create title with log transform indicator
                 title_text = f"3D Concept Space (top {len(concept_names)} of {len(vocab)} concepts)"
-                if not log_transform:
+                if log_transform:
                     title_text += " - LOG TRANSFORMED (Display Only)"
 
                 fig.update_layout(
