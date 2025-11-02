@@ -3,7 +3,6 @@ issn: "2164-0769"
 description: "Where communication meets science - ISSN 2164-0769"
 baseurl: ""
 url: "https://comscij.com"
-theme: jekyll-theme-cayman  # More modern than 'minimal'
 
 # Custom styling
 header_image: "/assets/images/header-graphic.jpg"
