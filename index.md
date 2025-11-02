@@ -3,7 +3,9 @@ layout: default
 title: "Communication and Science Journal"
 ---
 
-# Welcome to Communication and Science Journal  
+![Journal Header](/assets/images/comSciJsm.jpg){: style="width: 100%; max-height: 200px; object-fit: cover; margin-bottom: 2rem;"}
+
+# Communication and Science Journal  
 **ISSN 2164-0769**
 
 ---
@@ -31,4 +33,3 @@ Communication & Science Journal recognizes the central role of communication in 
 *A RAH Publication*
 
 ---
-*Contact the Editors with technical concerns; this site launched January 2025.*
