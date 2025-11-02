@@ -3,7 +3,7 @@ layout: default
 title: "Communication and Science Journal"
 ---
 
-![Journal Header](/assets/images/comSciJsm.jpg){: style="width: 100%; max-height: 200px; object-fit: cover; margin-bottom: 2rem;"}
+![Journal Header](/assets/images/comSciJsm.jpg){: style="width: 100%; max-height: 200px; object-fit: contain; margin-bottom: 2rem;"}
 
 # Communication and Science Journal  
 **ISSN 2164-0769**
