@@ -20,3 +20,6 @@ navigation:
     url: "/editorial-board"
   - title: "Related Work"
     url: "/related-work"
+custom_css:
+  - "/assets/css/custom.css"
+
