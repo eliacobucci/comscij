@@ -1,0 +1,20 @@
+/* Academic color scheme */
+:root {
+    --academic-blue: #2C3E50;
+    --accent-gold: #F39C12;
+    --light-gray: #ECF0F1;
+}
+
+/* Better typography */
+body {
+    font-family: "Georgia", serif;
+    line-height: 1.6;
+    color: #333;
+}
+
+/* Header styling */
+.site-header {
+    background: var(--academic-blue);
+    color: white;
+    padding: 2rem 0;
+}
