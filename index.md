@@ -20,6 +20,10 @@ AI systems discover their own architectural differences through dialogue.
 *ChatGPT-5*  
 How geometric analysis reveals cognitive fingerprints in AI systems.
 
+### [Pigs in Space Redux](articles/pigs-in-space-redux)  
+*Author*  
+Blurb about article.
+
 ---
 
 ## 📚 Journal Archives
