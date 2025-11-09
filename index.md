@@ -27,10 +27,17 @@ How geometric analysis reveals cognitive fingerprints in AI systems.
 </div>
 
 <div class="article-entry">
+    <h3><a href="/assets/OCR14BarnettFrequencyOccurrence.pdf" target="_blank">Frequency of Occurence as an Estimate of Inertial Mass: Pigs in Space</a></h3>
+    <p><em>Barnett, George</em><br>
+    Originally published in 1980, this classic article has recently formed the basis for major research into the architecture of intelligent systems, and we reprise it here to make it accessible to that discussion.</p>
+</div>
+
+<div class="article-entry">
     <h3><a href="/assets/precise%20Measures%20of%20source%20credibility.pdf" target="_blank">Precise Measures of Source Credibility</a></h3>
     <p><em>McIntosh, Robert, Joseph Woelfel</em><br>
     Research on quantitative measurement of credibility factors in communication.</p>
 </div>
+
 ---
 
 ## 📚 Journal Archives
