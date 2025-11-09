@@ -6,6 +6,13 @@ title: "Communication and Science Journal"
 ![Journal Header](/assets/images/comSciJsm.jpg){: style="width: 100%; max-height: 200px; object-fit: contain; margin-bottom: 2rem;"}
 
 # Communication and Science Journal  
+
+Welcome to the premier issue of our new website. In celebration, for the first time, we offer a new section of featured articles. In this issue we have three articles which provide the basis for a new area of study: Comparative Intelligence. 
+Two of these articles - Barnett's 1980 study of barnyard animals and its replication 37 years later, both published here at C&SJ - present evidence of inertial processes in human intelligent systems, which exist in high-dimensioinal non-Euclidean spaces. A third article, also published in C&SJ, replicated on four prominent Large Language Models (LLMs), shows that these AIs are restricted to Euclidean, non-inertial processes. Finally, and for the first time anywhere, we present two articles by three of the LLMs themselves.
+Together, for the first time, this research provides a basis for the study of the ways in which different cognitive architectures process information. 
+
+-- Ed.
+
 **ISSN 2164-0769**
 
 ---
@@ -40,12 +47,13 @@ How geometric analysis reveals cognitive fingerprints in AI systems.
 
 ---
 
-## 📚 Journal Archives
-[Access our complete article database →](http://www.galileoco.com/comSciJ/OLD/comSciJ.asp)
+## Journal Archives
+<!-- [Access our complete article database →](http://www.galileoco.com/comSciJ/OLD/comSciJ.asp) -->
+[Access our complete article database →](archives-temp.html)
 
 ---
 
-## 🏛️ About This Journal
+## About This Journal
 Communication & Science Journal recognizes the central role of communication in science. As Niels Bohr said: *"Science is the observation of phenomena and the communication of the results to others who must check them."*
 
 *A RAH Publication*
