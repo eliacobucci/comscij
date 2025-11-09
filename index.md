@@ -20,13 +20,15 @@ AI systems discover their own architectural differences through dialogue.
 *ChatGPT-5*  
 How geometric analysis reveals cognitive fingerprints in AI systems.
 
-### [Inertia in Cognitive Process: Pigs in Space Redux](/assets/precise%20Measures%20of%20source%20credibility.pdf){:target="_blank"}  
+### [Pigs in Space Redux](articles/pigs-in-space-redux)  
 *McIntosh, Robert, Joseph Woelfel*  
-Originally published in 2017, this classic article has recently formed the basis for major research into the architecture of intelligent systems.
+Originally published in 2017, this classic article has recently formed the basis for major researh into the architecture of intelligent systems, and we reprise it here to make it acessible to that discussion.
 
-### [Precise Measures of Source Credibility](/assets/precise%20Measures%20of%20source%20credibility.pdf){:target="_blank"}  
-*McIntosh, Robert, Joseph Woelfel*  
-Research on quantitative measurement of credibility factors in communication.
+<div class="article-entry">
+    <h3><a href="/assets/precise%20Measures%20of%20source%20credibility.pdf" target="_blank">Precise Measures of Source Credibility</a></h3>
+    <p><em>McIntosh, Robert, Joseph Woelfel</em><br>
+    Research on quantitative measurement of credibility factors in communication.</p>
+</div>
 ---
 
 ## 📚 Journal Archives
