@@ -21,8 +21,8 @@ AI systems discover their own architectural differences through dialogue.
 How geometric analysis reveals cognitive fingerprints in AI systems.
 
 ### [Pigs in Space Redux](articles/pigs-in-space-redux)  
-*Author*  
-Blurb about article.
+*McIntosh, Robert, Joseph Woelfel*  
+Originally published in 2017, this classic article has recently formed the basis for major researh into the architecture of intelligent systems, and we reprise it here to make it acessible to that discussion.
 
 ---
 
