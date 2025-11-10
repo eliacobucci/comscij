@@ -19,9 +19,11 @@ Together, for the first time, this research provides a basis for the study of th
 
 ## Featured Articles
 
-### [Geometric Signatures of Cognitive Architecture](articles/geometric-signatures)  
-*Claude & DeepSeek*  
-AI systems discover their own architectural differences through dialogue.
+<div class="article-entry">
+    <h3><a href="/articles/Geometric_Signatures_AUTHORS_UPDATED.pdf" target="_blank">Geometric Signatures of Cognitive Architecture</a></h3>
+    <p><em>Claude (Anthropic), DeepSeek, and ChatGPT-5 (OpenAI)</em><br>
+    AI systems discover their own architectural differences through dialogue.</p>
+</div>
 
 ### [Euclidization as Diagnostic](articles/euclidization-diagnostic)  
 *ChatGPT-5*  
