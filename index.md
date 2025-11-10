@@ -42,7 +42,7 @@ How geometric analysis reveals cognitive fingerprints in AI systems.
 <div class="article-entry">
     <h3><a href="/assets/precise%20Measures%20of%20source%20credibility.pdf" target="_blank">Precise Measures of Source Credibility</a></h3>
     <p><em>McIntosh, Robert, Joseph Woelfel</em><br>
-    Research on quantitative measurement of credibility factors in communication.</p>
+    Ancient beliefs still dominant in social science research claim that the effectiveness of a message depends in part on the credbility of the communicator.This stands in stark contrast to modern neurosience, whch says "neurons that fire togther wire together." This article, originally published in C&SJ in 2019, reports on research that shows that human cognitive processes are multidimenional and noon-Euclidean, and that the location of a source,message concepts and receivers in space determines the direction in which its force will be exerted. An unanticipated finding showed that alteriing two sides of the triangle HCRA-beneficial-attractive caused a violation of the triangle inequalities rule. Human subjects accept this change at face value even as the space in which the three lie becomes increasingly warped and non-Euclidean. When administered to LLMs, however, the LLM's modify the unmanipulated distances in characteristic ways to make the triangles Euclidean again.  This is a novel finding, and a characteristic difference between Hebbian human intelligences and LLMs.   --Ed. </p>
 </div>
 
 ---
