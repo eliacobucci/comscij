@@ -48,6 +48,8 @@ How geometric analysis reveals cognitive fingerprints in AI systems.
 </div>
 
 ---
+## Articles
+---
 
 ## Journal Archives
 <!-- [Access our complete article database →](http://www.galileoco.com/comSciJ/OLD/comSciJ.asp) -->
