@@ -49,6 +49,11 @@ How geometric analysis reveals cognitive fingerprints in AI systems.
 
 ---
 ## Articles
+<div class="article-entry">
+    <h3><a href="/articles/jw_20191204.pdf" target="_blank">Effects of Differentiation and Association in Galileo Space</a></h3>
+    <p><em>Woelfel, Joseph, 2019Dec04.</em><br>
+    </p>
+</div>
 ---
 
 ## Journal Archives
