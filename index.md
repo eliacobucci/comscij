@@ -69,7 +69,7 @@ How geometric analysis reveals cognitive fingerprints in AI systems.
 
 
 <div class="article-entry">
-    <h3><a href="/articles/inertiaCognitiveProcess2SwiatSFoxTextAnal.pdf" target="_blank">Text Analysis of Fox News Articles on Unarmed Police Shootings</a></h3>
+    <h3><a href="/articles/SwiatSFoxTextAnal.pdf" target="_blank">Text Analysis of Fox News Articles on Unarmed Police Shootings</a></h3>
     <p><em>SwiaT, S., 2018NOV1.</em><br>
     </p>
 </div>
