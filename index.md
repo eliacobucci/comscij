@@ -61,6 +61,15 @@ How geometric analysis reveals cognitive fingerprints in AI systems.
     </p>
 </div>
 
+
+<div class="article-entry">
+    <h3><a href="/articles/InertiaCognitiveProcess2.pdf" target="_blank">Precise Measures of Source Credibility as a Multidiemnsional Concept</a></h3>
+    <p><em>McIntosh, R., Woelfel, J., 2019</em><br>
+    </p>
+</div>
+
+
+
 ---
 
 ## Journal Archives
