@@ -91,6 +91,12 @@ How geometric analysis reveals cognitive fingerprints in AI systems.
     </p>
 </div>
 
+<div class="article-entry">
+    <h3><a href="/articles/serota1976.pdf" target="_blank">Communication,ideology and political behavior: A multidimensional analysis. Paper presentes to the Political Communication Division of the International Communication Association in Chicago, April23-26, 1975. Communication & Science Journal Classic Series 2014</a></h3>
+    <p><em>Serota, K., Fink, E. L., Noell, J., Woelfel, J.1975., 2017</em><br>
+    </p>
+</div>
+
 
 
 ---
