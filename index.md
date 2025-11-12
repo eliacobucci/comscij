@@ -62,7 +62,7 @@ How geometric analysis reveals cognitive fingerprints in AI systems.
 </div>
 
 <div class="article-entry">
-    <h3><a href="/articles/inertiaCognitiveProcess2.pdf" target="_blank">Precise Measures of Source Credibility</a></h3>
+    <h3><a href="/articles/woelfel14.pdf" target="_blank">Precise Measures of Source Credibility</a></h3>
     <p><em>McIntosh, R., Woelfel, J., 2019</em><br>
     </p>
 </div>
@@ -76,6 +76,12 @@ How geometric analysis reveals cognitive fingerprints in AI systems.
 <div class="article-entry">
     <h3><a href="/articles/TransitiveindifferenceGraphs.pdf" target="_blank">Social Networks and Transitive Indifference Graphs</a></h3>
     <p><em>Tutzauer, F., 2018NOV.</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/inertiaCognitiveProcess2.pdf" target="_blank">Precise Measures of Source Credibility</a></h3>
+    <p><em>McIntosh, R., Woelfel, J., 2019</em><br>
     </p>
 </div>
 
