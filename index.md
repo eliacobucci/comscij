@@ -74,8 +74,8 @@ How geometric analysis reveals cognitive fingerprints in AI systems.
 </div>
 
 <div class="article-entry">
-    <h3><a href="/articles/SwiatSFoxTextAnal.pdf" target="_blank">Text Analysis of Fox News Articles on Unarmed Police Shootings</a></h3>
-    <p><em>SwiaT, S., 2018NOV1.</em><br>
+    <h3><a href="/articles/TransitiveindifferenceGraphs.pdf" target="_blank">Social Networks and Transitive Indifference Graphs</a></h3>
+    <p><em>Tutzauer, F., 2018NOV.</em><br>
     </p>
 </div>
 
