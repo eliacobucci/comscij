@@ -133,6 +133,12 @@ How geometric analysis reveals cognitive fingerprints in AI systems.
     </p>
 </div>
 
+<div class="article-entry">
+    <h3><a href="/articles/sandhausFinkKaplowitz87.pdf" target="_blank">Asymmetry in judgments of similarity. Comunication & Science Journal, Classic Series 2012</a></h3>
+    <p><em>Sabdhaus, D.A.,Fink,E.L.,Kaplowitz,S.A. 2017</em><br>
+    </p>
+</div>
+
 
 
 
