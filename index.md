@@ -152,8 +152,8 @@ How geometric analysis reveals cognitive fingerprints in AI systems.
 </div>
 
 <div class="article-entry">
-    <h3><a href="/articles/iacobucciA17Mar15.pdf" target="_blank">Dialog on the foundations of sociological theory</a></h3>
-    <p><em>Iacobucci, A., 2017</em><br>
+    <h3><a href="/articles/leeWoelfel12.pdf" target="_blank">Self information, topics of interest and information seeking media use among Korean young adults. Communication & Science Journal, 2012Feb06.(recieved 2011Oct11)</a></h3>
+    <p><em>Lee, H.,J., & Woelfel, J., 2017</em><br>
     </p>
 </div>
 
