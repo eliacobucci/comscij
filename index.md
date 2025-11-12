@@ -122,8 +122,8 @@ How geometric analysis reveals cognitive fingerprints in AI systems.
 </div>
 
 <div class="article-entry">
-    <h3><a href="/articles/TransitiveindifferenceGraphs.pdf" target="_blank">Social Networks and Transitive Indifference Graphs</a></h3>
-    <p><em>Tutzauer, F., 2018NOV.</em><br>
+    <h3><a href="/articles/SaxtonGuo12.pdf" target="_blank">Conceptualizing web-based stakeholder communinication: The organizational website as a stakeholder relations tool 2012Dec18</a></h3>
+    <p><em>Saxton, G.D., & Guo, C., 2018NOV.</em><br>
     </p>
 </div>
 
