@@ -62,7 +62,7 @@ How geometric analysis reveals cognitive fingerprints in AI systems.
 </div>
 
 <div class="article-entry">
-    <h3><a href="/articles/precise Measures of souurce credibility.pdf" target="_blank">Precise Measures of Source Credibility</a></h3>
+    <h3><a href="/articles/precise Measures of source credibility.pdf" target="_blank">Precise Measures of Source Credibility</a></h3>
     <p><em>McIntosh, R., Woelfel, J., 2019</em><br>
     </p>
 </div>
