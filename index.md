@@ -115,6 +115,12 @@ How geometric analysis reveals cognitive fingerprints in AI systems.
     </p>
 </div>
 
+<div class="article-entry">
+    <h3><a href="/articles/woelfel14.pdf" target="_blank">Procedures for precise text analysis: Alternative methods for cluster analysis</a></h3>
+    <p><em>Woelfel, J., 2014May03</em><br>
+    </p>
+</div>
+
 
 
 ---
