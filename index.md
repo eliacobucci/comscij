@@ -116,8 +116,8 @@ How geometric analysis reveals cognitive fingerprints in AI systems.
 </div>
 
 <div class="article-entry">
-    <h3><a href="/articles/woelfel14.pdf" target="_blank">Procedures for precise text analysis: Alternative methods for cluster analysis</a></h3>
-    <p><em>Woelfel, J., 2014May03</em><br>
+    <h3><a href="/articles/lovejoyEtAl13" target="_blank">Exporing individual's Social Value Orientation and decisions in a Prisoner's Dilemma 213Jan10.</a></h3>
+    <p><em>Lovejoy, K., Catelier J., Evans C., Lohiser, A., Chu, I.H., 2014May03</em><br>
     </p>
 </div>
 
