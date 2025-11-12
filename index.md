@@ -81,7 +81,7 @@ How geometric analysis reveals cognitive fingerprints in AI systems.
 
 <div class="article-entry">
     <h3><a href="/articles/inertiaCognitiveProcess2.pdf" target="_blank">Inertia in Cognitive Processes: Pigs in Space Redux</a></h3>
-    <p><em>McIntosh, R., Woelfel, J., 2019</em><br>
+    <p><em>McIntosh, R., Woelfel, J., 2017</em><br>
     </p>
 </div>
 
