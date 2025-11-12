@@ -74,7 +74,7 @@ How geometric analysis reveals cognitive fingerprints in AI systems.
 </div>
 
 <div class="article-entry">
-    <h3><a href="/articles/TransitiveindifferenceGraphs.pdf" target="_blank">Social Networks and Transitive Indifference Graphs</a></h3>
+    <h3><a href="/articles/TransitiveIndifferenceGraphs.pdf" target="_blank">Social Networks and Transitive Indifference Graphs</a></h3>
     <p><em>Tutzauer, F., 2018NOV.</em><br>
     </p>
 </div>
