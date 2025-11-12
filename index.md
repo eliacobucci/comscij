@@ -104,7 +104,7 @@ How geometric analysis reveals cognitive fingerprints in AI systems.
 </div>
 
 <div class="article-entry">
-    <h3><a href="/articles/barnettFinkChang88" target="_blank">Procedures for precise text analysis: The adoption and discontinuance of motion picture attendance and monochromatic television;further tests of a mathematical modelMay-June 1998</a></h3>
+    <h3><a href="/articles/barnettFinkChang88" target="_blank">The adoption and discontinuance of motion picture attendance and monochromatic television;further tests of a mathematical modelMay-June 1998</a></h3>
     <p><em>Barnett, G.A., Fink, E.L., Chang, H.J.1988</em><br>
     </p>
 </div>
