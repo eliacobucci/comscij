@@ -146,7 +146,7 @@ How geometric analysis reveals cognitive fingerprints in AI systems.
 </div>
 
 <div class="article-entry">
-    <h3><a href="/articles/brandtBarnett79.pdf" target="_blank"Coding of facial and verbal expressions of emotion: a metric multidimensional scaling analysis. Communication & Science Journal, Classic Series 2012</a></h3>
+    <h3><a href="/articles/brandtBarnett79.pdf" target="_blank">Coding of facial and verbal expressions of emotion: a metric multidimensional scaling analysis. Communication & Science Journal, Classic Series 2012</a></h3>
     <p><em>Brandt, D.R., & Barnett, G.A., 2017</em><br>
     </p>
 </div>
