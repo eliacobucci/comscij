@@ -182,8 +182,8 @@ How geometric analysis reveals cognitive fingerprints in AI systems.
 </div>
 
 <div class="article-entry">
-    <h3><a href="/articles/iacobucciA17Mar15.pdf" target="_blank">Dialog on the foundations of sociological theory</a></h3>
-    <p><em>Iacobucci, A., 2017</em><br>
+    <h3><a href="/articles/serota1976.pdf" target="_blank">The generalizaton and description of a set of equations for point motion in a multidimensional space. Communication & Science Journal Classic Series 2011</a></h3>
+    <p><em>SWerota, K. (1976)., 2017</em><br>
     </p>
 </div>
 
