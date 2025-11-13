@@ -176,7 +176,7 @@ How geometric analysis reveals cognitive fingerprints in AI systems.
 </div>
 
 <div class="article-entry">
-    <h3><a href="/articles/serotaEtAl1977.pdf" target="_blank"Precise proceddurees for optimizing camoain=gn communication. Originally published in Communication Yearbook 1, 475-491 Communication & Science Journal Classic Series 2011</a></h3>
+    <h3><a href="/articles/serotaEtAl1977.pdf" target="_blank">Precise procedures for optimizing campaign communication. Originally published in Communication Yearbook 1, 475-491 Communication & Science Journal Classic Series 2011</a></h3>
     <p><em>Serota, K., Cody, M., Barnett, G.A., Taylor, J.1977., 2017</em><br>
     </p>
 </div>
