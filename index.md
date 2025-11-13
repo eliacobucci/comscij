@@ -159,13 +159,13 @@ How geometric analysis reveals cognitive fingerprints in AI systems.
 
 <div class="article-entry">
     <h3><a href="/articles/vishwanath11.pdf" target="_blank">Global differneces in internet diffusion: And empirical investigation into the effects of culture on the diffusion of the internet. Communication & Science Journal, 2012Feb06 (recieved 2011)ct11)</a></h3>
-    <p><em>Iacobucci, A., 2017</em><br>
+    <p><em>Iacobucci, A., 2011</em><br>
     </p>
 </div>
 
 <div class="article-entry">
-    <h3><a href="/articles/iacobucciA17Mar15.pdf" target="_blank">Dialog on the foundations of sociological theory</a></h3>
-    <p><em>Iacobucci, A., 2017</em><br>
+    <h3><a href="/articles/chenEtAl11.pdf" target="_blank">Procedures for the analysis of massive textual datasets. Communication & Science Journal, 2011Oct10 (received 2011Jul23)</a></h3>
+    <p><em>Chen, H., Evans, C., Battelson, B., Zubrow, E., Woelfel, J., 201</em><br>
     </p>
 </div>
 
