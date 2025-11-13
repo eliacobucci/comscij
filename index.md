@@ -183,7 +183,7 @@ How geometric analysis reveals cognitive fingerprints in AI systems.
 
 <div class="article-entry">
     <h3><a href="/articles/serota1976.pdf" target="_blank">The generalizaton and description of a set of equations for point motion in a multidimensional space. Communication & Science Journal Classic Series 2011</a></h3>
-    <p><em>SWerota, K. (1976)., 2017</em><br>
+    <p><em>Serota, K. (1976)., 2017</em><br>
     </p>
 </div>
 
