@@ -1,0 +1,24 @@
+title: "Communication and Science Journal"
+issn: "2164-0769"
+description: "Where communication meets science - ISSN 2164-0769"
+baseurl: ""
+url: "https://comscij.com"
+
+# Custom styling
+header_image: "/assets/images/header-graphic.jpg"
+logo: "/assets/images/logo.png"
+
+navigation:
+  - title: "Articles"
+    url: "/articles"
+  - title: "Archives" 
+    url: "http://www.galileoco.com/comSciJ/OLD/comSciJ.asp"
+  - title: "About"
+    url: "/about"
+  - title: "Editorial Board"
+    url: "/editorial-board"
+  - title: "Related Work"
+    url: "/related-work"
+custom_css:
+  - "/assets/css/custom.css"
+

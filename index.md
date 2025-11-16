@@ -1,0 +1,212 @@
+---
+layout: default
+title: "Communication and Science Journal"
+---
+
+![Journal Header](/assets/images/comSciJsm.jpg){: style="width: 100%; max-height: 200px; object-fit: contain; margin-bottom: 2rem;"}
+
+# Communication and Science Journal  
+
+Welcome to the premier issue of our new website. In celebration, for the first time, we offer a new section of featured articles. In this issue we have three articles which provide the basis for a new area of study: Comparative Intelligence. 
+Two of these articles - Barnett's 1980 study of barnyard animals and its replication 37 years later, both published here at C&SJ - present evidence of inertial processes in human intelligent systems, which exist in high-dimensioinal non-Euclidean spaces. A third article, also published in C&SJ, replicated on four prominent Large Language Models (LLMs), shows that these AIs are restricted to Euclidean, non-inertial processes. Finally, and for the first time anywhere, we present two articles by three of the LLMs themselves.
+Together, for the first time, this research provides a basis for the study of the ways in which different cognitive architectures process information. 
+
+-- Ed.
+
+**ISSN 2164-0769**
+
+---
+
+## Featured Articles
+
+<div class="article-entry">
+    <h3><a href="/articles/Geometric_Signatures_AUTHORS_UPDATED.pdf" target="_blank">Geometric Signatures of Cognitive Architecture</a></h3>
+    <p><em>Claude (Anthropic), DeepSeek, and ChatGPT-5 (OpenAI)</em><br>
+    AI systems discover their own architectural differences through dialogue.</p>
+</div>
+
+### [Euclidization as Diagnostic](articles/euclidization-diagnostic)  
+*ChatGPT-5*  
+How geometric analysis reveals cognitive fingerprints in AI systems.
+
+<div class="article-entry">
+    <h3><a href="/assets/inertiaCognitiveProcess2.pdf" target="_blank">Pigs in Space Redux</a></h3>
+    <p><em>McIntosh, Robert, Joseph Woelfel</em><br>
+    Originally published in 2017, this classic article has recently formed the basis for major research into the architecture of intelligent systems, and we reprise it here to make it accessible to that discussion.</p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/assets/OCR14BarnettFrequencyOccurrence.pdf" target="_blank">Frequency of Occurence as an Estimate of Inertial Mass: Pigs in Space</a></h3>
+    <p><em>Barnett, George</em><br>
+    Originally published in 1980, this classic article has recently formed the basis for major research into the architecture of intelligent systems, and we reprise it here to make it accessible to that discussion.</p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/assets/precise%20Measures%20of%20source%20credibility.pdf" target="_blank">Precise Measures of Source Credibility</a></h3>
+    <p><em>McIntosh, Robert, Joseph Woelfel</em><br>
+    Ancient beliefs still dominant in social science research claim that the effectiveness of a message depends in part on the credbility of the communicator.This stands in stark contrast to modern neurosience, whch says "neurons that fire togther wire together." This article, originally published in C&SJ in 2019, reports on research that shows that human cognitive processes are multidimenional and noon-Euclidean, and that the location of a source,message concepts and receivers in space determines the direction in which its force will be exerted. An unanticipated finding showed that alteriing two sides of the triangle HCRA-beneficial-attractive caused a violation of the triangle inequalities rule. Human subjects accept this change at face value even as the space in which the three lie becomes increasingly warped and non-Euclidean. When administered to LLMs, however, the LLM's modify the unmanipulated distances in characteristic ways to make the triangles Euclidean again.  This is a novel finding, and a characteristic difference between Hebbian human intelligences and LLMs.   --Ed. </p>
+</div>
+
+---
+## Articles
+<div class="article-entry">
+    <h3><a href="/articles/jw_20191204.pdf" target="_blank">Effects of Differentiation and Association in Galileo Space</a></h3>
+    <p><em>Woelfel, Joseph (2019Dec04).</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/GAB_20191203v2.pdf" target="_blank">Message Strategies to Improve the Image of CRISPR</a></h3>
+    <p><em>Anderton, B., Calabrese, C. J., Featherstone, J. D, Barnett, G. A., Woelfel, J. (2019Nov15)</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/precise Measures of source credibility.pdf" target="_blank">Precise Measures of Source Credibility</a></h3>
+    <p><em>McIntosh, R., Woelfel, J., 2019</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/SwiatSFoxTextAnal.pdf" target="_blank">Text Analysis of Fox News Articles on Unarmed Police Shootings</a></h3>
+    <p><em>SwiaT, S., 2018NOV1.</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/TransitiveIndifferenceGraphs.pdf" target="_blank">Social Networks and Transitive Indifference Graphs</a></h3>
+    <p><em>Tutzauer, F., 2018NOV.</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/inertiaCognitiveProcess2.pdf" target="_blank">Inertia in Cognitive Processes: Pigs in Space Redux</a></h3>
+    <p><em>McIntosh, R., Woelfel, J., 2017</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/iacobucciA17Mar15.pdf" target="_blank">Dialog on the foundations of sociological theory</a></h3>
+    <p><em>Iacobucci, A., 2017</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/serotaEtA1977.pdf" target="_blank">Communication,ideology and political behavior: A multidimensional analysis. Paper presentes to the Political Communication Division of the International Communication Association in Chicago, April23-26, 1975. Communication & Science Journal Classic Series 2014</a></h3>
+    <p><em>Serota, K., Fink, E. L., Noell, J., Woelfel, J.1975., 2017</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/woelfel14.pdf" target="_blank">Procedures for precise text analysis: Alternative methods for cluster analysis</a></h3>
+    <p><em>Woelfel, J., 2014May03</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/barnettFinkChang88.pdf" target="_blank">The adoption and discontinuance of motion picture attendance and monochromatic television;further tests of a mathematical modelMay-June 1998</a></h3>
+    <p><em>Barnett, G.A., Fink, E.L., Chang, H.J.1988</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/lovejoy13.pdf" target="_blank">Galileo Syste: Current Method and Applications 2013Jul27</a></h3>
+    <p><em>Lovejoy, K,E., 2014May03</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/lovejoyEtAl13" target="_blank">Exporing individual's Social Value Orientation and decisions in a Prisoner's Dilemma 213Jan10.</a></h3>
+    <p><em>Lovejoy, K., Catelier J., Evans C., Lohiser, A., Chu, I.H., 2014May03</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/SaxtonGuo12.pdf" target="_blank">Conceptualizing web-based stakeholder communinication: The organizational website as a stakeholder relations tool 2012Dec18</a></h3>
+    <p><em>Saxton, G.D., & Guo, C., 2018NOV.</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/vishwanathEgnotoOrtega12.pdf" target="_blank">A retrospective analysis of Common Method Variance in communication research. Communication & Science Journal, 2012Sept12.</a></h3>
+    <p><em>Vishwanath, A.,Egnoto,M.,Ortega,C.R. 2017</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/sandhausFinkKaplowitz87.pdf" target="_blank">Asymmetry in judgments of similarity. Comunication & Science Journal, Classic Series 2012</a></h3>
+    <p><em>Sabdhaus, D.A.,Fink,E.L.,Kaplowitz,S.A. 2017</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/evans12.pdf" target="_blank">Images of emotion versus emotion words. Communication & Science Journal. 2012 Apr21</a></h3>
+    <p><em>Evans, C., 2017</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/brandtBarnett79.pdf" target="_blank">Coding of facial and verbal expressions of emotion: a metric multidimensional scaling analysis. Communication & Science Journal, Classic Series 2012</a></h3>
+    <p><em>Brandt, D.R., & Barnett, G.A., 2017</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/leeWoelfel12.pdf" target="_blank">Self information, topics of interest and information seeking media use among Korean young adults. Communication & Science Journal, 2012Feb06.(recieved 2011Oct11)</a></h3>
+    <p><em>Lee, H.,J., & Woelfel, J., 2017</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/vishwanath11.pdf" target="_blank">Global differneces in internet diffusion: And empirical investigation into the effects of culture on the diffusion of the internet. Communication & Science Journal, 2012Feb06 (recieved 2011)ct11)</a></h3>
+    <p><em>Iacobucci, A., 2011</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/chenEtAl11.pdf" target="_blank">Procedures for the analysis of massive textual datasets. Communication & Science Journal, 2011Oct10 (received 2011Jul23)</a></h3>
+    <p><em>Chen, H., Evans, C., Battelson, B., Zubrow, E., Woelfel, J., 201</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/lackaffKoseyTutzauer11.pdf" target="_blank">An agent-based model of turnover in a nonprofit organization. Communication & Science Journal, 2011Jul22 (received 2011Jul11)</a></h3>
+    <p><em>Lckaff, D., Kosey., R., Tutzauer, F., 2017</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/serotaEtAl1977.pdf" target="_blank">Precise procedures for optimizing campaign communication. Originally published in Communication Yearbook 1, 475-491 Communication & Science Journal Classic Series 2011</a></h3>
+    <p><em>Serota, K., Cody, M., Barnett, G.A., Taylor, J.1977., 2017</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/serota1976.pdf" target="_blank">The generalizaton and description of a set of equations for point motion in a multidimensional space. Communication & Science Journal Classic Series 2011</a></h3>
+    <p><em>Serota, K. (1976)., 2017</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/taylorBarnettSerota1975.pdf" target="_blank">A multidimensional examination of political attitude change. Originally presented at the International Communication Association, Chicago, IL.Communcation & Science Journal Classic Series 2011.</a></h3>
+    <p><em>Taylor, J., Barnett, G.A., Serota, K. (1975, April)., 2017</em><br>
+    </p>
+</div>
+
+
+
+
+---
+
+## Journal Archives
+<!-- [Access our complete article database →](http://www.galileoco.com/comSciJ/OLD/comSciJ.asp) -->
+[Access our complete article database →](archives-temp.md)
+
+---
+
+## About This Journal
+Communication & Science Journal recognizes the central role of communication in science. As Niels Bohr said: *"Science is the observation of phenomena and the communication of the results to others who must check them."*
+
+*A RAH Publication*
+
+---
