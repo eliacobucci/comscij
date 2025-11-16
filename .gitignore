@@ -5,6 +5,9 @@
 !csj_literature/
 !csj_literature/**
 
+# Except csj_literature.md file
+!csj_literature.md
+
 # Except git files
 !.gitignore
 !.git/
