@@ -11,7 +11,7 @@ Type in the box below to filter the list by author, year, or title substring.
 <input id="lit-search" type="text" placeholder="Search literature..." style="width:100%; padding:0.5rem; margin-bottom:1rem;">
 
 <ul id="lit-list">
-  <li data-title="An examination of the 2008 United States of America presidential election"><a href="/csj_literature/12-24-12PAPERelection08.pdf">12 24 12PAPERelection08</a> <span style="font-size:0.85em; color:#666;">(An examination of the 2008 United States of America presidential election)</span></li>
+  <li data-title="An examination of the 2008 United States of America presidential election"><a href="/csj_literature/12-24-12PAPERelection08.pdf">An examination of the 2008 United States of America presidential election</a> <span style="font-size:0.85em; color:#666;">(An examination of the 2008 United States of America presidential election)</span></li>
   <li data-title="2 10 11sunbeltce"><a href="/csj_literature/2-10-11SUNBELTce.pdf">2 10 11SUNBELTce</a> <span style="font-size:0.85em; color:#666;">(2-10-11SUNBELTce.pdf)</span></li>
   <li data-title="52fink &amp; chen"><a href="/csj_literature/52Fink & Chen.pdf">52Fink &amp; Chen</a> <span style="font-size:0.85em; color:#666;">(52Fink &amp; Chen.pdf)</span></li>
   <li data-title="87chung&amp;finkhcr2008"><a href="/csj_literature/87Chung&FinkHCR2008.pdf">87Chung&amp;FinkHCR2008</a> <span style="font-size:0.85em; color:#666;">(87Chung&amp;FinkHCR2008.pdf)</span></li>
