@@ -1,0 +1,13 @@
+# Ignore everything in the parent directory
+*
+
+# Except the csj_literature directory
+!csj_literature/
+!csj_literature/**
+
+# Except git files
+!.gitignore
+!.git/
+
+# But ignore .DS_Store files everywhere
+.DS_Store
