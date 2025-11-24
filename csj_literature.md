@@ -1,7 +1,7 @@
 ---
 layout: page
 title: Galileo Literature Archive
-permalink: /csj_literature/
+permalink: /literature_archive/
 ---
 
 # Galileo Literature Archive
