@@ -200,7 +200,7 @@ How geometric analysis reveals cognitive fingerprints in AI systems.
 
 ## Journal Archives
 <!-- [Access our complete article database →](http://www.galileoco.com/comSciJ/OLD/comSciJ.asp) -->
-[Galileo Literature Archive]({{ "/csj_literature/" | relative_url }})
+[Galileo Literature Archive]({{ "/literature_archive/" | relative_url }})
 
 
 ---
