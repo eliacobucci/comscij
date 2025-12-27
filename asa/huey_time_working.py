@@ -984,7 +984,8 @@ if 'huey_results' in st.session_state:
                 
                 st.plotly_chart(fig, use_container_width=True)
                 st.success("✅ 3D visualization created successfully!")
-                
+
+
             except Exception as e:
                 st.error(f"❌ Visualization error: {e}")
                 import traceback

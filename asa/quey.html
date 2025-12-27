@@ -327,7 +327,17 @@ psychology</textarea>
                 return Array.from(inputs).map(input => input.value.trim()).filter(val => val);
             } else {
                 const textarea = document.getElementById('conceptList');
-                return textarea.value.split('\n').map(line => line.trim()).filter(line => line);
+                // Robust filtering: remove ALL empty/blank lines including invisible characters
+                const concepts = textarea.value
+                    .split('\n')
+                    .map(line => line.trim())
+                    .map(line => line.replace(/[\u200B-\u200D\uFEFF]/g, '')) // Remove zero-width chars
+                    .filter(line => line && line.length > 0 && /\S/.test(line))
+                    .filter(line => line !== ''); // Extra safety: remove truly empty strings
+
+                console.log('Raw textarea length:', textarea.value.split('\n').length);
+                console.log('After filtering:', concepts.length);
+                return concepts;
             }
         }
 
@@ -375,9 +385,16 @@ psychology</textarea>
 
         function generateQuestionnaire() {
             concepts = getConcepts();
-            
+
             if (concepts.length < 2) {
                 alert('Please enter at least 2 concepts to generate a questionnaire.');
+                return;
+            }
+
+            // Debug: show parsed concepts to user for verification
+            console.log('Parsed concepts:', concepts);
+            const conceptPreview = concepts.slice(0, 10).map((c, i) => `${i+1}. "${c}"`).join('\n');
+            if (!confirm(`Found ${concepts.length} concepts. First 10:\n\n${conceptPreview}\n\nContinue?`)) {
                 return;
             }
             
