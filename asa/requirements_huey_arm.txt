@@ -1,0 +1,15 @@
+# Huey ARM Environment - Pinned Dependencies
+# JAX 0.4.34 is the last stable version for Apple Silicon Metal
+# DO NOT upgrade to JAX 0.8.x - it has critical bugs with Metal backend
+
+jax==0.4.34
+jaxlib==0.4.34
+jax-metal==0.1.1
+
+# Core dependencies
+streamlit>=1.52.0
+plotly>=6.0.0
+PyPDF2>=3.0.0
+numpy>=2.4.0
+pandas>=2.3.0
+scipy>=1.16.0
