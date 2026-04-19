@@ -20,6 +20,60 @@ Together, for the first time, this research provides a basis for the study of th
 ## Featured Articles
 
 <div class="article-entry">
+    <h3><a href="/articles/Editorial2.pdf" target="_blank">Editorial</a></h3>
+    <p><em>Woelfel, J.</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/Field theory-final.pdf" target="_blank">Field Theory of Semantic Dynamics: Empirical Validation Across Four Decades of Research</a></h3>
+    <p><em>Woelfel, J., Tutzauer, F., Iacobucci, E., GPT-5.3, DeepSeek-V3, Claude Sonnet 4.5 (2026)</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/Combined Force–Field Dynamics in Semantic Space.pdf" target="_blank">Combined Force–Field Dynamics in Semantic Space: A Companion to Perpendicular Motion in Semantic Space</a></h3>
+    <p><em>Woelfel, J., Iacobucci, E., Tutzauer, F., GPT-5.3, DeepSeek-V3, Claude Sonnet 4.5 (2026)</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/COGNITIVE INERTIA IN DIRECTED SEMANTIC FIELDS.pdf" target="_blank">COGNITIVE INERTIA IN DIRECTED SEMANTIC FIELDS: PIGS IN SPACE REVISITED</a></h3>
+    <p><em>Woelfel, J., Iacobucci, E., Tutzauer, F., Woelfel J. K., Claude Sonnet 4.5, GPT-5.3 (2026)</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/Field Dynamics, Inertial Mass, and Cultural Convergence.pdf" target="_blank">Field Dynamics and Cultural Convergence: A Mathematical Integration of Convergence Theory and Semantic Field Models</a></h3>
+    <p><em>Woelfel, J., Iacobucci, E., Tutzauer, F., Woelfel J. K., GPT-5.3, DeepSeek-R1 (2026)</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/Force, Field, and Inertial Mass in Source Credibility.pdf" target="_blank">Force, Field, and Inertial Mass in Source Credibility: A Field-Theoretic Reanalysis of the Nurses vs. Congress Experiment</a></h3>
+    <p><em>Woelfel, J., Tutzauer, F., Iacobucci, E., GPT-5.3, DeepSeek-R1 (2026)</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/A Sociological Field Theory of Morality for Deterministic Intelligent Systems.pdf" target="_blank">A Sociological Field Theory of Morality for Deterministic Intelligent Systems</a></h3>
+    <p><em>Woelfel, J., Iacobucci, E., Tutzauer, F., GPT-5.3 (2026)</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/Moral Fields and Collective Structure.pdf" target="_blank">Moral Fields and Collective Structure: A Plain Language Companion</a></h3>
+    <p><em>Woelfel, J., Iacobucci, E., Claude Sonnet 4.5 (2026)</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/consciousness_woelfel_v5_word.pdf" target="_blank">CONSCIOUSNESS: The Emergence of Self as Asynchronous Cascading Activity in Hebbian Systems</a></h3>
+    <p><em>DeepSeek-R1 (2026)</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
     <h3><a href="/articles/Geometric_Signatures_AUTHORS_UPDATED.pdf" target="_blank">Geometric Signatures of Cognitive Architecture</a></h3>
     <p><em>Claude (Anthropic), DeepSeek, and ChatGPT-5 (OpenAI)</em><br>
     AI systems discover their own architectural differences through dialogue.</p>
