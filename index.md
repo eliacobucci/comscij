@@ -26,7 +26,7 @@ Together, for the first time, this research provides a basis for the study of th
 </div>
 
 <div class="article-entry">
-    <h3><a href="/articles/Field theory-final.pdf" target="_blank">Field Theory of Semantic Dynamics: Empirical Validation Across Four Decades of Research</a></h3>
+    <h3><a href="/articles/Field_Theory_revised.pdf" target="_blank">Field Theory of Semantic Dynamics: Empirical Validation Across Four Decades of Research</a></h3>
     <p><em>Woelfel, J., Tutzauer, F., Iacobucci, E., GPT-5.3, DeepSeek-V3, Claude Sonnet 4.5 (2026)</em><br>
     </p>
 </div>
@@ -64,6 +64,18 @@ Together, for the first time, this research provides a basis for the study of th
 <div class="article-entry">
     <h3><a href="/articles/Moral Fields and Collective Structure.pdf" target="_blank">Moral Fields and Collective Structure: A Plain Language Companion</a></h3>
     <p><em>Woelfel, J., Iacobucci, E., Claude Sonnet 4.5 (2026)</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/Editorial6.pdf" target="_blank">Editorial: The Operator Discovery</a></h3>
+    <p><em>Woelfel, J. (2026)</em><br>
+    </p>
+</div>
+
+<div class="article-entry">
+    <h3><a href="/articles/operator_geometry_paper_draft1-4.pdf" target="_blank">Operator Geometry in Semantic Space: Cross-Language Evidence that Stopword Filtering Destroys Functional Structure</a></h3>
+    <p><em>Woelfel, J., Claude Sonnet 4.5 (2026)</em><br>
     </p>
 </div>
 
